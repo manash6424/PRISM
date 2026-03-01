@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRISM – Subscription & Billing</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg2: #161b27;
+  --bg3: #1e2535;
+  --accent: #e8455a;
+  --accent2: #ff6b7a;
+  --gold: #f5c842;
+  --green: #22c55e;
+  --text: #e8eaf0;
+  --text2: #9aa3b8;
+  --border: rgba(255,255,255,0.07);
+  --glow: rgba(232,69,90,0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* TOP BAR */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2.5rem;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+  background: none;
+}
+.back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.logo-mark {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  color: white;
+}
+
+.logo-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: var(--text2);
+}
+
+.user-dot {
+  width: 8px; height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+}
+
+/* MAIN */
+.main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+/* PAGE HEADER */
+.page-header {
+  margin-bottom: 3rem;
+}
+
+.page-header h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+}
+
+.page-header p {
+  color: var(--text2);
+  font-size: 0.95rem;
+}
+
+/* CURRENT PLAN BANNER */
+.current-plan-banner {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.8rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.plan-info {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.plan-icon {
+  width: 48px; height: 48px;
+  background: rgba(232,69,90,0.1);
+  border: 1px solid rgba(232,69,90,0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.plan-details h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.plan-details p {
+  font-size: 0.82rem;
+  color: var(--text2);
+}
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
+  color: var(--green);
+  padding: 0.25rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-left: 0.8rem;
+}
+
+.usage-bars {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.usage-item {
+  min-width: 120px;
+}
+
+.usage-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text2);
+  margin-bottom: 0.4rem;
+}
+
+.usage-label span:last-child {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.usage-bar {
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 1s ease;
+}
+
+.usage-fill.warning { background: var(--gold); }
+.usage-fill.safe { background: var(--green); }
+
+/* PRICING SECTION */
+.pricing-section {
+  margin-bottom: 2.5rem;
+}
+
+.section-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.plan-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  position: relative;
+  transition: all 0.25s;
+}
+
+.plan-card:hover { border-color: rgba(255,255,255,0.12); }
+
+.plan-card.active {
+  border-color: var(--green);
+  background: linear-gradient(135deg, rgba(34,197,94,0.03), var(--bg2));
+}
+
+.plan-card.pro {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(232,69,90,0.05), var(--bg2));
+}
+
+.active-indicator {
+  position: absolute;
+  top: -11px;
+  left: 1.5rem;
+  background: var(--green);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.8rem;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.popular-indicator {
+  position: absolute;
+  top: -11px;
+  left: 1.5rem;
+  background: var(--accent);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.8rem;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.plan-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.plan-name-tag {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text2);
+  margin-bottom: 0.5rem;
+}
+
+.plan-price-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--text);
+}
+
+.plan-price-big .currency {
+  font-size: 1.3rem;
+  vertical-align: super;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+}
+
+.plan-period-small {
+  font-size: 0.78rem;
+  color: var(--text2);
+  margin-top: 0.2rem;
+}
+
+.plan-features-list {
+  list-style: none;
+  margin-bottom: 1.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.plan-features-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  color: var(--text2);
+}
+
+.check {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(34,197,94,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.cross {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: var(--text2);
+  flex-shrink: 0;
+  opacity: 0.4;
+}
+
+.plan-features-list li.locked { opacity: 0.45; }
+
+.plan-action-btn {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  border: none;
+}
+
+.btn-current {
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25) !important;
+  color: var(--green);
+  border: none;
+}
+
+.btn-upgrade {
+  background: var(--accent);
+  color: white;
+}
+.btn-upgrade:hover { background: var(--accent2); transform: translateY(-1px); }
+
+/* BILLING HISTORY */
+.billing-section {
+  margin-bottom: 2.5rem;
+}
+
+.billing-table {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.billing-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 0.8rem 1.5rem;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+}
+
+.billing-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.billing-row:last-child { border-bottom: none; }
+.billing-row:hover { background: var(--bg3); }
+
+.billing-row .invoice-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.billing-row .invoice-date {
+  font-size: 0.82rem;
+  color: var(--text2);
+}
+
+.billing-row .invoice-amount {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.status-paid {
+  background: rgba(34,197,94,0.1);
+  color: var(--green);
+  border: 1px solid rgba(34,197,94,0.2);
+}
+
+.status-free {
+  background: rgba(255,255,255,0.05);
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+
+.download-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.download-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+.no-billing {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text2);
+  font-size: 0.875rem;
+}
+
+/* FAQ */
+.faq-section { margin-bottom: 2.5rem; }
+
+.faq-list {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--border);
+}
+.faq-item:last-child { border-bottom: none; }
+
+.faq-question {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.faq-question:hover { background: var(--bg3); }
+
+.faq-arrow {
+  color: var(--text2);
+  transition: transform 0.2s;
+  font-size: 0.8rem;
+}
+
+.faq-answer {
+  display: none;
+  padding: 0 1.5rem 1.2rem;
+  font-size: 0.875rem;
+  color: var(--text2);
+  line-height: 1.7;
+}
+
+.faq-item.open .faq-answer { display: block; }
+.faq-item.open .faq-arrow { transform: rotate(180deg); }
+
+/* CONTACT SUPPORT */
+.support-box {
+  background: linear-gradient(135deg, rgba(232,69,90,0.08), var(--bg2));
+  border: 1px solid rgba(232,69,90,0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.support-box h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.support-box p {
+  font-size: 0.875rem;
+  color: var(--text2);
+}
+
+.support-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.support-btn:hover { background: var(--accent2); }
+
+/* UPGRADE MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2.5rem;
+  max-width: 460px;
+  width: 90%;
+  position: relative;
+  animation: popIn 0.3s ease;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.modal-close:hover { color: var(--text); }
+
+.modal h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+}
+
+.modal p {
+  font-size: 0.875rem;
+  color: var(--text2);
+  margin-bottom: 1.5rem;
+}
+
+.modal-price {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-price-label {
+  font-size: 0.875rem;
+  color: var(--text2);
+}
+
+.modal-price-amount {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.modal-features {
+  list-style: none;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.modal-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text2);
+}
+
+.modal-features li::before {
+  content: '✓';
+  color: var(--green);
+  font-weight: 700;
+}
+
+.razorpay-btn {
+  width: 100%;
+  padding: 0.9rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.razorpay-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+.secure-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin-top: 1rem;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.main > * {
+  animation: fadeUp 0.4s ease forwards;
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+<button class="back-btn" onclick="window.location.href='index.html?skip=true'">← Back to App</button>
+    <a href="#" class="logo">
+      <div class="logo-mark">P</div>
+      <span class="logo-name">PRISM</span>
+    </a>
+  </div>
+  <div class="topbar-right">
+    <div class="user-pill">
+      <div class="user-dot"></div>
+      admin@prism.com
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>Subscription & Billing</h1>
+    <p>Manage your plan, usage, and billing information</p>
+  </div>
+
+  <!-- CURRENT PLAN BANNER -->
+  <div class="current-plan-banner">
+    <div class="plan-info">
+      <div class="plan-icon">🆓</div>
+      <div class="plan-details">
+        <h3>Free Plan <span class="plan-badge">● Active</span></h3>
+        <p>Your plan renews on — · Upgrade anytime</p>
+      </div>
+    </div>
+    <div class="usage-bars">
+      <div class="usage-item">
+        <div class="usage-label">
+          <span>Queries Used</span>
+          <span>32 / 50</span>
+        </div>
+        <div class="usage-bar">
+          <div class="usage-fill warning" style="width: 64%"></div>
+        </div>
+      </div>
+      <div class="usage-item">
+        <div class="usage-label">
+          <span>Connections</span>
+          <span>1 / 1</span>
+        </div>
+        <div class="usage-bar">
+          <div class="usage-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    </div>
+    <button class="plan-action-btn btn-upgrade" onclick="openUpgradeModal()" style="width:auto;padding:0.7rem 1.5rem;">
+      Upgrade to Pro →
+    </button>
+  </div>
+
+  <!-- PLANS -->
+  <div class="pricing-section">
+    <div class="section-label">Choose Your Plan</div>
+    <div class="plans-grid">
+
+      <!-- FREE -->
+      <div class="plan-card active">
+        <div class="active-indicator">Current Plan</div>
+        <div class="plan-header">
+          <div>
+            <div class="plan-name-tag">Free</div>
+            <div class="plan-price-big"><span class="currency">₹</span>0</div>
+            <div class="plan-period-small">forever free</div>
+          </div>
+        </div>
+        <ul class="plan-features-list">
+          <li><span class="check">✓</span> 50 queries per month</li>
+          <li><span class="check">✓</span> 1 database connection</li>
+          <li><span class="check">✓</span> CSV & Excel export</li>
+          <li><span class="check">✓</span> 7-day query history</li>
+          <li class="locked"><span class="cross">✕</span> PDF export</li>
+          <li class="locked"><span class="cross">✕</span> Priority support</li>
+          <li class="locked"><span class="cross">✕</span> Custom report templates</li>
+          <li class="locked"><span class="cross">✕</span> Team access (5 users)</li>
+        </ul>
+        <button class="plan-action-btn btn-current">✓ Current Plan</button>
+      </div>
+
+      <!-- PRO -->
+      <div class="plan-card pro">
+        <div class="popular-indicator">⚡ Most Popular</div>
+        <div class="plan-header">
+          <div>
+            <div class="plan-name-tag">Pro</div>
+            <div class="plan-price-big"><span class="currency">₹</span>2,999</div>
+            <div class="plan-period-small">per month · cancel anytime</div>
+          </div>
+        </div>
+        <ul class="plan-features-list">
+          <li><span class="check">✓</span> Unlimited queries</li>
+          <li><span class="check">✓</span> Unlimited DB connections</li>
+          <li><span class="check">✓</span> CSV, Excel & PDF export</li>
+          <li><span class="check">✓</span> 90-day query history</li>
+          <li><span class="check">✓</span> PDF export</li>
+          <li><span class="check">✓</span> Priority support (24hr)</li>
+          <li><span class="check">✓</span> Custom report templates</li>
+          <li><span class="check">✓</span> Team access (5 users)</li>
+        </ul>
+        <button class="plan-action-btn btn-upgrade" onclick="openUpgradeModal()">
+          Upgrade to Pro →
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BILLING HISTORY -->
+  <div class="billing-section">
+    <div class="section-label">Billing History</div>
+    <div class="billing-table">
+      <div class="billing-table-header">
+        <span>Invoice</span>
+        <span>Date</span>
+        <span>Amount</span>
+        <span>Status</span>
+      </div>
+      <div class="no-billing">
+        No billing history yet. Upgrade to Pro to see invoices here.
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="faq-section">
+    <div class="section-label">Frequently Asked Questions</div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Can I cancel my Pro plan anytime?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer">Yes! You can cancel your Pro subscription at any time from this page. Your access will continue until the end of the current billing period.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          What payment methods do you accept?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer">We accept all major credit/debit cards, UPI (GPay, PhonePe, Paytm), and net banking via Razorpay — India's most trusted payment gateway.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          What happens when I exceed my free plan limits?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer">When you hit 50 queries on the Free plan, queries will be paused until the next month. You can upgrade to Pro at any time for unlimited access.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Is there a refund policy?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer">Yes. New Pro subscribers can request a full refund within 7 days of their first payment. Contact billing@prism.com with your account email.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Can I add more team members on Pro?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer">The Pro plan includes up to 5 team members. Need more? Contact us at hello@prism.com for a custom Enterprise quote.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPPORT -->
+  <div class="support-box">
+    <div>
+      <h3>Need help with billing?</h3>
+      <p>Our support team responds within 24 business hours.</p>
+    </div>
+    <a href="mailto:billing@prism.com" class="support-btn">Contact Support →</a>
+  </div>
+
+</div>
+
+<!-- UPGRADE MODAL -->
+<div class="modal-overlay" id="upgradeModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeUpgradeModal()">✕</button>
+    <h2>Upgrade to Pro ⚡</h2>
+    <p>Get unlimited queries, all exports, priority support and team access.</p>
+
+    <div class="modal-price">
+      <div class="modal-price-label">Pro Plan · Monthly</div>
+      <div class="modal-price-amount">₹2,999 / mo</div>
+    </div>
+
+    <ul class="modal-features">
+      <li>Unlimited queries every month</li>
+      <li>Unlimited database connections</li>
+      <li>PDF, CSV & Excel exports</li>
+      <li>90-day query history</li>
+      <li>Priority support within 24 hours</li>
+      <li>Team access for up to 5 users</li>
+    </ul>
+
+    <button class="razorpay-btn" onclick="initiatePayment()">
+      💳 Pay ₹2,999 with Razorpay
+    </button>
+
+    <div class="secure-note">
+      🔒 Secured by Razorpay · Cancel anytime
+    </div>
+  </div>
+</div>
+
+<script>
+function openUpgradeModal() {
+  document.getElementById('upgradeModal').classList.add('open');
+}
+
+function closeUpgradeModal() {
+  document.getElementById('upgradeModal').classList.remove('open');
+}
+
+// Close modal on overlay click
+document.getElementById('upgradeModal').addEventListener('click', function(e) {
+  if (e.target === this) closeUpgradeModal();
+});
+
+function toggleFaq(btn) {
+  const item = btn.parentElement;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+function initiatePayment() {
+  // TODO: Replace with your actual Razorpay Key ID
+  const options = {
+    key: 'YOUR_RAZORPAY_KEY_ID',
+    amount: 299900, // Amount in paise (₹2999 = 299900 paise)
+    currency: 'INR',
+    name: 'PRISM',
+    description: 'Pro Plan - Monthly Subscription',
+    image: '',
+    handler: function(response) {
+      alert('Payment successful! Payment ID: ' + response.razorpay_payment_id);
+      closeUpgradeModal();
+      // TODO: Send payment ID to backend to activate Pro plan
+    },
+    prefill: {
+      email: 'admin@prism.com',
+    },
+    theme: {
+      color: '#e8455a'
+    }
+  };
+
+  // Check if Razorpay is loaded
+  if (typeof Razorpay !== 'undefined') {
+    const rzp = new Razorpay(options);
+    rzp.open();
+  } else {
+    alert('Razorpay not loaded. Please add your Razorpay script to activate payments.');
+  }
+}
+
+// Animate usage bars on load
+window.addEventListener('load', () => {
+  document.querySelectorAll('.usage-fill').forEach(bar => {
+    const width = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => { bar.style.width = width; }, 300);
+  });
+});
+</script>
+
+<!-- Add this when you have Razorpay key: -->
+<!-- <script src="https://checkout.razorpay.com/v1/checkout.js"></script> -->
+
+</body>
+</html>

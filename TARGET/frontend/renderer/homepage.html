@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRISM – AI Database Copilot for Marketing Agencies</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080b12;
+  --bg2: #0e1420;
+  --bg3: #141c2e;
+  --accent: #e8455a;
+  --accent2: #ff6b7a;
+  --gold: #f5c842;
+  --text: #f0f2f8;
+  --text2: #8892a8;
+  --border: rgba(255,255,255,0.06);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 4rem;
+  background: rgba(8,11,18,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.logo-mark {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  color: white;
+}
+
+.logo-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text); }
+
+.nav-actions { display: flex; gap: 1rem; align-items: center; }
+
+.btn-ghost {
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.5rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+.btn-red {
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+}
+.btn-red:hover { background: #ff5a6d; transform: translateY(-1px); }
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8rem 4rem 6rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(232,69,90,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,69,90,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, black, transparent);
+}
+
+.hero-glow {
+  position: absolute;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(232,69,90,0.12), transparent 70%);
+  top: -150px; left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(232,69,90,0.1);
+  border: 1px solid rgba(232,69,90,0.3);
+  color: var(--accent);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeUp 0.6s ease 0.1s forwards;
+}
+
+.dot-pulse {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(4.5rem, 10vw, 9rem);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.2s forwards;
+}
+
+.hero-title .highlight {
+  color: var(--accent);
+  position: relative;
+  display: inline-block;
+}
+
+.hero-title .highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; left: 0; right: 0;
+  height: 4px;
+  background: var(--accent);
+  opacity: 0.3;
+  border-radius: 2px;
+}
+
+.hero-sub {
+  font-size: 1.15rem;
+  color: var(--text2);
+  max-width: 580px;
+  line-height: 1.75;
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.3s forwards;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.4s forwards;
+}
+
+.btn-large {
+  padding: 0.85rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 10px;
+}
+
+.btn-outline {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.85rem 2rem;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-outline:hover { background: rgba(255,255,255,0.05); }
+
+.hero-stats {
+  display: flex;
+  gap: 3rem;
+  margin-top: 5rem;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.5s forwards;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  display: block;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text2);
+  font-weight: 500;
+}
+
+/* DEMO PREVIEW */
+.demo-section {
+  padding: 4rem 4rem 6rem;
+  display: flex;
+  justify-content: center;
+}
+
+.demo-window {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  max-width: 900px;
+  width: 100%;
+  box-shadow: 0 40px 120px rgba(0,0,0,0.5), 0 0 60px rgba(232,69,90,0.08);
+}
+
+.demo-bar {
+  background: var(--bg3);
+  padding: 0.8rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.demo-dot { width: 10px; height: 10px; border-radius: 50%; }
+.demo-dot:nth-child(1) { background: #ff5f57; }
+.demo-dot:nth-child(2) { background: #febc2e; }
+.demo-dot:nth-child(3) { background: #28c840; }
+
+.demo-title {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text2);
+}
+
+.demo-body {
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.demo-query {
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 1.2rem;
+}
+
+.demo-label {
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+
+.demo-input {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.demo-input .typed {
+  border-right: 2px solid var(--accent);
+  animation: blink 1s infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+.demo-sql {
+  background: #0d1117;
+  border-radius: 10px;
+  padding: 1.2rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+.sql-keyword { color: #ff7b72; }
+.sql-table { color: #79c0ff; }
+.sql-string { color: #a5d6ff; }
+.sql-func { color: #d2a8ff; }
+
+/* LOGOS */
+.logos-section {
+  padding: 3rem 4rem;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.logos-label {
+  font-size: 0.78rem;
+  color: var(--text2);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+}
+
+.logos-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.logo-item {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text2);
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  letter-spacing: 0.05em;
+}
+.logo-item:hover { opacity: 0.8; }
+
+/* FEATURES */
+.features {
+  padding: 6rem 4rem;
+}
+
+.section-tag {
+  display: inline-block;
+  background: rgba(232,69,90,0.1);
+  color: var(--accent);
+  border: 1px solid rgba(232,69,90,0.2);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.section-sub {
+  font-size: 1rem;
+  color: var(--text2);
+  max-width: 500px;
+  line-height: 1.7;
+  margin-bottom: 3rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.feature-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.feature-card:hover {
+  border-color: rgba(232,69,90,0.2);
+  transform: translateY(-4px);
+}
+
+.feature-card:hover::before { opacity: 1; }
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.feature-card h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+
+.feature-card p {
+  font-size: 0.88rem;
+  color: var(--text2);
+  line-height: 1.65;
+}
+
+/* HOW IT WORKS */
+.how {
+  padding: 6rem 4rem;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.step {
+  text-align: center;
+  position: relative;
+}
+
+.step::after {
+  content: '→';
+  position: absolute;
+  right: -1rem;
+  top: 1.5rem;
+  color: var(--text2);
+  font-size: 1.2rem;
+}
+
+.step:last-child::after { display: none; }
+
+.step-num {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: rgba(232,69,90,0.1);
+  border: 1px solid rgba(232,69,90,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin: 0 auto 1rem;
+}
+
+.step h4 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.step p {
+  font-size: 0.82rem;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+/* USE CASES */
+.usecases {
+  padding: 6rem 4rem;
+}
+
+.usecases-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.usecase-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  transition: all 0.2s;
+}
+
+.usecase-card:hover {
+  border-color: rgba(232,69,90,0.2);
+  transform: translateY(-2px);
+}
+
+.usecase-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.usecase-card h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.usecase-card p {
+  font-size: 0.875rem;
+  color: var(--text2);
+  line-height: 1.65;
+}
+
+/* PRICING */
+.pricing {
+  padding: 6rem 4rem;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  max-width: 780px;
+  margin: 3rem auto 0;
+}
+
+.pricing-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2.5rem;
+  text-align: left;
+  position: relative;
+  transition: all 0.25s;
+}
+
+.pricing-card:hover { transform: translateY(-4px); }
+
+.pricing-card.popular {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(232,69,90,0.05), var(--bg3));
+}
+
+.popular-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.3rem 1rem;
+  border-radius: 20px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.plan-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.plan-price {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.5rem;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 0.3rem;
+}
+
+.plan-price span {
+  font-size: 1.5rem;
+  vertical-align: super;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+}
+
+.plan-period {
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin-bottom: 1.5rem;
+}
+
+.plan-features {
+  list-style: none;
+  margin-bottom: 2rem;
+}
+
+.plan-features li {
+  font-size: 0.875rem;
+  color: var(--text2);
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.plan-features li:last-child { border-bottom: none; }
+
+.plan-features li::before {
+  content: '✓';
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.plan-features li.no::before {
+  content: '✕';
+  color: var(--text2);
+}
+
+.plan-features li.no { opacity: 0.5; }
+
+.plan-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+
+.plan-btn-free {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.plan-btn-free:hover { background: rgba(255,255,255,0.05); }
+
+.plan-btn-pro {
+  background: var(--accent);
+  border: none;
+  color: white;
+}
+.plan-btn-pro:hover { background: #ff5a6d; }
+
+/* TESTIMONIALS */
+.testimonials {
+  padding: 6rem 4rem;
+}
+
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.testimonial-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.8rem;
+  transition: all 0.2s;
+}
+
+.testimonial-card:hover {
+  border-color: rgba(232,69,90,0.2);
+  transform: translateY(-2px);
+}
+
+.stars {
+  color: var(--gold);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.testimonial-text {
+  font-size: 0.9rem;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.author-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.author-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.author-role {
+  font-size: 0.78rem;
+  color: var(--text2);
+}
+
+/* CTA */
+.cta {
+  padding: 8rem 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-glow {
+  position: absolute;
+  width: 600px; height: 400px;
+  background: radial-gradient(ellipse, rgba(232,69,90,0.12), transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.cta-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 7vw, 6rem);
+  line-height: 1;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.cta-sub {
+  font-size: 1.1rem;
+  color: var(--text2);
+  margin-bottom: 2.5rem;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
+
+.cta-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 3rem 4rem;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 3rem;
+}
+
+.footer-brand p {
+  font-size: 0.875rem;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-top: 0.8rem;
+  max-width: 260px;
+}
+
+.footer-col h4 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.footer-col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.footer-col ul a {
+  font-size: 0.875rem;
+  color: var(--text2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-col ul a:hover { color: var(--accent); }
+
+.footer-bottom {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text2);
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  .hero { padding: 7rem 1.5rem 4rem; }
+  .hero-stats { gap: 2rem; flex-wrap: wrap; justify-content: center; }
+  .features-grid, .usecases-grid, .testimonials-grid, .steps { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .demo-body { grid-template-columns: 1fr; }
+  footer { grid-template-columns: 1fr 1fr; padding: 2rem 1.5rem; }
+  .features, .how, .usecases, .pricing, .testimonials, .cta { padding: 4rem 1.5rem; }
+  .step::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">
+    <div class="logo-mark">P</div>
+    <span class="logo-name">PRISM</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#usecases">Use Cases</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="#" class="btn-ghost">Login</a>
+    <a href="#" class="btn-red">Get Started Free</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+
+  <div class="hero-badge">
+    <div class="dot-pulse"></div>
+    Built for Marketing Agencies
+  </div>
+
+  <h1 class="hero-title">
+    QUERY YOUR DATA<br>
+    <span class="highlight">WITHOUT SQL</span>
+  </h1>
+
+  <p class="hero-sub">
+    PRISM turns plain English into powerful database queries — instantly. Perfect for agencies managing client campaigns, ad spend, and performance data.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#" class="btn-red btn-large">Start for Free →</a>
+    <a href="#how" class="btn-outline">▶ See How It Works</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-num">10x</span>
+      <span class="stat-label">Faster Reporting</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">0</span>
+      <span class="stat-label">SQL Required</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">500+</span>
+      <span class="stat-label">Agencies Trust Us</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">99.9%</span>
+      <span class="stat-label">Uptime SLA</span>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO PREVIEW -->
+<section class="demo-section">
+  <div class="demo-window">
+    <div class="demo-bar">
+      <div class="demo-dot"></div>
+      <div class="demo-dot"></div>
+      <div class="demo-dot"></div>
+      <span class="demo-title">PRISM — Natural Language Query</span>
+    </div>
+    <div class="demo-body">
+      <div class="demo-query">
+        <div class="demo-label">💬 You asked</div>
+        <div class="demo-input">
+          Show me total ad spend by client for last month, sorted by highest spend<span class="typed"></span>
+        </div>
+      </div>
+      <div class="demo-sql">
+        <div class="demo-label" style="font-family:'DM Sans';font-size:0.7rem;color:var(--accent);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.7rem;">⚡ Generated SQL</div>
+        <span class="sql-keyword">SELECT</span> client_name,<br>
+        &nbsp;&nbsp;<span class="sql-func">SUM</span>(ad_spend) <span class="sql-keyword">AS</span> total_spend<br>
+        <span class="sql-keyword">FROM</span> <span class="sql-table">campaigns</span><br>
+        <span class="sql-keyword">WHERE</span> month = <span class="sql-string">'last_month'</span><br>
+        <span class="sql-keyword">GROUP BY</span> client_name<br>
+        <span class="sql-keyword">ORDER BY</span> total_spend <span class="sql-keyword">DESC</span>;
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGOS -->
+<section class="logos-section">
+  <div class="logos-label">Trusted by leading marketing teams</div>
+  <div class="logos-grid">
+    <span class="logo-item">DENTSU</span>
+    <span class="logo-item">OGILVY</span>
+    <span class="logo-item">WPP</span>
+    <span class="logo-item">PUBLICIS</span>
+    <span class="logo-item">HAVAS</span>
+    <span class="logo-item">GREY</span>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-tag">Features</div>
+  <h2 class="section-title">Everything your agency needs<br>to move faster</h2>
+  <p class="section-sub">Stop waiting for engineers to pull reports. PRISM puts data directly in the hands of your team.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🗣️</span>
+      <h3>Natural Language Queries</h3>
+      <p>Just type what you want to know. PRISM understands plain English and converts it to accurate SQL instantly.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <h3>Instant Results</h3>
+      <p>Get query results in seconds. No waiting for engineers, no writing code, no bottlenecks in your workflow.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📊</span>
+      <h3>Multi-Database Support</h3>
+      <p>Connect to PostgreSQL, MySQL, MariaDB and more. Switch between client databases with one click.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📥</span>
+      <h3>One-Click Exports</h3>
+      <p>Export results to CSV, Excel, or PDF instantly. Perfect for client reports and campaign performance decks.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔒</span>
+      <h3>Enterprise Security</h3>
+      <p>AES-256 encryption, zero data storage, and full audit logs. Your client data stays completely safe.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧠</span>
+      <h3>Schema Intelligence</h3>
+      <p>PRISM reads your database schema and generates contextually accurate queries — no setup required.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div style="text-align:center;">
+    <div class="section-tag">How It Works</div>
+    <h2 class="section-title">From question to insight<br>in 4 simple steps</h2>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h4>Connect Your DB</h4>
+      <p>Add your database connection in seconds. We support all major databases.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h4>Ask a Question</h4>
+      <p>Type your question in plain English — no SQL knowledge needed.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h4>AI Generates SQL</h4>
+      <p>PRISM's AI instantly converts your question into an accurate SQL query.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <h4>Get Results</h4>
+      <p>View, analyze, and export your results in one click.</p>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="usecases" id="usecases">
+  <div class="section-tag">Use Cases</div>
+  <h2 class="section-title">Built for every agency workflow</h2>
+  <p class="section-sub">Whether you run paid media, SEO, or creative campaigns — PRISM fits right in.</p>
+
+  <div class="usecases-grid">
+    <div class="usecase-card">
+      <div class="usecase-icon">📈</div>
+      <div>
+        <h3>Campaign Performance Reporting</h3>
+        <p>Pull campaign metrics, ROAS, CPC, and conversions across all client accounts in seconds. No more manual spreadsheet work.</p>
+      </div>
+    </div>
+    <div class="usecase-card">
+      <div class="usecase-icon">💰</div>
+      <div>
+        <h3>Ad Spend Analysis</h3>
+        <p>Instantly compare ad spend vs performance across clients, channels, and time periods. Spot wasted budget immediately.</p>
+      </div>
+    </div>
+    <div class="usecase-card">
+      <div class="usecase-icon">👥</div>
+      <div>
+        <h3>Client Retention Insights</h3>
+        <p>Track client engagement, churn signals, and lifetime value from your CRM data without writing a single line of SQL.</p>
+      </div>
+    </div>
+    <div class="usecase-card">
+      <div class="usecase-icon">🎯</div>
+      <div>
+        <h3>Lead & Conversion Tracking</h3>
+        <p>Analyze lead quality, conversion rates, and funnel performance across campaigns. Make data-driven decisions faster.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="section-tag">Pricing</div>
+  <h2 class="section-title">Simple, transparent pricing</h2>
+  <p class="section-sub" style="margin:1rem auto 0;">Start free, scale as your agency grows. No hidden fees, no surprises.</p>
+
+  <div class="pricing-grid">
+    <!-- FREE -->
+    <div class="pricing-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-price"><span>₹</span>0</div>
+      <div class="plan-period">per month, forever free</div>
+      <ul class="plan-features">
+        <li>50 queries per month</li>
+        <li>1 database connection</li>
+        <li>CSV & Excel export</li>
+        <li>Query history (7 days)</li>
+        <li class="no">PDF export</li>
+        <li class="no">Priority support</li>
+        <li class="no">Custom reports</li>
+        <li class="no">Team access</li>
+      </ul>
+      <a href="#" class="plan-btn plan-btn-free">Get Started Free</a>
+    </div>
+
+    <!-- PRO -->
+    <div class="pricing-card popular">
+      <div class="popular-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price"><span>₹</span>2,999</div>
+      <div class="plan-period">per month per workspace</div>
+      <ul class="plan-features">
+        <li>Unlimited queries</li>
+        <li>Unlimited DB connections</li>
+        <li>CSV, Excel & PDF export</li>
+        <li>Query history (90 days)</li>
+        <li>PDF export</li>
+        <li>Priority support (24hr)</li>
+        <li>Custom report templates</li>
+        <li>Team access (5 users)</li>
+      </ul>
+      <a href="#" class="plan-btn plan-btn-pro">Start Pro Plan →</a>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div style="text-align:center;">
+    <div class="section-tag">Testimonials</div>
+    <h2 class="section-title">Agencies love PRISM</h2>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"PRISM cut our reporting time from 4 hours to 15 minutes. Our account managers now pull client reports themselves without bothering the dev team."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar" style="background:linear-gradient(135deg,#e8455a,#ff8c5a)">R</div>
+        <div>
+          <div class="author-name">Rahul Sharma</div>
+          <div class="author-role">Head of Operations, DigiEdge Agency</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Finally a tool that non-technical people can actually use. Our media buyers pull their own campaign data now. Game changer for our workflow."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">P</div>
+        <div>
+          <div class="author-name">Priya Mehta</div>
+          <div class="author-role">CEO, Brandcraft Digital</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"We manage 40+ client accounts. PRISM lets us compare performance across all of them in seconds. The export feature saves us hours every week."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar" style="background:linear-gradient(135deg,#059669,#0ea5e9)">A</div>
+        <div>
+          <div class="author-name">Arjun Patel</div>
+          <div class="author-role">Director, GrowthLab Media</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="cta-glow"></div>
+  <h2 class="cta-title">READY TO QUERY<br>SMARTER?</h2>
+  <p class="cta-sub">Join 500+ marketing agencies already using PRISM to get insights faster than ever before.</p>
+  <div class="cta-actions">
+    <a href="#" class="btn-red btn-large">Start Free Today →</a>
+    <a href="about.html" class="btn-outline">Learn More</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">
+    <a href="#" class="logo">
+      <div class="logo-mark">P</div>
+      <span class="logo-name">PRISM</span>
+    </a>
+    <p>AI-powered database copilot built for marketing agencies. Query smarter, report faster, grow bigger.</p>
+  </div>
+  <div class="footer-col">
+    <h4>Product</h4>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#how">How It Works</a></li>
+      <li><a href="#">Changelog</a></li>
+    </ul>
+  </div>
+  <div class="footer-col">
+    <h4>Company</h4>
+    <ul>
+      <li><a href="about.html">About</a></li>
+      <li><a href="about.html#team">Team</a></li>
+      <li><a href="#">Blog</a></li>
+      <li><a href="about.html#contact">Contact</a></li>
+    </ul>
+  </div>
+  <div class="footer-col">
+    <h4>Legal</h4>
+    <ul>
+      <li><a href="about.html#privacy">Privacy Policy</a></li>
+      <li><a href="about.html#terms">Terms & Conditions</a></li>
+      <li><a href="about.html#security">Security</a></li>
+      <li><a href="about.html#refund">Refund Policy</a></li>
+    </ul>
+  </div>
+</footer>
+
+<div class="footer-bottom">
+  <span>© 2026 PRISM Inc. All rights reserved.</span>
+  <span>Made with ❤️ in India</span>
+</div>
+
+</body>
+</html>

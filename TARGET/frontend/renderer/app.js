@@ -1,3 +1,10 @@
+if (new URLSearchParams(window.location.search).get('skip') === 'true') {
+    document.getElementById('login-screen').style.display = 'none';
+}
+// Skip login if coming back from subscription/about page
+if (new URLSearchParams(window.location.search).get('skip') === 'true') {
+    document.getElementById('login-screen').style.display = 'none';
+}
 function togglePassword(inputId, icon) {
     const input = document.getElementById(inputId);
     if (input.type === 'password') {
