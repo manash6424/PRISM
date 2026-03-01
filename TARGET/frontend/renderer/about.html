@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRISM – About & Legal</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --accent: #e8455a;
+    --accent2: #ff6b7a;
+    --text: #e8eaf0;
+    --text2: #9aa3b8;
+    --border: rgba(255,255,255,0.07);
+    --glow: rgba(232,69,90,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 3rem;
+    background: rgba(15,17,23,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .logo-dot {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  .nav-cta {
+    background: var(--accent);
+    color: white !important;
+    padding: 0.5rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 600 !important;
+  }
+
+  /* SIDEBAR */
+  .layout {
+    display: flex;
+    min-height: 100vh;
+    padding-top: 4rem;
+  }
+
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    padding: 3rem 1.5rem;
+    position: sticky;
+    top: 4rem;
+    height: calc(100vh - 4rem);
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+
+  .sidebar-section {
+    margin-bottom: 2rem;
+  }
+
+  .sidebar-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.8rem;
+    padding-left: 0.8rem;
+  }
+
+  .sidebar-links {
+    list-style: none;
+  }
+
+  .sidebar-links li a {
+    display: block;
+    padding: 0.45rem 0.8rem;
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    border-left: 2px solid transparent;
+  }
+
+  .sidebar-links li a:hover,
+  .sidebar-links li a.active {
+    color: var(--text);
+    background: var(--bg3);
+    border-left-color: var(--accent);
+  }
+
+  /* MAIN CONTENT */
+  .content {
+    flex: 1;
+    padding: 3rem 4rem;
+    max-width: 860px;
+  }
+
+  /* PAGE HERO */
+  .page-hero {
+    margin-bottom: 4rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-tag {
+    display: inline-block;
+    background: var(--glow);
+    color: var(--accent);
+    border: 1px solid rgba(232,69,90,0.3);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .page-hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff 0%, var(--text2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .page-hero p {
+    font-size: 1.05rem;
+    color: var(--text2);
+    max-width: 560px;
+    line-height: 1.75;
+  }
+
+  /* SECTIONS */
+  .section {
+    margin-bottom: 4rem;
+    scroll-margin-top: 6rem;
+  }
+
+  .section h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .section h2::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 1.4rem;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .section h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.8rem 0 0.6rem;
+    color: var(--text);
+  }
+
+  .section p {
+    color: var(--text2);
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+  }
+
+  .section ul {
+    list-style: none;
+    margin: 0.5rem 0 1rem 0;
+  }
+
+  .section ul li {
+    color: var(--text2);
+    font-size: 0.95rem;
+    padding: 0.3rem 0 0.3rem 1.4rem;
+    position: relative;
+  }
+
+  .section ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: 0.8rem;
+  }
+
+  /* CARDS */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .card:hover {
+    border-color: rgba(232,69,90,0.3);
+    transform: translateY(-2px);
+  }
+
+  .card-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    color: var(--text2);
+    margin: 0;
+  }
+
+  /* TEAM */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .team-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .team-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    margin: 0 auto 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: white;
+  }
+
+  .team-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .team-card span {
+    font-size: 0.8rem;
+    color: var(--accent);
+  }
+
+  /* HIGHLIGHT BOX */
+  .highlight {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 1.2rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .highlight p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text2);
+  }
+
+  .highlight strong {
+    color: var(--text);
+  }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 3rem 0;
+  }
+
+  /* LAST UPDATED */
+  .last-updated {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--text2);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    margin-bottom: 1.5rem;
+  }
+
+  .last-updated::before {
+    content: '🕐';
+    font-size: 0.75rem;
+  }
+
+  /* CONTACT SECTION */
+  .contact-box {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .contact-box h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+  }
+
+  .contact-box p {
+    font-size: 0.875rem;
+    color: var(--text2);
+    margin: 0;
+  }
+
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    display: inline-block;
+  }
+
+  .btn:hover {
+    background: var(--accent2);
+    transform: translateY(-1px);
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text2);
+    font-size: 0.85rem;
+  }
+
+  footer a {
+    color: var(--text2);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  footer a:hover { color: var(--accent); }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  /* ANIMATIONS */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeIn 0.5s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section { animation: fadeIn 0.5s ease forwards; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .content { padding: 2rem 1.5rem; }
+    .card-grid, .team-grid { grid-template-columns: 1fr; }
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .contact-box { flex-direction: column; }
+    .page-hero h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">
+    <div class="logo-dot"></div>
+    PRISM
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="#terms">Terms</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#" class="nav-cta">Get Started</a></li>
+  </ul>
+</nav>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Company</div>
+      <ul class="sidebar-links">
+        <li><a href="#about" class="active">About PRISM</a></li>
+        <li><a href="#mission">Our Mission</a></li>
+        <li><a href="#team">Team</a></li>
+        <li><a href="#contact">Contact Us</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Legal</div>
+      <ul class="sidebar-links">
+        <li><a href="#privacy">Privacy Policy</a></li>
+        <li><a href="#terms">Terms & Conditions</a></li>
+        <li><a href="#security">Security Policy</a></li>
+        <li><a href="#cookies">Cookie Policy</a></li>
+        <li><a href="#refund">Refund Policy</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="content">
+
+    <!-- ABOUT HERO -->
+    <div class="page-hero" id="about">
+      <div class="page-tag">About PRISM</div>
+      <h1>AI-Powered Database Copilot</h1>
+      <p>PRISM lets you query any database using plain English — no SQL expertise required. Built for developers, analysts, and businesses who want faster, smarter data access.</p>
+    </div>
+
+    <!-- MISSION -->
+    <section class="section" id="mission">
+      <h2>Our Mission</h2>
+      <p>We believe data should be accessible to everyone — not just engineers. PRISM bridges the gap between natural language and databases, making it possible for anyone on your team to ask questions and get answers instantly.</p>
+      <p>Our AI understands your database schema, generates accurate SQL, and explains it in plain English so you always know what's happening under the hood.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <h4>Instant Queries</h4>
+          <p>Type a question, get results in seconds. No SQL knowledge needed.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔒</div>
+          <h4>Secure by Default</h4>
+          <p>Your credentials are encrypted. Your data never leaves your infrastructure.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧠</div>
+          <h4>Schema Aware</h4>
+          <p>PRISM reads your schema and generates contextually accurate queries every time.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <h4>Multi-Database</h4>
+          <p>Supports PostgreSQL, MySQL, SQLite, and more out of the box.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- TEAM -->
+    <section class="section" id="team">
+      <h2>Team</h2>
+      <p>Built by a small team passionate about making data accessible and developer tools delightful.</p>
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="team-avatar">S</div>
+          <h4>Shreya Kolam</h4>
+          <span>Founder & CEO</span>
+        </div>
+        <div class="team-card">
+          <div class="team-avatar" style="background: linear-gradient(135deg, #7c3aed, #3b82f6)">M</div>
+          <h4>Manash Mandal</h4>
+          <span>Co-Founder & CTO</span>
+        </div>
+        <div class="team-card">
+          <div class="team-avatar" style="background: linear-gradient(135deg, #059669, #3b82f6)">A</div>
+          <h4>Abhishek Singh</h4>
+          <span>Co-Founder & COO</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- PRIVACY POLICY -->
+    <section class="section" id="privacy">
+      <div class="last-updated">Last updated: March 1, 2026</div>
+      <h2>Privacy Policy</h2>
+      <p>At PRISM, your privacy is our priority. This policy explains what data we collect, how we use it, and your rights as a user.</p>
+
+      <h3>1. Information We Collect</h3>
+      <p>We collect the following types of information when you use PRISM:</p>
+      <ul>
+        <li>Account information (name, email address, password hash)</li>
+        <li>Database connection metadata (host, port, database name — never your actual data)</li>
+        <li>Natural language queries you submit through the app</li>
+        <li>Usage analytics (feature usage, session duration, error logs)</li>
+        <li>Device and browser information for security purposes</li>
+      </ul>
+
+      <h3>2. How We Use Your Information</h3>
+      <ul>
+        <li>To provide and improve the PRISM service</li>
+        <li>To generate accurate SQL from your natural language queries</li>
+        <li>To send you product updates, security alerts, and support responses</li>
+        <li>To detect and prevent fraudulent or unauthorized activity</li>
+        <li>To analyze usage patterns and improve AI model accuracy</li>
+      </ul>
+
+      <div class="highlight">
+        <p><strong>Important:</strong> PRISM does not store the actual contents of your database. We only process query results temporarily in memory to display them to you. No rows from your database are ever saved on our servers.</p>
+      </div>
+
+      <h3>3. Data Sharing</h3>
+      <p>We do not sell your personal data. We may share information with:</p>
+      <ul>
+        <li>AI model providers (e.g. OpenAI) solely to process your natural language queries</li>
+        <li>Cloud infrastructure providers (AWS, GCP) to host and operate our services</li>
+        <li>Legal authorities when required by law or to protect our rights</li>
+      </ul>
+
+      <h3>4. Data Retention</h3>
+      <p>We retain your account data for as long as your account is active. Query history is retained for 90 days by default and can be cleared at any time from your account settings. You can request full deletion of your data by contacting us.</p>
+
+      <h3>5. Your Rights (GDPR & CCPA)</h3>
+      <ul>
+        <li>Right to access — request a copy of your data</li>
+        <li>Right to rectification — correct inaccurate data</li>
+        <li>Right to erasure — request deletion of your data</li>
+        <li>Right to portability — export your data in a readable format</li>
+        <li>Right to object — opt out of certain processing activities</li>
+      </ul>
+
+      <h3>6. Cookies</h3>
+      <p>We use essential cookies for authentication and session management. We do not use advertising or tracking cookies. See our <a href="#cookies" style="color: var(--accent)">Cookie Policy</a> for full details.</p>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- TERMS & CONDITIONS -->
+    <section class="section" id="terms">
+      <div class="last-updated">Last updated: March 1, 2026</div>
+      <h2>Terms & Conditions</h2>
+      <p>By using PRISM, you agree to these terms. Please read them carefully before using our service.</p>
+
+      <h3>1. Acceptance of Terms</h3>
+      <p>By creating an account or using PRISM in any way, you agree to be bound by these Terms & Conditions and our Privacy Policy. If you do not agree, please do not use our service.</p>
+
+      <h3>2. Permitted Use</h3>
+      <p>You may use PRISM to:</p>
+      <ul>
+        <li>Query your own databases or databases you have authorization to access</li>
+        <li>Generate and export SQL queries for business or personal use</li>
+        <li>Share query results within your authorized team or organization</li>
+      </ul>
+
+      <h3>3. Prohibited Activities</h3>
+      <p>You agree NOT to:</p>
+      <ul>
+        <li>Use PRISM to access databases without proper authorization</li>
+        <li>Attempt to reverse engineer, decompile, or extract our AI models</li>
+        <li>Use PRISM for illegal, harmful, or malicious purposes</li>
+        <li>Share your account credentials with unauthorized parties</li>
+        <li>Circumvent rate limits or abuse our API endpoints</li>
+        <li>Store sensitive personal data (PII, health data) without appropriate safeguards</li>
+      </ul>
+
+      <h3>4. Subscription & Billing</h3>
+      <ul>
+        <li>Free tier is limited to 50 queries per month and 1 database connection</li>
+        <li>Paid plans are billed monthly or annually in advance</li>
+        <li>Prices may change with 30 days notice to existing subscribers</li>
+        <li>You can cancel your subscription at any time from account settings</li>
+      </ul>
+
+      <h3>5. Intellectual Property</h3>
+      <p>PRISM and all associated technology, branding, and content are owned by PRISM Inc. Your data and database schemas remain entirely your property. We claim no ownership over any data you process through PRISM.</p>
+
+      <h3>6. Limitation of Liability</h3>
+      <p>PRISM is provided "as is" without warranty of any kind. We are not liable for any data loss, business interruption, or damages arising from your use of our service. Always maintain your own database backups independently of PRISM.</p>
+
+      <h3>7. Termination</h3>
+      <p>We reserve the right to suspend or terminate accounts that violate these terms, engage in abusive behavior, or misuse our services, with or without prior notice depending on the severity of the violation.</p>
+
+      <h3>8. Governing Law</h3>
+      <p>These terms are governed by the laws of India. Any disputes shall be resolved in the courts of Mumbai, Maharashtra.</p>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- SECURITY POLICY -->
+    <section class="section" id="security">
+      <div class="last-updated">Last updated: March 1, 2026</div>
+      <h2>Security Policy</h2>
+      <p>Security is core to everything we build. Here's how we protect your data and connections.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🔐</div>
+          <h4>Encrypted Credentials</h4>
+          <p>All database credentials are encrypted at rest using AES-256 and in transit via TLS 1.3.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🛡️</div>
+          <h4>Zero Data Storage</h4>
+          <p>Query results are never persisted on our servers. Data flows through and is discarded immediately.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔑</div>
+          <h4>Auth Security</h4>
+          <p>Passwords are hashed using bcrypt. We support 2FA and session timeouts for all accounts.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📋</div>
+          <h4>Audit Logs</h4>
+          <p>All query executions are logged with timestamps for security auditing purposes.</p>
+        </div>
+      </div>
+
+      <h3>Responsible Disclosure</h3>
+      <p>If you discover a security vulnerability in PRISM, please report it responsibly to <strong style="color: var(--accent)">security@prism.com</strong>. We appreciate responsible disclosure and will respond within 48 hours.</p>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- COOKIE POLICY -->
+    <section class="section" id="cookies">
+      <div class="last-updated">Last updated: March 1, 2026</div>
+      <h2>Cookie Policy</h2>
+      <p>We use a minimal set of cookies to keep PRISM working properly.</p>
+
+      <h3>Cookies We Use</h3>
+      <ul>
+        <li><strong style="color: var(--text)">session_token</strong> — Required for authentication and keeping you logged in</li>
+        <li><strong style="color: var(--text)">csrf_token</strong> — Required to protect against cross-site request forgery attacks</li>
+        <li><strong style="color: var(--text)">preferences</strong> — Stores your UI preferences like theme and language</li>
+      </ul>
+
+      <div class="highlight">
+        <p><strong>We do not use:</strong> advertising cookies, third-party tracking cookies, analytics cookies that identify you personally, or any cookies that share your data with ad networks.</p>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- REFUND POLICY -->
+    <section class="section" id="refund">
+      <div class="last-updated">Last updated: March 1, 2026</div>
+      <h2>Refund Policy</h2>
+      <p>We want you to be happy with PRISM. Here's our refund policy:</p>
+      <ul>
+        <li>New subscribers can request a full refund within <strong style="color: var(--text)">7 days</strong> of their first payment</li>
+        <li>Refunds are not available for partial months or after the 7-day window</li>
+        <li>Annual plan subscribers may request a prorated refund within 30 days</li>
+        <li>Accounts terminated for Terms violations are not eligible for refunds</li>
+      </ul>
+      <p>To request a refund, email <strong style="color: var(--accent)">billing@prism.com</strong> with your account email and reason.</p>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- CONTACT -->
+    <section class="section" id="contact">
+      <h2>Contact Us</h2>
+      <p>Have questions about our policies or need support? We're here to help.</p>
+
+      <div class="contact-box">
+        <div>
+          <h3>Get in Touch</h3>
+          <p>Our team responds to all inquiries within 24 business hours.</p>
+        </div>
+        <a href="mailto:hello@prism.com" class="btn">Email Us →</a>
+      </div>
+
+      <div class="card-grid" style="margin-top: 1rem;">
+        <div class="card">
+          <div class="card-icon">📧</div>
+          <h4>General Inquiries</h4>
+          <p>hello@prism.com</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔒</div>
+          <h4>Security Issues</h4>
+          <p>security@prism.com</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">💳</div>
+          <h4>Billing Support</h4>
+          <p>billing@prism.com</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚖️</div>
+          <h4>Legal Requests</h4>
+          <p>legal@prism.com</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    PRISM
+  </div>
+  <div class="footer-links">
+    <a href="#privacy">Privacy</a>
+    <a href="#terms">Terms</a>
+    <a href="#security">Security</a>
+    <a href="#cookies">Cookies</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <span>© 2026 PRISM Inc. All rights reserved.</span>
+</footer>
+
+<script>
+  // Highlight active sidebar link on scroll
+  const sections = document.querySelectorAll('.section, .page-hero');
+  const sideLinks = document.querySelectorAll('.sidebar-links a');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 120) current = s.id;
+    });
+    sideLinks.forEach(a => {
+      a.classList.remove('active');
+      if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
