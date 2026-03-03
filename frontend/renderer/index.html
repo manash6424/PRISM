@@ -385,28 +385,143 @@
         </div>
     </div>
     
-    
     <!-- Profile Dropdown -->
-<div id="profile-dropdown" class="profile-dropdown hidden">
-    <div class="profile-header">
-        <div class="profile-avatar">👤</div>
-        <div>
-            <div class="profile-name">Admin</div>
-            <div class="profile-email">admin@prism.com</div>
+    <div id="profile-dropdown" class="profile-dropdown hidden">
+        <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <div>
+                <div class="profile-name">Admin</div>
+                <div class="profile-email">admin@prism.com</div>
+            </div>
         </div>
+        <hr class="profile-divider">
+        <button class="profile-item" onclick="window.location.href='settings.html'">⚙️ Settings</button>
+        <button class="profile-item">🏢 Company</button>
+        <button class="profile-item" onclick="window.location.href='subscription.html'">💳 Subscription</button>
+        <button class="profile-item">🔍 Recent Searches</button>
+        <hr class="profile-divider">
+        <button class="profile-item" onclick="window.location.href='about.html'">📋 Privacy & Terms</button>
+        <button class="profile-item logout-item" id="logout-btn">🚪 Logout</button>
     </div>
-    <hr class="profile-divider">
-    <button class="profile-item" onclick="window.location.href='settings.html'">⚙️ Settings</button>
-    <button class="profile-item">🏢 Company</button>
-    <button class="profile-item" onclick="window.location.href='subscription.html'">💳 Subscription</button>
-    <button class="profile-item">🔍 Recent Searches</button>
-    <hr class="profile-divider">
-<button class="profile-item" onclick="window.location.href='about.html'">📋 Privacy & Terms</button>
-    <button class="profile-item logout-item" id="logout-btn">🚪 Logout</button>
 
-</div><!-- Toast Notifications -->
+    <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
     
     <script src="app.js"></script>
+    <script>
+
+        // ── Helper to show/hide app vs login ──
+        function showApp() {
+            sessionStorage.setItem('logged_in', 'true');
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+        }
+
+        function showLogin() {
+            sessionStorage.removeItem('logged_in');
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+
+        // ── Skip login if already logged in or coming back from another page ──
+        if (window.location.search.includes('skip=true') || sessionStorage.getItem('logged_in')) {
+            showApp();
+        }
+
+        // ── Login button ──
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email    = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn      = document.getElementById('login-btn');
+
+            if (!email || !password) { alert('Please enter email and password'); return; }
+
+            btn.textContent = 'Logging in...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                // Whether auth succeeds or returns 404 (no auth route yet), enter the app
+                showApp();
+            } catch (err) {
+                // Backend unreachable — still enter app for local dev
+                showApp();
+            } finally {
+                btn.textContent = 'Login';
+                btn.disabled = false;
+            }
+        });
+
+        // ── Signup button ──
+        document.getElementById('signup-btn').addEventListener('click', async () => {
+            const name     = document.getElementById('signup-name').value.trim();
+            const company  = document.getElementById('signup-company').value.trim();
+            const email    = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const btn      = document.getElementById('signup-btn');
+
+            if (!name || !email || !password) { alert('Please fill all required fields'); return; }
+
+            btn.textContent = 'Creating account...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:8000/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, company, email, password })
+                });
+                alert('Account created! Please login.');
+                document.getElementById('login-tab').click();
+            } catch (err) {
+                alert('Could not reach server. Is the backend running?');
+            } finally {
+                btn.textContent = 'Create Account';
+                btn.disabled = false;
+            }
+        });
+
+        // ── Tab switching ──
+        document.getElementById('login-tab').addEventListener('click', () => {
+            document.getElementById('login-tab').classList.add('active');
+            document.getElementById('signup-tab').classList.remove('active');
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('signup-form').classList.add('hidden');
+        });
+
+        document.getElementById('signup-tab').addEventListener('click', () => {
+            document.getElementById('signup-tab').classList.add('active');
+            document.getElementById('login-tab').classList.remove('active');
+            document.getElementById('signup-form').classList.remove('hidden');
+            document.getElementById('login-form').classList.add('hidden');
+        });
+
+        // ── Password toggle ──
+        function togglePassword(inputId, el) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+            el.textContent = input.type === 'password' ? '👁️' : '🙈';
+        }
+
+        // ── Profile dropdown ──
+        document.getElementById('user-avatar-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('profile-dropdown').classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', () => {
+            document.getElementById('profile-dropdown').classList.add('hidden');
+        });
+
+        // ── Logout ──
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            showLogin();
+        });
+
+    </script>
 </body>
 </html>

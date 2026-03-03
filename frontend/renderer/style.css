@@ -398,5 +398,6 @@ td {
     display: block;
     width: 100%;
 }
-
+#app-container { display: none; }
+.login-screen { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
 
