@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Desktop Copilot</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🤖</span>
+                    <span class="logo-text">AI Copilot</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="query">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">Query</span>
+                </button>
+                <button class="nav-item" data-view="connections">
+                    <span class="nav-icon">🗄️</span>
+                    <span class="nav-text">Connections</span>
+                </button>
+                <button class="nav-item" data-view="schema">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Schema</span>
+                </button>
+                <button class="nav-item" data-view="exports">
+                    <span class="nav-icon">📥</span>
+                    <span class="nav-text">Exports</span>
+                </button>
+                <button class="nav-item" data-view="reports">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">Reports</span>
+                </button>
+                <button class="nav-item" data-view="alerts">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text">Alerts</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-name">Admin</div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Query View -->
+            <div id="query-view" class="view active">
+                <div class="view-header">
+                    <h1>Natural Language Query</h1>
+                    <p>Ask questions about your data in plain English</p>
+                </div>
+                
+                <div class="query-container">
+                    <div class="connection-selector">
+                        <label>Database Connection:</label>
+                        <select id="query-connection">
+                            <option value="">Select a connection...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="query-input-container">
+                        <textarea 
+                            id="natural-query" 
+                            placeholder="e.g., Show me total sales by customer for last month"
+                            rows="4"
+                        ></textarea>
+                        <button id="execute-query" class="btn-primary">
+                            <span class="btn-icon">▶</span>
+                            Execute Query
+                        </button>
+                    </div>
+                    
+                    <div class="query-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="include-explanation" checked>
+                            Show SQL Explanation
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="show-sql" checked>
+                            Show Generated SQL
+                        </label>
+                    </div>
+                    
+                    <!-- Results Section -->
+                    <div id="query-results" class="results-section hidden">
+                        <div class="results-header">
+                            <h3>Query Results</h3>
+                            <div class="results-actions">
+                                <button class="btn-secondary" id="export-csv">
+                                    <span class="btn-icon">📄</span> CSV
+                                </button>
+                                <button class="btn-secondary" id="export-excel">
+                                    <span class="btn-icon">📊</span> Excel
+                                </button>
+                                <button class="btn-secondary" id="export-pdf">
+                                    <span class="btn-icon">📑</span> PDF
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="execution-info">
+                            <span id="execution-time"></span>
+                            <span id="row-count"></span>
+                        </div>
+                        
+                        <div id="generated-sql" class="generated-sql hidden">
+                            <div class="sql-header">
+                                <span>Generated SQL</span>
+                                <button class="btn-copy" id="copy-sql">Copy</button>
+                            </div>
+                            <pre id="sql-code"></pre>
+                        </div>
+                        
+                        <div id="sql-explanation" class="sql-explanation hidden">
+                            <strong>Explanation:</strong> <span id="explanation-text"></span>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table id="results-table">
+                                <thead id="results-head"></thead>
+                                <tbody id="results-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Connections View -->
+            <div id="connections-view" class="view">
+                <div class="view-header">
+                    <h1>Database Connections</h1>
+                    <p>Manage your database connections</p>
+                </div>
+                
+                <div class="connections-grid" id="connections-list">
+                    <!-- Connections will be rendered here -->
+                </div>
+                
+                <button class="btn-primary btn-add" id="add-connection">
+                    <span class="btn-icon">+</span>
+                    Add New Connection
+                </button>
+            </div>
+            
+            <!-- Schema View -->
+            <div id="schema-view" class="view">
+                <div class="view-header">
+                    <h1>Database Schema</h1>
+                    <p>Explore your database structure</p>
+                </div>
+                
+                <div class="schema-container">
+                    <div class="schema-sidebar">
+                        <select id="schema-connection">
+                            <option value="">Select a connection...</option>
+                        </select>
+                        <button class="btn-secondary" id="refresh-schema">
+                            <span class="btn-icon">🔄</span> Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="schema-content" id="schema-content">
+                        <div class="schema-placeholder">
+                            Select a connection to view schema
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Exports View -->
+            <div id="exports-view" class="view">
+                <div class="view-header">
+                    <h1>Export History</h1>
+                    <p>View and manage your exports</p>
+                </div>
+                
+                <div class="exports-list" id="exports-list">
+                    <div class="exports-placeholder">
+                        No exports yet. Execute a query and export the results.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reports View -->
+            <div id="reports-view" class="view">
+                <div class="view-header">
+                    <h1>Reports</h1>
+                    <p>Generate and manage automated reports</p>
+                </div>
+                
+                <div class="reports-container">
+                    <div class="reports-section">
+                        <h3>Quick Report</h3>
+                        <select id="report-connection">
+                            <option value="">Select a connection...</option>
+                        </select>
+                        <button class="btn-primary" id="generate-summary">
+                            Generate Summary Report
+                        </button>
+                    </div>
+                    
+                    <div class="reports-section">
+                        <h3>Report Templates</h3>
+                        <div class="templates-list" id="templates-list">
+                            <div class="templates-placeholder">
+                                No report templates configured
+                            </div>
+                        </div>
+                        <button class="btn-secondary" id="create-template">
+                            + Create Template
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alerts View -->
+            <div id="alerts-view" class="view">
+                <div class="view-header">
+                    <h1>Alerts</h1>
+                    <p>Configure automated alerts for your databases</p>
+                </div>
+                
+                <div class="alerts-container">
+                    <div class="alerts-section">
+                        <h3>Alert Rules</h3>
+                        <div class="rules-list" id="rules-list">
+                            <div class="rules-placeholder">
+                                No alert rules configured
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="create-alert-rule">
+                            + Create Alert Rule
+                        </button>
+                    </div>
+                    
+                    <div class="alerts-section">
+                        <h3>Send Test Alert</h3>
+                        <div class="test-alert-form">
+                            <input type="text" id="test-alert-title" placeholder="Alert Title">
+                            <textarea id="test-alert-message" placeholder="Alert Message" rows="3"></textarea>
+                            <div class="channel-checkboxes">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="channel-email" checked> Email
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="channel-slack" checked> Slack
+                                </label>
+                            </div>
+                            <button class="btn-secondary" id="send-test-alert">
+                                Send Test Alert
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal" id="connection-modal">
+            <div class="modal-header">
+                <h2>Add Database Connection</h2>
+                <button class="modal-close" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="connection-form">
+                    <div class="form-group">
+                        <label>Connection Name</label>
+                        <input type="text" id="conn-name" required placeholder="My Production DB">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Database Type</label>
+                            <select id="conn-dialect">
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="mysql">MySQL</option>
+                                <option value="mariadb">MariaDB</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="number" id="conn-port" value="5432" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Host</label>
+                        <input type="text" id="conn-host" required placeholder="localhost">
+                    </div>
+                    <div class="form-group">
+                        <label>Database Name</label>
+                        <input type="text" id="conn-database" required placeholder="mydb">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="conn-username" required placeholder="postgres">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="conn-password" placeholder="Optional">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="test-connection-btn">
+                            Test Connection
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            Save Connection
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
