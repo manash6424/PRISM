@@ -3,20 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Desktop Copilot</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>PRISM</title>
+    <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container">
+    <!-- Login Screen -->
+<div id="login-screen" class="login-screen">
+    <div class="login-card">
+        
+        <!-- Logo -->
+        <div class="login-logo">
+            <span class="logo-icon">🤖</span>
+            <span class="login-title">PRISM</span>
+        </div>
+        <p class="login-subtitle">AI-Powered Database Copilot</p>
+
+        <!-- Tabs -->
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="login-tab">Login</button>
+            <button class="auth-tab" id="signup-tab">Sign Up</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-form" class="login-form">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="login-email" placeholder="Enter your email">
+            </div>
+            <div class="form-group" style="position:relative;">
+    <label>Password</label>
+                <input type="password" id="login-password" placeholder="Enter your password">
+            <span onclick="togglePassword('login-password', this)" style="position:absolute;right:12px;top:65%;transform:translateY(-50%);cursor:pointer;color:var(--text-muted);font-size:16px;">👁️</span>
+        </div>
+            <button id="login-btn" class="btn-primary login-btn">Login</button>
+        </div>
+
+        <!-- Sign Up Form -->
+        <div id="signup-form" class="login-form hidden">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="signup-name" placeholder="Enter your full name">
+            </div>
+            <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" id="signup-company" placeholder="Enter your company name">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="signup-email" placeholder="Enter your email">
+            </div>
+           <div class="form-group" style="position:relative;">
+    <label>Password</label>
+                <input type="password" id="signup-password" placeholder="Create a password">
+                <span onclick="togglePassword('signup-password', this)" style="position:absolute;right:12px;top:65%;transform:translateY(-50%);cursor:pointer;color:var(--text-muted);font-size:16px;">👁️</span>
+            </div>
+            <button id="signup-btn" class="btn-primary login-btn">Create Account</button>
+            <div style="text-align:center; margin-top:16px; font-size:11px; color:#666;">
+  <a href="about.html" style="color:#e8455a; text-decoration:none;">Privacy Policy</a> · 
+  <a href="about.html" style="color:#e8455a; text-decoration:none;">Terms & Conditions</a>
+</div>
+        </div>
+
+    </div>
+</div>
+    <div class="app-container " id="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <div class="logo">
-                    <span class="logo-icon">🤖</span>
-                    <span class="logo-text">AI Copilot</span>
-                </div>
-            </div>
+    <div class="logo">
+        <span class="logo-icon">🤖</span>
+        <span class="logo-text">PRISM</span>
+    </div>
+</div>
             
             <nav class="sidebar-nav">
                 <button class="nav-item active" data-view="query">
@@ -46,11 +105,11 @@
             </nav>
             
             <div class="sidebar-footer">
-                <div class="user-info">
-                    <div class="user-avatar">👤</div>
-                    <div class="user-name">Admin</div>
-                </div>
-            </div>
+    <div class="user-info" style="cursor:pointer;" id="user-avatar-btn">
+        <div class="user-avatar">👤</div>
+        <div class="user-name">Admin</div>
+    </div>
+</div>
         </aside>
         
         <!-- Main Content -->
@@ -326,7 +385,26 @@
         </div>
     </div>
     
-    <!-- Toast Notifications -->
+    
+    <!-- Profile Dropdown -->
+<div id="profile-dropdown" class="profile-dropdown hidden">
+    <div class="profile-header">
+        <div class="profile-avatar">👤</div>
+        <div>
+            <div class="profile-name">Admin</div>
+            <div class="profile-email">admin@prism.com</div>
+        </div>
+    </div>
+    <hr class="profile-divider">
+    <button class="profile-item" onclick="window.location.href='settings.html'">⚙️ Settings</button>
+    <button class="profile-item">🏢 Company</button>
+    <button class="profile-item" onclick="window.location.href='subscription.html'">💳 Subscription</button>
+    <button class="profile-item">🔍 Recent Searches</button>
+    <hr class="profile-divider">
+<button class="profile-item" onclick="window.location.href='about.html'">📋 Privacy & Terms</button>
+    <button class="profile-item logout-item" id="logout-btn">🚪 Logout</button>
+
+</div><!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
     
     <script src="app.js"></script>

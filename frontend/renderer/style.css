@@ -301,3 +301,102 @@ td {
         padding: 20px;
     }
 }
+.hidden {
+    display: none !important;
+}
+.login-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.login-card {
+    background: var(--bg-secondary);
+    padding: 40px;
+    border-radius: 12px;
+    width: 420px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.login-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.login-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.login-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.auth-tabs {
+    display: flex;
+    margin-bottom: 24px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.auth-tab.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.login-form .form-group {
+    text-align: left;
+    margin-bottom: 16px;
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.login-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    margin-top: 10px;
+}
+.profile-dropdown {
+    position: fixed;
+    bottom: 70px;
+    left: 12px;
+    width: 220px;
+    z-index: 1000;
+}
+.profile-item {
+    display: block;
+    width: 100%;
+}
+
+
