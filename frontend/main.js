@@ -21,11 +21,11 @@ function createWindow() {
     });
 
     // Load the app
-    const startUrl = isDev 
-        ? 'http://localhost:3000' 
-        : `file://${path.join(__dirname, '../renderer/index.html')}`;
-    
-    mainWindow.loadURL(startUrl);
+    if (isDev) {
+    mainWindow.loadURL('http://localhost:3000');
+} else {
+    mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+}
 
     // Show window when ready
     mainWindow.once('ready-to-show', () => {

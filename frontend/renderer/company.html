@@ -1,0 +1,522 @@
+Company · HTML
+Copy
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PRISM – Company Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:  #0f1117; --bg2: #161b27; --bg3: #1e2535;
+      --accent: #e8455a; --accent2: #ff6b7a;
+      --green: #22c55e; --blue: #3b8fe8; --yellow: #f0c030;
+      --text: #e8eaf0; --text2: #9aa3b8;
+      --border: rgba(255,255,255,0.07);
+      --mono: 'DM Mono', monospace;
+      --head: 'Syne', sans-serif;
+      --body: 'DM Sans', sans-serif;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--body); font-size: 13px; overflow: hidden; }
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg2); } ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+
+    /* ── TOPBAR (same as subscription.html) ── */
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:.85rem 2rem; background:var(--bg2); border-bottom:1px solid var(--border); flex-shrink:0; }
+    .topbar-left { display:flex; align-items:center; gap:1rem; }
+    .back-btn { display:flex; align-items:center; gap:.4rem; color:var(--text2); font-size:.875rem; font-weight:500; padding:.4rem .8rem; border:1px solid var(--border); border-radius:8px; transition:all .2s; cursor:pointer; background:none; font-family:var(--body); }
+    .back-btn:hover { color:var(--text); border-color:rgba(255,255,255,.15); }
+    .logo { display:flex; align-items:center; gap:.5rem; }
+    .logo-mark { width:26px; height:26px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:var(--head); font-weight:800; font-size:13px; color:#fff; }
+    .logo-name { font-family:var(--head); font-size:14px; font-weight:800; letter-spacing:.05em; color:var(--text); }
+    .user-pill { display:flex; align-items:center; gap:.5rem; background:var(--bg3); border:1px solid var(--border); padding:.35rem .8rem; border-radius:20px; font-size:.78rem; color:var(--text2); font-family:var(--mono); }
+    .user-dot { width:7px; height:7px; background:var(--green); border-radius:50%; }
+
+    /* ── LAYOUT ── */
+    #app { display:flex; flex-direction:column; height:100vh; }
+    #body-area { display:flex; flex:1; overflow:hidden; }
+    #sidebar { width:200px; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; }
+    #main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    #subheader { padding:16px 24px 0; border-bottom:1px solid var(--border); background:var(--bg); flex-shrink:0; }
+    #content { flex:1; overflow-y:auto; padding:18px 24px; }
+
+    /* ── SIDEBAR ── */
+    .sb-label { font-family:var(--mono); font-size:9px; color:var(--text2); text-transform:uppercase; letter-spacing:.1em; padding:10px 14px 4px; }
+    .sb-nav { padding:6px 8px; flex:1; }
+    .nav-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; cursor:pointer; margin-bottom:2px; color:var(--text2); font-size:12px; transition:all .15s; border-left:2px solid transparent; user-select:none; }
+    .nav-item:hover { color:var(--text); background:var(--bg3); }
+    .nav-item.active { color:var(--accent); background:rgba(232,69,90,.1); border-left-color:var(--accent); font-weight:600; }
+    .nav-ic { font-family:var(--mono); font-size:14px; width:18px; text-align:center; flex-shrink:0; }
+    .sb-footer { padding:12px 14px; border-top:1px solid var(--border); }
+    .sb-footer .lbl { font-size:10px; color:var(--text2); }
+    .sb-footer .em { font-size:11px; color:var(--text); margin-top:2px; font-family:var(--mono); }
+
+    /* ── SUBHEADER (tab bar) ── */
+    .page-title { font-family:var(--head); font-size:18px; font-weight:800; }
+    .page-sub { font-size:11px; color:var(--text2); margin-top:2px; font-family:var(--mono); }
+    .save-row { display:flex; justify-content:space-between; align-items:flex-end; }
+    .tab-bar { display:flex; gap:2px; margin-top:14px; }
+    .tab-btn { padding:7px 13px; font-size:11px; font-family:var(--mono); color:var(--text2); cursor:pointer; border:none; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; background:none; user-select:none; display:flex; align-items:center; gap:5px; }
+    .tab-btn:hover { color:var(--text); }
+    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+
+    /* ── BUTTONS ── */
+    .btn-primary { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:600; font-family:var(--body); cursor:pointer; transition:all .15s; }
+    .btn-primary:hover { background:var(--accent2); }
+    .btn-primary.saved { background:var(--green); }
+    .btn-ghost { background:transparent; color:var(--text2); border:1px solid var(--border); border-radius:8px; padding:7px 14px; font-size:12px; font-family:var(--body); cursor:pointer; transition:all .15s; }
+    .btn-ghost:hover { border-color:rgba(255,255,255,.15); color:var(--text); }
+    .btn-sm { padding:5px 11px; font-size:11px; }
+    .btn-danger { background:rgba(232,69,90,.1); color:var(--accent); border:1px solid rgba(232,69,90,.25); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; font-family:var(--body); }
+    .btn-danger:hover { background:rgba(232,69,90,.2); }
+
+    /* ── SECTIONS ── */
+    .section { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:14px; animation:fadeIn .2s ease; }
+    .sec-title { font-family:var(--head); font-size:12px; font-weight:700; color:var(--text); letter-spacing:.06em; text-transform:uppercase; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+
+    /* ── FORMS ── */
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+    .field label { display:block; font-size:10px; font-weight:600; color:var(--text2); margin-bottom:5px; text-transform:uppercase; letter-spacing:.08em; font-family:var(--mono); }
+    .field input, .field select, .field textarea { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--body); font-size:13px; padding:8px 12px; outline:none; transition:border-color .15s; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent); }
+    .field input::placeholder, .field textarea::placeholder { color:var(--text2); }
+    .field select option { background:var(--bg2); }
+    .field textarea { resize:vertical; min-height:60px; font-family:var(--body); }
+    .mt { margin-top:14px; }
+
+    /* ── TOGGLES ── */
+    .tog-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+    .tog-row:last-child { border-bottom:none; }
+    .tog-lbl { font-size:13px; color:var(--text); font-weight:500; }
+    .tog-desc { font-size:11px; color:var(--text2); margin-top:2px; }
+    .toggle { width:36px; height:20px; border-radius:10px; background:var(--bg3); border:1px solid rgba(255,255,255,.1); position:relative; cursor:pointer; transition:all .2s; flex-shrink:0; }
+    .toggle.on { background:var(--accent); border-color:var(--accent); }
+    .toggle-thumb { position:absolute; width:12px; height:12px; border-radius:50%; background:#fff; top:3px; left:3px; transition:left .2s; }
+    .toggle.on .toggle-thumb { left:19px; }
+
+    /* ── TAGS ── */
+    .tag { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; font-family:var(--mono); }
+    .tag-green  { background:rgba(34,197,94,.1);  color:#22c55e; border:1px solid rgba(34,197,94,.25); }
+    .tag-red    { background:rgba(232,69,90,.1);  color:#e8455a; border:1px solid rgba(232,69,90,.25); }
+    .tag-blue   { background:rgba(59,143,232,.1); color:#3b8fe8; border:1px solid rgba(59,143,232,.25); }
+    .tag-yellow { background:rgba(240,192,48,.1); color:#f0c030; border:1px solid rgba(240,192,48,.25); }
+    .tag-muted  { background:var(--bg3); color:var(--text2); border:1px solid var(--border); }
+
+    /* ── TABLE ── */
+    .table-wrap { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    thead th { background:var(--bg3); color:var(--text2); font-family:var(--mono); font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:.08em; padding:9px 14px; text-align:left; border-bottom:1px solid var(--border); }
+    tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:var(--bg3); }
+    tbody td { padding:10px 14px; color:var(--text); vertical-align:middle; }
+
+    /* ── STAT CARDS ── */
+    .stat-card { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px; }
+    .stat-num { font-family:var(--head); font-size:22px; font-weight:800; }
+    .stat-lbl { font-size:10px; color:var(--text2); margin-top:3px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.06em; }
+    .bar-bg { background:var(--bg3); border-radius:99px; height:4px; width:100%; margin-top:8px; }
+    .bar { height:4px; border-radius:99px; }
+
+    /* ── AVATAR ── */
+    .avatar { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; font-family:var(--head); }
+
+    /* ── INLINE FORM ── */
+    .inline-form { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:14px; display:none; }
+    .inline-form.show { display:block; }
+    .il-label { font-family:var(--mono); font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
+    .il-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .il-row input, .il-row select { background:var(--bg2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--body); font-size:12px; padding:7px 10px; outline:none; }
+
+    /* ── PANELS ── */
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    /* ── MISC ── */
+    .plan-banner { display:flex; justify-content:space-between; align-items:center; background:var(--bg); border:1px solid rgba(232,69,90,.2); border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .invoice-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
+    .invoice-row:last-child { border-bottom:none; }
+
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ TOPBAR — same pattern as subscription.html ══ -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="back-btn" onclick="history.back()">← Back to App</button>
+      <div class="logo">
+        <div class="logo-mark">P</div>
+        <span class="logo-name">PRISM</span>
+      </div>
+    </div>
+    <div class="user-pill">
+      <div class="user-dot"></div>
+      admin@prism.com
+    </div>
+  </div>
+
+  <div id="body-area">
+
+    <!-- ══ SIDEBAR ══ -->
+    <div id="sidebar">
+      <div class="sb-label">Company</div>
+      <nav class="sb-nav">
+        <div class="nav-item active" data-tab="workspace"><span class="nav-ic">⬡</span> Workspace</div>
+        <div class="nav-item" data-tab="databases"><span class="nav-ic">⬢</span> Databases</div>
+        <div class="nav-item" data-tab="users"><span class="nav-ic">◈</span> Users & Roles</div>
+        <div class="nav-item" data-tab="ai"><span class="nav-ic">◉</span> AI & Queries</div>
+        <div class="nav-item" data-tab="exports"><span class="nav-ic">◫</span> Exports & Reports</div>
+        <div class="nav-item" data-tab="audit"><span class="nav-ic">◧</span> Audit Trail</div>
+        <div class="nav-item" data-tab="billing"><span class="nav-ic">◪</span> Billing</div>
+      </nav>
+      <div class="sb-footer">
+        <div class="lbl">Signed in as</div>
+        <div class="em">admin@prism.com</div>
+      </div>
+    </div>
+
+    <!-- ══ MAIN ══ -->
+    <div id="main">
+      <div id="subheader">
+        <div class="save-row">
+          <div>
+            <div class="page-title">Company Settings</div>
+            <div class="page-sub">prism.ai &nbsp;·&nbsp; Pro Plan &nbsp;·&nbsp; 4 members</div>
+          </div>
+          <button class="btn-primary" id="saveBtn" style="margin-bottom:14px" onclick="saveSettings()">Save Changes</button>
+        </div>
+        <div class="tab-bar" id="tabBar"></div>
+      </div>
+
+      <div id="content">
+
+        <!-- WORKSPACE -->
+        <div class="panel active" id="panel-workspace">
+          <div class="section">
+            <div class="sec-title"><span>⬡ Organization Identity</span></div>
+            <div class="grid2">
+              <div class="field"><label>Workspace Name</label><input value="PRISM Labs"/></div>
+              <div class="field"><label>Industry</label>
+                <select><option>Technology</option><option>Finance</option><option>Healthcare</option><option>Retail</option><option>SaaS</option><option>Other</option></select>
+              </div>
+            </div>
+            <div class="field mt"><label>Description</label><textarea placeholder="What does your team use PRISM for?"></textarea></div>
+          </div>
+          <div class="section">
+            <div class="sec-title"><span>◉ Default AI Behaviour</span></div>
+            <div class="grid2">
+              <div class="field"><label>Default SQL Dialect</label>
+                <select><option>PostgreSQL</option><option>MySQL</option><option>Oracle</option><option>SQL Server</option><option>SQLite</option></select>
+              </div>
+              <div class="field"><label>Max Rows Returned</label><input type="number" value="500"/></div>
+            </div>
+            <div class="mt">
+              <div class="tog-row"><div><div class="tog-lbl">Show Generated SQL by Default</div><div class="tog-desc">All users see the SQL PRISM generated for each query</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+              <div class="tog-row"><div><div class="tog-lbl">Show Query Explanation by Default</div><div class="tog-desc">Natural language explanation shown below every query</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+              <div class="tog-row"><div><div class="tog-lbl">Auto Schema Discovery</div><div class="tog-desc">Automatically detect tables and relationships on connection</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DATABASES -->
+        <div class="panel" id="panel-databases">
+          <div class="section">
+            <div class="sec-title">
+              <span>⬢ Connected Databases</span>
+              <button class="btn-primary btn-sm" onclick="toggleForm('addDbForm')">+ Add Connection</button>
+            </div>
+            <div class="inline-form" id="addDbForm">
+              <div class="il-label">New Connection</div>
+              <div class="grid3" style="gap:10px">
+                <div class="field"><label>Display Name</label><input id="db-name" placeholder="prod_postgres"/></div>
+                <div class="field"><label>Type</label><select id="db-type"><option>PostgreSQL</option><option>MySQL</option><option>Oracle</option><option>SQL Server</option></select></div>
+                <div class="field"><label>Port</label><input id="db-port" value="5432"/></div>
+              </div>
+              <div class="grid2 mt" style="gap:10px">
+                <div class="field"><label>Host</label><input id="db-host" placeholder="db.yourcompany.io"/></div>
+                <div class="field"><label>Database</label><input id="db-db" placeholder="my_database"/></div>
+                <div class="field"><label>Username</label><input id="db-user" placeholder="admin"/></div>
+                <div class="field"><label>Password</label><input type="password" id="db-pass" placeholder="••••••••"/></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn-primary btn-sm" onclick="addDB()">Connect Database</button>
+                <button class="btn-ghost btn-sm" onclick="toggleForm('addDbForm')">Cancel</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Connection</th><th>Type</th><th>Host</th><th>Tables</th><th>Status</th><th></th></tr></thead>
+                <tbody id="db-tbody">
+                  <tr><td><span style="font-family:var(--mono)">prod_postgres</span></td><td><span class="tag tag-blue">PostgreSQL</span></td><td><span style="font-family:var(--mono);color:var(--text2)">db.prism.io</span></td><td>48</td><td><span class="tag tag-green">● Connected</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td></tr>
+                  <tr><td><span style="font-family:var(--mono)">analytics_db</span></td><td><span class="tag tag-yellow">MySQL</span></td><td><span style="font-family:var(--mono);color:var(--text2)">analytics.prism.io</span></td><td>22</td><td><span class="tag tag-green">● Connected</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td></tr>
+                  <tr><td><span style="font-family:var(--mono)">reporting_mysql</span></td><td><span class="tag tag-yellow">MySQL</span></td><td><span style="font-family:var(--mono);color:var(--text2)">reports.prism.io</span></td><td>0</td><td><span class="tag tag-red">● Error</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="section">
+            <div class="sec-title"><span>◫ Dialect Support</span></div>
+            <div class="chips">
+              <span class="tag tag-green">✓ PostgreSQL · Active</span>
+              <span class="tag tag-green">✓ MySQL · Active</span>
+              <span class="tag tag-yellow">⚡ Oracle · Beta</span>
+              <span class="tag tag-yellow">⚡ SQL Server · Beta</span>
+              <span class="tag tag-muted">⏳ SQLite · Coming</span>
+              <span class="tag tag-muted">⏳ BigQuery · Coming</span>
+            </div>
+            <div style="font-size:11px;color:var(--text2);margin-top:10px">Oracle & SQL Server are in beta. BigQuery coming in v1.4.</div>
+          </div>
+        </div>
+
+        <!-- USERS -->
+        <div class="panel" id="panel-users">
+          <div class="section">
+            <div class="sec-title">
+              <span>◈ Team Members</span>
+              <button class="btn-primary btn-sm" onclick="toggleForm('inviteForm')">+ Invite Member</button>
+            </div>
+            <div class="inline-form" id="inviteForm">
+              <div class="il-label">Invite Member</div>
+              <div class="il-row">
+                <input id="invite-email" placeholder="colleague@company.com" style="flex:1;min-width:180px"/>
+                <select id="invite-role" style="width:120px"><option>Analyst</option><option>Admin</option><option>Viewer</option></select>
+                <button class="btn-primary btn-sm" onclick="addUser()">Send Invite</button>
+                <button class="btn-ghost btn-sm" onclick="toggleForm('inviteForm')">✕</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Member</th><th>Email</th><th>Role</th><th>Last Active</th><th>Status</th><th></th></tr></thead>
+                <tbody id="users-tbody">
+                  <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:rgba(232,69,90,.15);color:#e8455a">AM</div><span>Arjun Mehta</span></div></td><td><span style="font-family:var(--mono);color:var(--text2)">arjun@prism.ai</span></td><td><span class="tag tag-red">Admin</span></td><td><span style="color:var(--text2)">2 min ago</span></td><td><span class="tag tag-green">Active</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:rgba(59,143,232,.15);color:#3b8fe8">SO</div><span>Sara Okafor</span></div></td><td><span style="font-family:var(--mono);color:var(--text2)">sara@prism.ai</span></td><td><span class="tag tag-blue">Analyst</span></td><td><span style="color:var(--text2)">1 hr ago</span></td><td><span class="tag tag-green">Active</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:rgba(34,197,94,.15);color:#22c55e">DP</div><span>Dev Patel</span></div></td><td><span style="font-family:var(--mono);color:var(--text2)">dev@prism.ai</span></td><td><span class="tag tag-muted">Viewer</span></td><td><span style="color:var(--text2)">—</span></td><td><span class="tag tag-yellow">Invited</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:rgba(240,192,48,.15);color:#f0c030">LW</div><span>Liu Wei</span></div></td><td><span style="font-family:var(--mono);color:var(--text2)">liu@prism.ai</span></td><td><span class="tag tag-blue">Analyst</span></td><td><span style="color:var(--text2)">Yesterday</span></td><td><span class="tag tag-green">Active</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="section">
+            <div class="sec-title"><span>◈ Role Permissions</span></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Permission</th><th>Admin</th><th>Analyst</th><th>Viewer</th></tr></thead>
+                <tbody>
+                  <tr><td>Run NL Queries</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td></tr>
+                  <tr><td>View Generated SQL</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td></tr>
+                  <tr><td>Export CSV</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td><td style="color:var(--text2)">✕</td></tr>
+                  <tr><td>Generate PDF / Excel</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td><td style="color:var(--text2)">✕</td></tr>
+                  <tr><td>Add DB Connections</td><td style="color:#22c55e">✓</td><td style="color:var(--text2)">✕</td><td style="color:var(--text2)">✕</td></tr>
+                  <tr><td>View Schema</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td></tr>
+                  <tr><td>View Query History</td><td style="color:#22c55e">✓</td><td style="color:#22c55e">✓</td><td style="color:var(--text2)">✕</td></tr>
+                  <tr><td>Manage Users</td><td style="color:#22c55e">✓</td><td style="color:var(--text2)">✕</td><td style="color:var(--text2)">✕</td></tr>
+                  <tr><td>Billing & Settings</td><td style="color:#22c55e">✓</td><td style="color:var(--text2)">✕</td><td style="color:var(--text2)">✕</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI & QUERIES -->
+        <div class="panel" id="panel-ai">
+          <div class="section">
+            <div class="sec-title"><span>◉ Query Settings</span></div>
+            <div class="grid2">
+              <div class="field"><label>Default SQL Dialect</label>
+                <select><option>PostgreSQL</option><option>MySQL</option><option>Oracle</option><option>SQL Server</option></select>
+              </div>
+              <div class="field"><label>Max Result Rows</label><input type="number" value="500"/></div>
+            </div>
+            <div class="mt">
+              <div class="tog-row"><div><div class="tog-lbl">Show Generated SQL</div><div class="tog-desc">Display the SQL PRISM creates for every query</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+              <div class="tog-row"><div><div class="tog-lbl">Show Query Explanation</div><div class="tog-desc">Natural language breakdown of what the query does</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+              <div class="tog-row"><div><div class="tog-lbl">Auto Schema Discovery</div><div class="tog-desc">Detect tables & relationships when connecting a DB</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+              <div class="tog-row"><div><div class="tog-lbl">Save Query History</div><div class="tog-desc">Store all queries for audit and reuse</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="sec-title"><span>◉ Usage This Month</span></div>
+            <div class="grid3">
+              <div class="stat-card"><div class="stat-num" style="color:#e8455a">2,841</div><div class="stat-lbl">NL Queries Run</div><div class="bar-bg"><div class="bar" style="width:57%;background:#e8455a"></div></div></div>
+              <div class="stat-card"><div class="stat-num" style="color:#3b8fe8">124</div><div class="stat-lbl">Schema Syncs</div><div class="bar-bg"><div class="bar" style="width:24%;background:#3b8fe8"></div></div></div>
+              <div class="stat-card"><div class="stat-num" style="color:#22c55e">1.2M</div><div class="stat-lbl">Tokens Used</div><div class="bar-bg"><div class="bar" style="width:38%;background:#22c55e"></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EXPORTS -->
+        <div class="panel" id="panel-exports">
+          <div class="section">
+            <div class="sec-title"><span>◫ Export Formats</span></div>
+            <div class="tog-row"><div><div class="tog-lbl">CSV Export</div><div class="tog-desc">Export query results as comma-separated values</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+            <div class="tog-row"><div><div class="tog-lbl">PDF Reports</div><div class="tog-desc">Generate formatted PDF reports from query results</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+            <div class="tog-row"><div><div class="tog-lbl">Excel (XLSX) Reports</div><div class="tog-desc">Export formatted spreadsheets with charts and summaries</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></div>
+          </div>
+          <div class="section">
+            <div class="sec-title"><span>◫ Report Branding</span></div>
+            <div class="grid2">
+              <div class="field"><label>Report Logo URL</label><input placeholder="https://prism.ai/logo.png"/></div>
+              <div class="field"><label>Footer Text</label><input placeholder="Generated by PRISM · prism.ai"/></div>
+              <div class="field"><label>PDF Page Size</label><select><option>A4</option><option>Letter</option><option>A3</option></select></div>
+              <div class="field"><label>Default Chart Type</label><select><option>Bar</option><option>Line</option><option>Pie</option><option>Table only</option></select></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUDIT -->
+        <div class="panel" id="panel-audit">
+          <div class="section">
+            <div class="sec-title">
+              <span>◧ Query & Action History</span>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11px;font-family:var(--mono);outline:none">
+                  <option>All Users</option><option>arjun@prism.ai</option><option>sara@prism.ai</option><option>liu@prism.ai</option>
+                </select>
+                <button class="btn-ghost btn-sm">Export Log</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>User</th><th>Action</th><th>Detail</th><th>Database</th><th>Time</th></tr></thead>
+                <tbody>
+                  <tr><td><span style="font-family:var(--mono);color:var(--text2)">arjun@prism.ai</span></td><td><span class="tag tag-blue">Ran NL Query</span></td><td>Show top 10 customers by revenue</td><td><span style="font-family:var(--mono);color:var(--text2)">prod_postgres</span></td><td><span style="color:var(--text2)">Today 12:41</span></td></tr>
+                  <tr><td><span style="font-family:var(--mono);color:var(--text2)">sara@prism.ai</span></td><td><span class="tag tag-green">Exported CSV</span></td><td>orders_summary_q1.csv</td><td><span style="font-family:var(--mono);color:var(--text2)">analytics_db</span></td><td><span style="color:var(--text2)">Today 11:20</span></td></tr>
+                  <tr><td><span style="font-family:var(--mono);color:var(--text2)">arjun@prism.ai</span></td><td><span class="tag tag-yellow">Added DB</span></td><td>MySQL · reporting_db</td><td><span style="color:var(--text2)">—</span></td><td><span style="color:var(--text2)">Today 09:05</span></td></tr>
+                  <tr><td><span style="font-family:var(--mono);color:var(--text2)">liu@prism.ai</span></td><td><span class="tag tag-blue">Ran NL Query</span></td><td>Monthly sales by region last year</td><td><span style="font-family:var(--mono);color:var(--text2)">analytics_db</span></td><td><span style="color:var(--text2)">Yesterday</span></td></tr>
+                  <tr><td><span style="font-family:var(--mono);color:var(--text2)">arjun@prism.ai</span></td><td><span class="tag tag-yellow">Invited User</span></td><td>dev@prism.ai → Viewer</td><td><span style="color:var(--text2)">—</span></td><td><span style="color:var(--text2)">Mar 3</span></td></tr>
+                  <tr><td><span style="font-family:var(--mono);color:var(--text2)">sara@prism.ai</span></td><td><span class="tag tag-green">Downloaded PDF</span></td><td>Q4 Revenue Report.pdf</td><td><span style="font-family:var(--mono);color:var(--text2)">prod_postgres</span></td><td><span style="color:var(--text2)">Mar 2</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="grid2 mt">
+              <div class="field"><label>Retention Period</label>
+                <select><option>30 days</option><option selected>90 days</option><option>180 days</option><option>1 year</option></select>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding-top:20px">
+                <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+                <span style="font-size:13px;font-weight:500">Audit Logging Enabled</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BILLING -->
+        <div class="panel" id="panel-billing">
+          <div class="section">
+            <div class="plan-banner">
+              <div>
+                <div style="font-family:var(--head);font-size:15px;font-weight:700">Pro Plan</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:2px;font-family:var(--mono)">Renews April 3, 2026 · $79 / month</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span class="tag tag-green">● Active</span>
+                <button class="btn-ghost btn-sm" onclick="window.location.href='subscription.html'">Manage Plan →</button>
+              </div>
+            </div>
+            <div class="grid3">
+              <div class="stat-card"><div class="stat-num" style="color:#3b8fe8;font-size:18px">4 / 10</div><div class="stat-lbl">Seats Used</div><div class="bar-bg"><div class="bar" style="width:40%;background:#3b8fe8"></div></div></div>
+              <div class="stat-card"><div class="stat-num" style="color:#e8455a;font-size:18px">6,241</div><div class="stat-lbl">API Calls / 10K</div><div class="bar-bg"><div class="bar" style="width:62%;background:#e8455a"></div></div></div>
+              <div class="stat-card"><div class="stat-num" style="color:#22c55e;font-size:18px">2.4 GB</div><div class="stat-lbl">Storage / 10 GB</div><div class="bar-bg"><div class="bar" style="width:24%;background:#22c55e"></div></div></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="sec-title"><span>◪ Billing Details</span></div>
+            <div class="grid2">
+              <div class="field"><label>Billing Email</label><input value="billing@prism.ai"/></div>
+              <div class="field"><label>Company / VAT Name</label><input value="PRISM Labs Pvt Ltd"/></div>
+            </div>
+            <div class="mt">
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Recent Invoices</div>
+              <div class="invoice-row"><span style="font-family:var(--mono);color:var(--text2)">Mar 2026</span><span style="font-family:var(--mono)">$79.00</span><span class="tag tag-green">Paid</span><button class="btn-ghost btn-sm">Download PDF</button></div>
+              <div class="invoice-row"><span style="font-family:var(--mono);color:var(--text2)">Feb 2026</span><span style="font-family:var(--mono)">$79.00</span><span class="tag tag-green">Paid</span><button class="btn-ghost btn-sm">Download PDF</button></div>
+              <div class="invoice-row"><span style="font-family:var(--mono);color:var(--text2)">Jan 2026</span><span style="font-family:var(--mono)">$79.00</span><span class="tag tag-green">Paid</span><button class="btn-ghost btn-sm">Download PDF</button></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </div><!-- /main -->
+  </div><!-- /body-area -->
+</div><!-- /app -->
+
+<script>
+  const TABS = [
+    { id:"workspace", icon:"⬡", label:"Workspace" },
+    { id:"databases", icon:"⬢", label:"Databases" },
+    { id:"users",     icon:"◈", label:"Users & Roles" },
+    { id:"ai",        icon:"◉", label:"AI & Queries" },
+    { id:"exports",   icon:"◫", label:"Exports & Reports" },
+    { id:"audit",     icon:"◧", label:"Audit Trail" },
+    { id:"billing",   icon:"◪", label:"Billing" },
+  ];
+
+  const tabBar = document.getElementById("tabBar");
+  TABS.forEach(t => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (t.id === "workspace" ? " active" : "");
+    btn.dataset.tab = t.id;
+    btn.innerHTML = t.icon + " " + t.label;
+    btn.onclick = () => switchTab(t.id);
+    tabBar.appendChild(btn);
+  });
+
+  function switchTab(id) {
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn,.nav-item").forEach(b => b.classList.remove("active"));
+    document.getElementById("panel-" + id).classList.add("active");
+    document.querySelectorAll('[data-tab="' + id + '"]').forEach(el => el.classList.add("active"));
+  }
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.onclick = () => switchTab(item.dataset.tab);
+  });
+
+  function toggleForm(id) { document.getElementById(id).classList.toggle("show"); }
+  function removeRow(btn) { btn.closest("tr").remove(); }
+
+  function addDB() {
+    const name = document.getElementById("db-name").value || "new_db";
+    const type = document.getElementById("db-type").value;
+    const host = document.getElementById("db-host").value || "localhost";
+    const tc = type === "PostgreSQL" ? "tag-blue" : type === "MySQL" ? "tag-yellow" : "tag-muted";
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td><span style="font-family:var(--mono)">' + name + '</span></td><td><span class="tag ' + tc + '">' + type + '</span></td><td><span style="font-family:var(--mono);color:var(--text2)">' + host + '</span></td><td>0</td><td><span class="tag tag-green">● Connected</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td>';
+    document.getElementById("db-tbody").appendChild(tr);
+    toggleForm("addDbForm");
+  }
+
+  const AC = [{bg:"rgba(232,69,90,.15)",col:"#e8455a"},{bg:"rgba(59,143,232,.15)",col:"#3b8fe8"},{bg:"rgba(34,197,94,.15)",col:"#22c55e"},{bg:"rgba(240,192,48,.15)",col:"#f0c030"},{bg:"rgba(168,85,247,.15)",col:"#a855f7"}];
+  let uc = 4;
+
+  function addUser() {
+    const email = document.getElementById("invite-email").value;
+    if (!email) return;
+    const role = document.getElementById("invite-role").value;
+    const name = email.split("@")[0];
+    const initials = name.slice(0,2).toUpperCase();
+    const c = AC[uc % AC.length];
+    const rt = role === "Admin" ? "tag-red" : role === "Analyst" ? "tag-blue" : "tag-muted";
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:' + c.bg + ';color:' + c.col + '">' + initials + '</div><span>' + name + '</span></div></td><td><span style="font-family:var(--mono);color:var(--text2)">' + email + '</span></td><td><span class="tag ' + rt + '">' + role + '</span></td><td><span style="color:var(--text2)">—</span></td><td><span class="tag tag-yellow">Invited</span></td><td><button class="btn-danger" onclick="removeRow(this)">Remove</button></td>';
+    document.getElementById("users-tbody").appendChild(tr);
+    document.getElementById("invite-email").value = "";
+    uc++;
+    toggleForm("inviteForm");
+  }
+
+  function saveSettings() {
+    const btn = document.getElementById("saveBtn");
+    btn.textContent = "✓ Saved";
+    btn.classList.add("saved");
+    setTimeout(() => { btn.textContent = "Save Changes"; btn.classList.remove("saved"); }, 2500);
+  }
+</script>
+</body>
+</html>
