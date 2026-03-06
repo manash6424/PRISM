@@ -142,7 +142,7 @@ class QueryExecutor:
     def get_query_history(self, connection_id: Optional[str] = None, limit: int = 50) -> list[QueryResponse]:
         history = list(self._query_history.values())
         if connection_id is not None:
-            history = [q for q in history if q.connection_id == connection_id]
+            history = [q for q in history if getattr(q, 'connection_id', None) == connection_id]
         history.sort(key=lambda x: x.timestamp, reverse=True)
         return history[:limit]
 

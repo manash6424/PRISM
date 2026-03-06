@@ -107,6 +107,22 @@ class ExportService:
 
         filepath = os.path.join(self.settings.export.export_dir, f"{filename}.pdf")
 
+        # FIX: all logic outside f-string
+        max_rows = getattr(request, 'max_rows', 1000)
+        if query_response.row_count > max_rows:
+            logger.warning(f"PDF export truncated to {max_rows} rows (total: {query_response.row_count})")
+
+        header_row = ''.join(f'<th>{col}</th>' for col in query_response.columns)
+
+        table_rows = ''.join(
+            '<tr>' + ''.join(
+                f'<td>{row.get(col, "")}</td>' for col in query_response.columns
+            ) + '</tr>'
+            for row in query_response.results[:max_rows]
+        )
+
+        description_block = f'<p class="description">{request.description}</p>' if request.description else ''
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -134,13 +150,13 @@ class ExportService:
             </div>
             <table>
                 <thead>
-                    <tr>{''.join(f'<th>{col}</th>' for col in query_response.columns)}</tr>
+                    <tr>{header_row}</tr>
                 </thead>
                 <tbody>
-                    {''.join(f'<tr>{"".join(f"<td>{row.get(col, "")}</td>" for col in query_response.columns)}</tr>' for row in query_response.results[:1000])}
+                    {table_rows}
                 </tbody>
             </table>
-            {f'<p class="description">{request.description}</p>' if request.description else ''}
+            {description_block}
         </body>
         </html>
         """
