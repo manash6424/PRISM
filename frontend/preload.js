@@ -1,50 +1,62 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Securely expose selected APIs to renderer
 contextBridge.exposeInMainWorld('api', {
 
-    // ==========================
-    // Connection Management
-    // ==========================
+    // ── Auth ────────────────────────────────────────────────────────────────
+    login: (email, password) =>
+        ipcRenderer.invoke('auth-login', { email, password }),
 
+    signup: (name, company, email, password) =>
+        ipcRenderer.invoke('auth-signup', { name, company, email, password }),
+
+    // ── Connections ──────────────────────────────────────────────────────────
     getConnections: () =>
         ipcRenderer.invoke('get-connections'),
 
     saveConnection: (connection) =>
         ipcRenderer.invoke('save-connection', connection),
 
-    testConnection: (id) =>
-        ipcRenderer.invoke('api-request', {
-            method: 'POST',
-            endpoint: `/connections/${id}/test`
-        }),
-
     deleteConnection: (id) =>
-        ipcRenderer.invoke('api-request', {
-            method: 'DELETE',
-            endpoint: `/connections/${id}`
-        }),
+        ipcRenderer.invoke('delete-connection', id),
 
-    // ==========================
-    // Database Operations
-    // ==========================
+    testConnection: (id) =>
+        ipcRenderer.invoke('test-connection', id),
 
+    // ── Database Operations ──────────────────────────────────────────────────
     getSchema: (connectionId, refresh = false) =>
         ipcRenderer.invoke('api-request', {
             method: 'GET',
             endpoint: `/connections/${connectionId}/schema?refresh=${refresh}`
         }),
 
-    getTables: (connectionId) =>
-        ipcRenderer.invoke('api-request', {
-            method: 'GET',
-            endpoint: `/connections/${connectionId}/tables`
-        }),
-
-    executeQuery: (connectionId, query) =>
+    executeQuery: (connectionId, query, includeExplanation = true) =>
         ipcRenderer.invoke('api-request', {
             method: 'POST',
-            endpoint: `/connections/${connectionId}/query`,
-            body: { query }
+            endpoint: '/query',
+            data: {
+                connection_id: connectionId,
+                natural_language: query,
+                include_explanation: includeExplanation
+            }
+        }),
+
+    exportResults: (queryId, format, filename) =>
+        ipcRenderer.invoke('api-request', {
+            method: 'POST',
+            endpoint: '/export',
+            data: { query_id: queryId, format, filename }
+        }),
+
+    generateReport: (connectionId) =>
+        ipcRenderer.invoke('api-request', {
+            method: 'GET',
+            endpoint: `/reports/summary/${connectionId}`
+        }),
+
+    sendAlert: (title, message, channels) =>
+        ipcRenderer.invoke('api-request', {
+            method: 'POST',
+            endpoint: '/alerts/send',
+            data: { title, message, channels }
         })
 });
