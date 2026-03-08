@@ -1,5 +1,5 @@
 """
-API routes for AI Desktop Copilot.
+API routes for PRISM.
 """
 
 import uuid
@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 from ..models.database import (
     DatabaseConnection,
@@ -31,8 +33,6 @@ from ..utils.validators import (
 router = APIRouter()
 settings = get_settings()
 
-
-# ==================== Helper Models ====================
 
 class RawSQLRequest(BaseModel):
     connection_id: str
@@ -61,13 +61,15 @@ async def create_connection(connection: DatabaseConnection):
         connection.status = ConnectionStatus.ERROR
         raise HTTPException(status_code=400, detail=f"Connection failed: {message}")
 
-    await db_manager.connect(connection)
+    # ✅ connect() creates engine + session under connection.id
+    connected = await db_manager.connect(connection)
+    if not connected:
+        raise HTTPException(status_code=400, detail="Failed to establish connection")
+
     connection.status = ConnectionStatus.CONNECTED
     connection.last_connected_at = datetime.now(timezone.utc)
 
-    # ✅ Persist connection so it survives restarts
     db_manager._save_connections()
-
     schema_discovery.clear_cache(connection.id)
 
     return {
@@ -92,6 +94,58 @@ async def list_connections():
             "status": conn.status.value,
         })
     return connections
+
+
+@router.post("/connections/{connection_id}/test")
+async def test_connection(connection_id: str):
+    """Test database connection."""
+    conn = db_manager._connection_cache.get(connection_id)
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    success, message = await db_manager.test_connection(conn)
+
+    return {
+        "success": success,
+        "message": message,
+        "status": "connected" if success else "error",
+    }
+
+
+# ==================== Schema Endpoints ====================
+
+@router.get("/connections/{connection_id}/schema")
+async def get_schema(connection_id: str, force_refresh: bool = False):
+    """Get database schema for a connection."""
+    conn = db_manager._connection_cache.get(connection_id)
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    try:
+        schema_data = await schema_discovery.discover_full_schema(
+            connection_id, force_refresh=force_refresh
+        )
+
+        tables = []
+        for table in schema_data.get("tables", []):
+            tables.append({
+                "name": table.get("name", ""),
+                "columns": [
+                    {
+                        "name": col.get("name", ""),
+                        "data_type": col.get("data_type", "text"),
+                        "is_nullable": col.get("is_nullable", True),
+                        "is_primary_key": col.get("is_primary_key", False),
+                    }
+                    for col in table.get("columns", [])
+                ],
+                "row_count": table.get("row_count", 0),
+            })
+
+        return {"tables": tables, "connection_id": connection_id}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/connections/{connection_id}", response_model=dict)
@@ -127,22 +181,6 @@ async def delete_connection(connection_id: str):
     return {"message": "Connection deleted successfully"}
 
 
-@router.post("/connections/{connection_id}/test")
-async def test_connection(connection_id: str):
-    """Test database connection."""
-    conn = db_manager._connection_cache.get(connection_id)
-    if not conn:
-        raise HTTPException(status_code=404, detail="Connection not found")
-
-    success, message = await db_manager.test_connection(conn)
-
-    return {
-        "success": success,
-        "message": message,
-        "status": "connected" if success else "error",
-    }
-
-
 # ==================== Query Endpoints ====================
 
 @router.post("/query", response_model=QueryResponse)
@@ -152,6 +190,12 @@ async def execute_natural_language_query(request: QueryRequest):
     conn = db_manager._connection_cache.get(request.connection_id)
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
+
+    # ✅ Ensure session exists before executing query
+    if request.connection_id not in db_manager._sessions:
+        connected = await db_manager.connect(conn)
+        if not connected:
+            raise HTTPException(status_code=400, detail="Failed to reconnect to database")
 
     is_valid, error = validate_natural_language_query(request.natural_language)
     if not is_valid:

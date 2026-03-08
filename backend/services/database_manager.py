@@ -30,7 +30,6 @@ from ..models.database import (
 
 logger = logging.getLogger(__name__)
 
-# Path to persist connections across restarts
 CONNECTIONS_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "../../connections.json"
@@ -50,7 +49,6 @@ class DatabaseManager:
     # ---------------------------------------------------------
 
     def _save_connections(self) -> None:
-        """Save all connections to disk."""
         try:
             data = {}
             for conn_id, conn in self._connection_cache.items():
@@ -78,11 +76,30 @@ class DatabaseManager:
                     conn = DatabaseConnection(**conn_data)
                     conn.id = conn_id
 
+                    import asyncpg
                     resolved_host = self._resolve_host(conn.host)
+                    ssl_ctx = self._build_ssl_context()
 
-                    # Use psycopg for startup restore to avoid asyncpg DNS issues on Windows
-                    async_url = self._build_async_url(conn, resolved_host, force_psycopg=True)
-                    connect_args = self._build_connect_args_psycopg(conn)
+                    # Test with asyncpg directly using resolved IP
+                    pg_conn = await asyncpg.connect(
+                        host=resolved_host,
+                        port=conn.port,
+                        user=conn.username,
+                        password=conn.password or "",
+                        database=conn.database,
+                        ssl=ssl_ctx,
+                    )
+                    await pg_conn.execute("SELECT 1")
+                    await pg_conn.close()
+
+                    # ✅ KEY FIX: Store resolved IP as host so all future queries use IP
+                    conn.host = resolved_host
+
+                    password = conn.password or ""
+                    async_url = (
+                        f"postgresql+asyncpg://{conn.username}:{password}"
+                        f"@{resolved_host}:{conn.port}/{conn.database}"
+                    )
 
                     engine = create_async_engine(
                         async_url,
@@ -91,14 +108,9 @@ class DatabaseManager:
                         pool_pre_ping=True,
                         pool_recycle=3600,
                         echo=False,
-                        connect_args=connect_args,
+                        connect_args={"ssl": ssl_ctx},
                     )
 
-                    # Verify connection is alive
-                    async with engine.connect() as c:
-                        await c.execute(text("SELECT 1"))
-
-                    # Register everything under conn_id explicitly
                     self._engines[conn_id] = engine
                     self._connection_cache[conn_id] = conn
 
@@ -119,7 +131,6 @@ class DatabaseManager:
             logger.error(f"Failed to load connections file: {e}")
 
     def _delete_persisted_connection(self, connection_id: str) -> None:
-        """Remove a connection from the persistence file."""
         if not os.path.exists(CONNECTIONS_FILE):
             return
         try:
@@ -136,7 +147,6 @@ class DatabaseManager:
     # ---------------------------------------------------------
 
     def _resolve_host(self, host: str) -> str:
-        """Resolve hostname to IP to fix Windows asyncio DNS issue."""
         try:
             ip = socket.gethostbyname(host)
             logger.info(f"Resolved {host} -> {ip}")
@@ -150,44 +160,25 @@ class DatabaseManager:
     # ---------------------------------------------------------
 
     def _build_ssl_context(self) -> ssl.SSLContext:
-        """Build a permissive SSL context."""
         ssl_ctx = ssl.create_default_context()
         ssl_ctx.check_hostname = False
         ssl_ctx.verify_mode = ssl.CERT_NONE
         return ssl_ctx
 
     def _build_connect_args(self, connection: DatabaseConnection) -> dict:
-        """Build connect_args for asyncpg with SSL if required."""
         connect_args = {}
         if connection.ssl_mode and connection.ssl_mode.lower() == "require":
             connect_args["ssl"] = self._build_ssl_context()
-        return connect_args
-
-    def _build_connect_args_psycopg(self, connection: DatabaseConnection) -> dict:
-        """Build connect_args for psycopg with SSL if required."""
-        connect_args = {}
-        if connection.ssl_mode and connection.ssl_mode.lower() == "require":
-            connect_args["sslmode"] = "require"
-            connect_args["sslrootcert"] = "disable"
         return connect_args
 
     # ---------------------------------------------------------
     # ENGINE CREATION
     # ---------------------------------------------------------
 
-    def _build_async_url(
-        self,
-        connection: DatabaseConnection,
-        resolved_host: str,
-        force_psycopg: bool = False,
-    ) -> str:
-        """Build async SQLAlchemy URL."""
+    def _build_async_url(self, connection: DatabaseConnection, resolved_host: str) -> str:
         dialect = connection.dialect.value
-
         if dialect == "postgresql":
-            # Use psycopg when forced (startup restore on Windows)
-            # to avoid asyncpg internal DNS resolution issues
-            async_dialect = "postgresql+psycopg" if force_psycopg else "postgresql+asyncpg"
+            async_dialect = "postgresql+asyncpg"
         elif dialect in ["mysql", "mariadb"]:
             async_dialect = "mysql+aiomysql"
         else:
@@ -200,21 +191,24 @@ class DatabaseManager:
         )
 
     def _get_cache_key(self, connection: DatabaseConnection) -> str:
-        """Return a safe, stable cache key."""
         if connection.id:
             return connection.id
         return f"{connection.username}@{connection.host}:{connection.port}/{connection.database}"
 
     async def _create_engine(self, connection: DatabaseConnection) -> AsyncEngine:
-        """Create async engine with connection pooling."""
         cache_key = self._get_cache_key(connection)
 
         if cache_key in self._engines:
             return self._engines[cache_key]
 
+        # Always resolve hostname to IP to fix Windows DNS issue
         resolved_host = self._resolve_host(connection.host)
+
+        # ✅ Store resolved IP so reconnects also use IP
+        connection.host = resolved_host
+
+        ssl_ctx = self._build_ssl_context()
         async_url = self._build_async_url(connection, resolved_host)
-        connect_args = self._build_connect_args(connection)
 
         engine = create_async_engine(
             async_url,
@@ -223,7 +217,7 @@ class DatabaseManager:
             pool_pre_ping=True,
             pool_recycle=3600,
             echo=False,
-            connect_args=connect_args,
+            connect_args={"ssl": ssl_ctx},
         )
 
         self._engines[cache_key] = engine
@@ -273,7 +267,6 @@ class DatabaseManager:
         return True
 
     async def disconnect_all(self) -> None:
-        """Disconnect all active database connections."""
         for conn_id in list(self._engines.keys()):
             await self._engines[conn_id].dispose()
         self._engines.clear()
@@ -282,18 +275,13 @@ class DatabaseManager:
         logger.info("All database connections closed.")
 
     async def test_connection(self, connection: DatabaseConnection) -> Tuple[bool, str]:
-        """Test if a database connection is valid."""
         try:
             dialect = connection.dialect.value
             resolved_host = self._resolve_host(connection.host)
 
             if dialect == "postgresql":
                 import asyncpg
-                ssl_ctx = (
-                    self._build_ssl_context()
-                    if connection.ssl_mode and connection.ssl_mode.lower() == "require"
-                    else None
-                )
+                ssl_ctx = self._build_ssl_context()
                 conn = await asyncpg.connect(
                     host=resolved_host,
                     port=connection.port,
@@ -309,7 +297,6 @@ class DatabaseManager:
             elif dialect in ["mysql", "mariadb"]:
                 async_url = self._build_async_url(connection, resolved_host)
                 connect_args = self._build_connect_args(connection)
-
                 engine = create_async_engine(
                     async_url,
                     pool_size=1,

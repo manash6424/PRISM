@@ -41,17 +41,8 @@ function createWindow() {
         show: false
     });
 
-<<<<<<< HEAD
-    // Load the app
-    if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
-} else {
-    mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-}
-=======
     // ✅ FIXED: correct path to your index.html
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
->>>>>>> d41097fb6e388e22fd45603f354578e9c27c7bc9
 
     mainWindow.once('ready-to-show', () => mainWindow.show());
     mainWindow.on('closed', () => { mainWindow = null; });

@@ -1,3 +1,5 @@
+const API = 'http://localhost:8000/api/v1';
+
 class AICopilotApp {
     constructor() {
         this.connections = [];
@@ -14,19 +16,16 @@ class AICopilotApp {
 
     // ── Event Bindings ──────────────────────────────────────────────────────
     bindEvents() {
-        // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) =>
                 this.switchView(e.target.closest('.nav-item').dataset.view));
         });
 
-        // Query
         document.getElementById('execute-query').addEventListener('click', () => this.executeQuery());
         document.getElementById('natural-query').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) this.executeQuery();
         });
 
-        // Connection modal
         document.getElementById('add-connection').addEventListener('click', () => this.openConnectionModal());
         document.getElementById('close-modal').addEventListener('click', () => this.closeConnectionModal());
         document.getElementById('modal-overlay').addEventListener('click', (e) => {
@@ -35,21 +34,13 @@ class AICopilotApp {
         document.getElementById('connection-form').addEventListener('submit', (e) => this.saveConnection(e));
         document.getElementById('test-connection-btn').addEventListener('click', () => this.testNewConnection());
 
-        // Export
         document.getElementById('export-csv').addEventListener('click', () => this.exportResults('csv'));
         document.getElementById('export-excel').addEventListener('click', () => this.exportResults('xlsx'));
         document.getElementById('export-pdf').addEventListener('click', () => this.exportResults('pdf'));
 
-        // SQL copy
         document.getElementById('copy-sql').addEventListener('click', () => this.copySQL());
-
-        // Schema
         document.getElementById('refresh-schema').addEventListener('click', () => this.loadSchema(true));
-
-        // Reports
         document.getElementById('generate-summary').addEventListener('click', () => this.generateSummaryReport());
-
-        // Alerts
         document.getElementById('send-test-alert').addEventListener('click', () => this.sendTestAlert());
     }
 
@@ -76,8 +67,8 @@ class AICopilotApp {
     // ── Connections ─────────────────────────────────────────────────────────
     async loadConnections() {
         try {
-            // ✅ FIXED: use window.api instead of fetch
-            const result = await window.api.getConnections();
+            const res = await fetch(`${API}/connections`);
+            const result = await res.json();
             this.connections = Array.isArray(result) ? result : [];
             this.renderConnections();
             this.populateConnectionSelects();
@@ -88,12 +79,10 @@ class AICopilotApp {
 
     renderConnections() {
         const container = document.getElementById('connections-list');
-
         if (this.connections.length === 0) {
             container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:40px;">No connections yet. Click "Add New Connection" to get started.</p>';
             return;
         }
-
         container.innerHTML = this.connections.map(conn => `
             <div class="connection-card" data-id="${conn.id}">
                 <div class="connection-card-header">
@@ -167,17 +156,20 @@ class AICopilotApp {
             username: document.getElementById('conn-username').value,
             password: document.getElementById('conn-password').value,
         };
-
-        // ✅ FIXED: use window.api
-        const result = await window.api.saveConnection(connection);
-
-        if (result.error) {
-            this.showToast(result.error, 'error');
-            return;
+        try {
+            const res = await fetch(`${API}/connections`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(connection)
+            });
+            const result = await res.json();
+            if (result.error) { this.showToast(result.error, 'error'); return; }
+            this.closeConnectionModal();
+            this.loadConnections();
+            this.showToast('Connection saved successfully!', 'success');
+        } catch (err) {
+            this.showToast('Failed to save connection', 'error');
         }
-        this.closeConnectionModal();
-        this.loadConnections();
-        this.showToast('Connection saved successfully', 'success');
     }
 
     async testNewConnection() {
@@ -190,41 +182,57 @@ class AICopilotApp {
             username: document.getElementById('conn-username').value,
             password: document.getElementById('conn-password').value,
         };
-        const result = await window.api.saveConnection(connection);
-        if (result.status === 'connected') {
-            this.showToast('Connection successful!', 'success');
-        } else {
-            this.showToast(`Connection failed: ${result.message || 'Unknown error'}`, 'error');
+        try {
+            const res = await fetch(`${API}/connections`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(connection)
+            });
+            const result = await res.json();
+            if (result.status === 'connected') {
+                this.showToast('Connection successful!', 'success');
+            } else {
+                this.showToast(`Connection failed: ${result.message || 'Unknown error'}`, 'error');
+            }
+        } catch (err) {
+            this.showToast('Failed to test connection', 'error');
         }
     }
 
     async testConnection(connectionId) {
-        // ✅ FIXED: use window.api
-        const result = await window.api.testConnection(connectionId);
-        if (result.success) {
-            this.showToast('Connection test successful!', 'success');
-        } else {
-            this.showToast(`Connection failed: ${result.message}`, 'error');
+        try {
+            const res = await fetch(`${API}/connections/${connectionId}/test`, { method: 'POST' });
+            const result = await res.json();
+            if (result.success) {
+                this.showToast('Connection test successful!', 'success');
+            } else {
+                this.showToast(`Connection failed: ${result.message}`, 'error');
+            }
+        } catch (err) {
+            this.showToast('Failed to test connection', 'error');
         }
     }
 
     async deleteConnection(connectionId) {
         if (!confirm('Are you sure you want to delete this connection?')) return;
-        // ✅ FIXED: use window.api
-        const result = await window.api.deleteConnection(connectionId);
-        if (!result.error) {
-            this.loadConnections();
-            this.showToast('Connection deleted', 'success');
-        } else {
+        try {
+            const res = await fetch(`${API}/connections/${connectionId}`, { method: 'DELETE' });
+            if (res.ok) {
+                this.loadConnections();
+                this.showToast('Connection deleted', 'success');
+            } else {
+                this.showToast('Failed to delete connection', 'error');
+            }
+        } catch (err) {
             this.showToast('Failed to delete connection', 'error');
         }
     }
 
     // ── Query ───────────────────────────────────────────────────────────────
     async executeQuery() {
-        const connectionId  = document.getElementById('query-connection').value;
-        const naturalQuery  = document.getElementById('natural-query').value.trim();
-        const includeExpl   = document.getElementById('include-explanation').checked;
+        const connectionId = document.getElementById('query-connection').value;
+        const naturalQuery = document.getElementById('natural-query').value.trim();
+        const includeExpl  = document.getElementById('include-explanation').checked;
 
         if (!connectionId) { this.showToast('Please select a database connection', 'warning'); return; }
         if (!naturalQuery)  { this.showToast('Please enter a query', 'warning'); return; }
@@ -235,10 +243,18 @@ class AICopilotApp {
         btn.disabled = true;
 
         try {
-            // ✅ FIXED: use window.api
-            const result = await window.api.executeQuery(connectionId, naturalQuery, includeExpl);
+            const res = await fetch(`${API}/query`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    connection_id: connectionId,
+                    natural_language: naturalQuery,  // ✅ FIXED: was 'query'
+                    include_explanation: includeExpl
+                })
+            });
+            const result = await res.json();
 
-            if (result.error) { this.showToast(result.error, 'error'); return; }
+            if (!res.ok || result.error) { this.showToast(result.detail || result.error || 'Query failed', 'error'); return; }
             if (!result.success) { this.showToast(`Query failed: ${result.error_message}`, 'error'); return; }
 
             this.currentQuery = result;
@@ -293,12 +309,16 @@ class AICopilotApp {
     async exportResults(format) {
         if (!this.currentQuery) { this.showToast('No query results to export', 'warning'); return; }
         try {
-            // ✅ FIXED: use window.api
-            const result = await window.api.exportResults(
-                this.currentQuery.query_id,
-                format,
-                `query_export_${Date.now()}`
-            );
+            const res = await fetch(`${API}/export`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query_id: this.currentQuery.query_id,
+                    format: format,
+                    filename: `query_export_${Date.now()}`
+                })
+            });
+            const result = await res.json();
             if (result.success) {
                 this.showToast(`Exported to ${format.toUpperCase()} successfully!`, 'success');
             } else {
@@ -320,11 +340,14 @@ class AICopilotApp {
     async loadSchema(forceRefresh = false) {
         const connectionId = document.getElementById('schema-connection').value;
         if (!connectionId) { this.showToast('Please select a connection', 'warning'); return; }
-
-        // ✅ FIXED: use window.api
-        const result = await window.api.getSchema(connectionId, forceRefresh);
-        if (result.error) { this.showToast('Failed to load schema', 'error'); return; }
-        this.renderSchema(result);
+        try {
+            const res = await fetch(`${API}/connections/${connectionId}/schema?force_refresh=${forceRefresh}`);
+            const result = await res.json();
+            if (result.error) { this.showToast('Failed to load schema', 'error'); return; }
+            this.renderSchema(result);
+        } catch (err) {
+            this.showToast('Failed to load schema', 'error');
+        }
     }
 
     renderSchema(schemaData) {
@@ -359,16 +382,24 @@ class AICopilotApp {
     async generateSummaryReport() {
         const connectionId = document.getElementById('report-connection').value;
         if (!connectionId) { this.showToast('Please select a connection', 'warning'); return; }
-        // ✅ FIXED: use window.api
-        const result = await window.api.generateReport(connectionId);
-        if (result.error) { this.showToast('Failed to generate report', 'error'); return; }
-        this.showToast('Summary report generated successfully', 'success');
+        try {
+            const res = await fetch(`${API}/reports/summary`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ connection_id: connectionId })
+            });
+            const result = await res.json();
+            if (result.error) { this.showToast('Failed to generate report', 'error'); return; }
+            this.showToast('Summary report generated successfully', 'success');
+        } catch (err) {
+            this.showToast('Failed to generate report', 'error');
+        }
     }
 
     // ── Alerts ──────────────────────────────────────────────────────────────
     async sendTestAlert() {
-        const title   = document.getElementById('test-alert-title').value.trim();
-        const message = document.getElementById('test-alert-message').value.trim();
+        const title    = document.getElementById('test-alert-title').value.trim();
+        const message  = document.getElementById('test-alert-message').value.trim();
         const channels = [];
         if (document.getElementById('channel-email').checked) channels.push('email');
         if (document.getElementById('channel-slack').checked) channels.push('slack');
@@ -376,12 +407,20 @@ class AICopilotApp {
         if (!title || !message) { this.showToast('Please fill in title and message', 'warning'); return; }
         if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
 
-        // ✅ FIXED: use window.api
-        const result = await window.api.sendAlert(title, message, channels);
-        const hasSuccess = Object.values(result).some(v => v === true);
-        if (hasSuccess) {
-            this.showToast('Test alert sent successfully', 'success');
-        } else {
+        try {
+            const res = await fetch(`${API}/alerts/test`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, message, channels })
+            });
+            const result = await res.json();
+            const hasSuccess = Object.values(result).some(v => v === true);
+            if (hasSuccess) {
+                this.showToast('Test alert sent successfully', 'success');
+            } else {
+                this.showToast('Failed to send test alert', 'error');
+            }
+        } catch (err) {
             this.showToast('Failed to send test alert', 'error');
         }
     }
