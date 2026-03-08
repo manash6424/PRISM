@@ -14,6 +14,7 @@ import uvicorn
 
 from backend.config import get_settings
 from backend.api.routes import router
+from backend.api.auth import auth_router          # ✅ NEW
 from backend.services.database_manager import db_manager
 from backend.services.schema_discovery import schema_discovery
 
@@ -37,12 +38,12 @@ async def lifespan(app: FastAPI):
     if not settings.debug and "*" in settings.allowed_hosts:
         logger.warning("CORS wildcard '*' detected in non-debug mode.")
 
-    # ✅ Restore all persisted connections on startup
+    # Restore all persisted connections on startup
     await db_manager.load_connections()
 
     yield
 
-    logger.info("Shutting down AI Desktop Copilot...")
+    logger.info("Shutting down PRISM...")
     await db_manager.disconnect_all()
 
 
@@ -63,7 +64,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ✅ Register both routers
 app.include_router(router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")   # ✅ NEW
 
 
 @app.get("/")
