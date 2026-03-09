@@ -13,18 +13,16 @@ from typing import Optional, Tuple
 def format_sql(sql: str, dialect: str = "postgresql") -> str:
     """
     Format SQL query for readability.
-
-    Args:
-        sql: Raw SQL query
-        dialect: SQL dialect
-
-    Returns:
-        Formatted SQL string
     """
 
     if not sql or not sql.strip():
         return ""
 
+    sql = sql.strip()
+
+    # ✅ Strip markdown code blocks (```sql ... ``` or ``` ... ```)
+    sql = re.sub(r"```(?:sql|SQL)?\s*", "", sql)
+    sql = re.sub(r"```", "", sql)
     sql = sql.strip()
 
     # --- Uppercase important SQL keywords ---
@@ -75,12 +73,6 @@ def format_sql(sql: str, dialect: str = "postgresql") -> str:
 def validate_sql(sql: str) -> Tuple[bool, Optional[str]]:
     """
     Basic SQL validation.
-
-    Args:
-        sql: SQL query to validate
-
-    Returns:
-        Tuple of (is_valid, error_message)
     """
 
     if not sql or not sql.strip():
@@ -116,13 +108,6 @@ def validate_sql(sql: str) -> Tuple[bool, Optional[str]]:
 def generate_explanation(sql: str, dialect: str = "postgresql") -> str:
     """
     Generate human-readable explanation of SQL query.
-
-    Args:
-        sql: SQL query
-        dialect: SQL dialect
-
-    Returns:
-        Explanation string
     """
 
     if not sql:
@@ -131,7 +116,6 @@ def generate_explanation(sql: str, dialect: str = "postgresql") -> str:
     sql_upper = sql.upper()
     explanations = []
 
-    # --- Query Type ---
     if re.search(r"\bSELECT\b", sql_upper):
         explanations.append("This is a SELECT query that retrieves data from the database.")
 
@@ -144,7 +128,6 @@ def generate_explanation(sql: str, dialect: str = "postgresql") -> str:
         if re.search(r"\bDISTINCT\b", sql_upper):
             explanations.append("It removes duplicate results.")
 
-    # --- Joins ---
     if re.search(r"\bLEFT\s+JOIN\b", sql_upper):
         explanations.append("Uses LEFT JOIN to include all rows from the left table.")
     elif re.search(r"\bRIGHT\s+JOIN\b", sql_upper):
@@ -154,24 +137,20 @@ def generate_explanation(sql: str, dialect: str = "postgresql") -> str:
     elif re.search(r"\bJOIN\b", sql_upper):
         explanations.append("Combines rows from multiple tables.")
 
-    # --- Filtering ---
     if re.search(r"\bWHERE\b", sql_upper):
         explanations.append("Filters results based on specified conditions.")
 
-    # --- Grouping ---
     if re.search(r"\bGROUP\s+BY\b", sql_upper):
         explanations.append("Groups results by specific columns.")
         if re.search(r"\bHAVING\b", sql_upper):
             explanations.append("Applies conditions to grouped results.")
 
-    # --- Ordering ---
     if re.search(r"\bORDER\s+BY\b", sql_upper):
         if re.search(r"\bDESC\b", sql_upper):
             explanations.append("Results are sorted in descending order.")
         else:
             explanations.append("Results are sorted in ascending order.")
 
-    # --- Limit ---
     limit_match = re.search(r"\bLIMIT\s+(\d+)", sql_upper)
     if limit_match:
         explanations.append(f"Limits results to {limit_match.group(1)} rows.")
