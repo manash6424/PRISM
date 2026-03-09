@@ -3,6 +3,7 @@ Natural Language to SQL conversion service.
 Uses AI/LLM to convert natural language queries to SQL.
 """
 
+import re
 import json
 import logging
 from typing import Optional, Tuple
@@ -37,7 +38,6 @@ class NLToSQLConverter:
         try:
             if provider == "openai":
                 from openai import AsyncOpenAI
-
                 self._client = AsyncOpenAI(
                     api_key=self.settings.ai.api_key,
                     base_url=self.settings.ai.base_url or "https://api.openai.com/v1",
@@ -46,7 +46,6 @@ class NLToSQLConverter:
 
             elif provider == "anthropic":
                 import anthropic
-
                 self._client = anthropic.AsyncAnthropic(
                     api_key=self.settings.ai.api_key,
                     base_url=self.settings.ai.base_url,
@@ -55,7 +54,6 @@ class NLToSQLConverter:
 
             elif provider == "groq":
                 from openai import AsyncOpenAI
-
                 self._client = AsyncOpenAI(
                     api_key=self.settings.ai.api_key,
                     base_url=self.settings.ai.base_url or "https://api.groq.com/openai/v1",
@@ -63,7 +61,6 @@ class NLToSQLConverter:
                 self._client_model = self.settings.ai.model
 
             elif provider == "ollama":
-                # Local Ollama instance
                 self._client = None
                 self._client_model = self.settings.ai.model
                 self._ollama_url = (
@@ -92,27 +89,29 @@ class NLToSQLConverter:
         Returns (generated_sql, explanation)
         """
 
-        prompt = self._build_prompt(natural_language, schema_context, dialect)
-
+        sql_prompt = self._build_sql_prompt(natural_language, schema_context, dialect)
         provider = (self.settings.ai.provider or "").lower()
 
         try:
-            if provider == "openai":
-                return await self._convert_with_openai(prompt, include_explanation)
-
+            if provider in ("openai", "groq"):
+                sql = await self._get_completion(sql_prompt)
             elif provider == "anthropic":
-                return await self._convert_with_anthropic(prompt, include_explanation)
-
-            elif provider == "groq":
-                return await self._convert_with_openai(prompt, include_explanation)
-
+                sql = await self._get_completion_anthropic(sql_prompt)
             elif provider == "ollama":
-                return await self._convert_with_ollama(prompt, include_explanation)
-
+                sql = await self._get_completion_ollama(sql_prompt)
             else:
-                return self._rule_based_conversion(
-                    natural_language, schema_context, dialect
-                )
+                sql, explanation = self._rule_based_conversion(natural_language, schema_context, dialect)
+                return sql, explanation
+
+            # Clean the SQL
+            sql = self._clean_sql(sql)
+
+            # Generate explanation separately if needed
+            explanation = None
+            if include_explanation:
+                explanation = self._generate_explanation(sql)
+
+            return sql, explanation
 
         except Exception as e:
             logger.error(f"NL to SQL conversion failed: {e}")
@@ -122,104 +121,81 @@ class NLToSQLConverter:
     # Prompt Builder
     # ==========================================================
 
-    def _build_prompt(
+    def _build_sql_prompt(
         self,
         natural_language: str,
         schema_context: str,
         dialect: DatabaseDialect,
     ) -> str:
-        """Build structured prompt for AI conversion."""
+        """Build prompt that returns plain SQL only."""
 
         dialect_instructions = {
             DatabaseDialect.POSTGRESQL: """
-PostgreSQL Specific:
+PostgreSQL Specific Rules:
 - Use LIMIT instead of TOP
 - Use ILIKE for case-insensitive matching
 - Use EXTRACT(YEAR FROM date) for year extraction
 - Use COALESCE for null handling
-- PostgreSQL uses TRUE/FALSE for booleans
+- Use TRUE/FALSE for booleans
 """,
             DatabaseDialect.MYSQL: """
-MySQL Specific:
+MySQL Specific Rules:
 - Use LIMIT for limiting rows
-- Use LIKE for case-insensitive matching
 - Use YEAR(date) for year extraction
 - Use IFNULL for null handling
-- MySQL uses 1/0 for booleans
+- Use 1/0 for booleans
 """,
         }
 
-        return f"""
-You are an expert SQL query generator.
+        return f"""You are an expert SQL query generator.
 
-Your task:
-1. Convert the natural language query into valid SQL.
-2. Use ONLY tables and columns from the schema.
-3. Follow the specified SQL dialect strictly.
-4. Do not hallucinate columns or tables.
+CRITICAL INSTRUCTIONS:
+- Return ONLY the raw SQL query
+- Do NOT include markdown code blocks (no ``` or ```sql)
+- Do NOT include JSON
+- Do NOT include any explanation or commentary
+- Just the plain SQL statement ending with a semicolon
 
 {dialect_instructions.get(dialect, "")}
 
 Database Schema:
 {schema_context}
 
-Natural Language Query:
-{natural_language}
+Natural Language Query: {natural_language}
 
-Return output in JSON format:
-{{
-    "sql": "<generated_sql>",
-    "explanation": "<brief explanation>"
-}}
-"""
+SQL Query:"""
 
     # ==========================================================
-    # OpenAI
+    # AI Completions
     # ==========================================================
 
-    async def _convert_with_openai(
-        self, prompt: str, include_explanation: bool
-    ) -> Tuple[str, Optional[str]]:
-
+    async def _get_completion(self, prompt: str) -> str:
+        """Get completion from OpenAI/Groq."""
         response = await self._client.chat.completions.create(
             model=self._client_model,
             messages=[
-                {"role": "system", "content": "You generate SQL queries."},
+                {
+                    "role": "system",
+                    "content": "You are an expert SQL generator. Return ONLY plain SQL queries with no markdown, no code blocks, no JSON, no explanation.",
+                },
                 {"role": "user", "content": prompt},
             ],
             temperature=0,
         )
+        return response.choices[0].message.content
 
-        content = response.choices[0].message.content
-        return self._parse_llm_response(content, include_explanation)
-
-    # ==========================================================
-    # Anthropic
-    # ==========================================================
-
-    async def _convert_with_anthropic(
-        self, prompt: str, include_explanation: bool
-    ) -> Tuple[str, Optional[str]]:
-
+    async def _get_completion_anthropic(self, prompt: str) -> str:
+        """Get completion from Anthropic."""
         response = await self._client.messages.create(
             model=self._client_model,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
+        return response.content[0].text
 
-        content = response.content[0].text
-        return self._parse_llm_response(content, include_explanation)
-
-    # ==========================================================
-    # Ollama (Local)
-    # ==========================================================
-
-    async def _convert_with_ollama(
-        self, prompt: str, include_explanation: bool
-    ) -> Tuple[str, Optional[str]]:
-
+    async def _get_completion_ollama(self, prompt: str) -> str:
+        """Get completion from Ollama."""
         import httpx
-
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self._ollama_url}/api/generate",
@@ -229,31 +205,70 @@ Return output in JSON format:
                     "stream": False,
                 },
             )
-
         data = response.json()
-        return self._parse_llm_response(data.get("response", ""), include_explanation)
+        return data.get("response", "")
 
     # ==========================================================
-    # LLM Response Parser
+    # SQL Cleaner
     # ==========================================================
 
-    def _parse_llm_response(
-        self, content: str, include_explanation: bool
-    ) -> Tuple[str, Optional[str]]:
+    def _clean_sql(self, sql: str) -> str:
+        """Strip markdown, JSON, and extra whitespace from SQL."""
+        if not sql:
+            return ""
 
-        try:
-            parsed = json.loads(content)
-            sql = parsed.get("sql", "").strip()
-            explanation = parsed.get("explanation")
+        sql = sql.strip()
 
-            if not include_explanation:
-                explanation = None
+        # Strip markdown code blocks
+        sql = re.sub(r"```(?:sql|SQL)?\s*", "", sql)
+        sql = re.sub(r"```", "", sql)
 
-            return sql, explanation
+        # If it looks like JSON, try to extract sql field
+        if sql.strip().startswith("{"):
+            try:
+                parsed = json.loads(sql)
+                sql = parsed.get("sql", sql)
+            except json.JSONDecodeError:
+                pass
 
-        except json.JSONDecodeError:
-            # Fallback if model didn't return JSON
-            return content.strip(), None
+        # Remove any leading/trailing non-SQL text
+        # Keep only from first SQL keyword
+        sql_match = re.search(
+            r"(SELECT|INSERT|UPDATE|DELETE|WITH|SHOW|DESCRIBE|EXPLAIN)\b",
+            sql,
+            re.IGNORECASE,
+        )
+        if sql_match:
+            sql = sql[sql_match.start():]
+
+        return sql.strip()
+
+    # ==========================================================
+    # Explanation Generator
+    # ==========================================================
+
+    def _generate_explanation(self, sql: str) -> str:
+        """Generate a simple explanation from SQL."""
+        if not sql:
+            return "No query generated."
+
+        sql_upper = sql.upper()
+        parts = []
+
+        if "SELECT" in sql_upper:
+            parts.append("Retrieves data from the database.")
+        if "WHERE" in sql_upper:
+            parts.append("Filters results based on conditions.")
+        if "JOIN" in sql_upper:
+            parts.append("Combines data from multiple tables.")
+        if "GROUP BY" in sql_upper:
+            parts.append("Groups results by specific columns.")
+        if "ORDER BY" in sql_upper:
+            parts.append("Sorts the results.")
+        if "LIMIT" in sql_upper:
+            parts.append("Limits the number of results returned.")
+
+        return " ".join(parts) if parts else "SQL query generated successfully."
 
     # ==========================================================
     # Fallback Rule-Based
@@ -271,15 +286,15 @@ Return output in JSON format:
         if "all" in nl and "from" in nl:
             table = nl.split("from")[-1].strip()
             sql = f"SELECT * FROM {table};"
-            explanation = "Basic SELECT * query generated using rule-based fallback."
-            return sql, explanation
+            return sql, "Basic SELECT * query generated using rule-based fallback."
 
         return (
             "-- Unable to generate SQL using rule-based fallback.",
             "AI provider not configured. Using fallback logic.",
         )
 
+
 # ==========================================================
-# Create a single global instance to be imported
+# Global instance
 # ==========================================================
 nl_to_sql = NLToSQLConverter()
