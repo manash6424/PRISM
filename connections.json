@@ -1,9 +1,9 @@
 {
-  "a797c509-9231-4175-ad66-1cf1a53d9dee": {
-    "id": "a797c509-9231-4175-ad66-1cf1a53d9dee",
-    "name": "my_supabase_db",
+  "9e060951-8180-42dd-a66a-27381e5e55c7": {
+    "id": "9e060951-8180-42dd-a66a-27381e5e55c7",
+    "name": "My Supabase DB",
     "dialect": "postgresql",
-    "host": "aws-1-ap-south-1.pooler.supabase.com",
+    "host": "13.200.110.68",
     "port": 5432,
     "database": "postgres",
     "username": "postgres.ycejbrbkcqutfdlhawik",
@@ -11,8 +11,8 @@
     "db_schema": "public",
     "ssl_mode": "require",
     "status": "connected",
-    "created_at": "2026-03-04T06:37:44.623706Z",
-    "updated_at": "2026-03-04T06:37:44.623712Z",
-    "last_connected_at": "2026-03-04T06:37:46.385627Z"
+    "created_at": "2026-03-07T08:59:44.200269Z",
+    "updated_at": "2026-03-07T08:59:44.200278Z",
+    "last_connected_at": "2026-03-07T08:59:45.304461Z"
   }
 }

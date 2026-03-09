@@ -306,3 +306,21 @@ async def get_system_info():
         "ai_provider": settings.ai.provider,
         "ai_model": settings.ai.model,
     }
+    # ==================== Auth Endpoints ====================
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+@router.post("/auth/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    try:
+        import os
+        from supabase import create_client
+        supabase = create_client(
+            os.getenv("SUPABASE_URL"),
+            os.getenv("SUPABASE_ANON_KEY")
+        )
+        supabase.auth.reset_password_email(request.email)
+        return {"success": True, "message": "Reset link sent"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
