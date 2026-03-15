@@ -1,5 +1,5 @@
 const API = 'http://localhost:8000/api/v1';
-
+ 
 class AICopilotApp {
     constructor() {
         this.connections = [];
@@ -7,25 +7,25 @@ class AICopilotApp {
         this.currentQuery = null;
         this.init();
     }
-
+ 
     init() {
         this.bindEvents();
         this.loadConnections();
         this.setupNavigation();
     }
-
+ 
     // ── Event Bindings ──────────────────────────────────────────────────────
     bindEvents() {
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) =>
                 this.switchView(e.target.closest('.nav-item').dataset.view));
         });
-
+ 
         document.getElementById('execute-query').addEventListener('click', () => this.executeQuery());
         document.getElementById('natural-query').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) this.executeQuery();
         });
-
+ 
         document.getElementById('add-connection').addEventListener('click', () => this.openConnectionModal());
         document.getElementById('close-modal').addEventListener('click', () => this.closeConnectionModal());
         document.getElementById('modal-overlay').addEventListener('click', (e) => {
@@ -33,22 +33,22 @@ class AICopilotApp {
         });
         document.getElementById('connection-form').addEventListener('submit', (e) => this.saveConnection(e));
         document.getElementById('test-connection-btn').addEventListener('click', () => this.testNewConnection());
-
+ 
         document.getElementById('export-csv').addEventListener('click', () => this.exportResults('csv'));
         document.getElementById('export-excel').addEventListener('click', () => this.exportResults('xlsx'));
         document.getElementById('export-pdf').addEventListener('click', () => this.exportResults('pdf'));
-
+ 
         document.getElementById('copy-sql').addEventListener('click', () => this.copySQL());
         document.getElementById('refresh-schema').addEventListener('click', () => this.loadSchema(true));
         document.getElementById('generate-summary').addEventListener('click', () => this.generateSummaryReport());
         document.getElementById('send-test-alert').addEventListener('click', () => this.sendTestAlert());
     }
-
+ 
     // ── Navigation ──────────────────────────────────────────────────────────
     setupNavigation() {
         this.switchView('query');
     }
-
+ 
     switchView(viewName) {
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.toggle('active', item.dataset.view === viewName);
@@ -58,12 +58,12 @@ class AICopilotApp {
         });
         const target = document.getElementById(`${viewName}-view`);
         if (target) target.classList.add('active');
-
+ 
         if (viewName === 'connections') this.loadConnections();
         else if (viewName === 'schema') this.populateSchemaConnectionSelect();
         else if (viewName === 'reports') this.populateReportConnectionSelect();
     }
-
+ 
     // ── Connections ─────────────────────────────────────────────────────────
     async loadConnections() {
         try {
@@ -76,7 +76,7 @@ class AICopilotApp {
             this.showToast('Failed to load connections', 'error');
         }
     }
-
+ 
     renderConnections() {
         const container = document.getElementById('connections-list');
         if (this.connections.length === 0) {
@@ -104,7 +104,7 @@ class AICopilotApp {
             </div>
         `).join('');
     }
-
+ 
     populateConnectionSelects() {
         ['query-connection', 'schema-connection', 'report-connection'].forEach(selectId => {
             const select = document.getElementById(selectId);
@@ -120,17 +120,17 @@ class AICopilotApp {
             if (currentValue) select.value = currentValue;
         });
     }
-
+ 
     populateSchemaConnectionSelect() {
         this.populateConnectionSelects();
         const sel = document.getElementById('schema-connection');
         sel.onchange = (e) => { if (e.target.value) this.loadSchema(); };
     }
-
+ 
     populateReportConnectionSelect() {
         this.populateConnectionSelects();
     }
-
+ 
     openConnectionModal() {
         document.getElementById('modal-overlay').classList.remove('hidden');
         document.getElementById('connection-form').reset();
@@ -140,11 +140,11 @@ class AICopilotApp {
             else if (['mysql', 'mariadb'].includes(e.target.value)) port.value = '3306';
         };
     }
-
+ 
     closeConnectionModal() {
         document.getElementById('modal-overlay').classList.add('hidden');
     }
-
+ 
     async saveConnection(e) {
         e.preventDefault();
         const connection = {
@@ -171,7 +171,7 @@ class AICopilotApp {
             this.showToast('Failed to save connection', 'error');
         }
     }
-
+ 
     async testNewConnection() {
         const connection = {
             name:     document.getElementById('conn-name').value || 'Test',
@@ -198,7 +198,7 @@ class AICopilotApp {
             this.showToast('Failed to test connection', 'error');
         }
     }
-
+ 
     async testConnection(connectionId) {
         try {
             const res = await fetch(`${API}/connections/${connectionId}/test`, { method: 'POST' });
@@ -212,7 +212,7 @@ class AICopilotApp {
             this.showToast('Failed to test connection', 'error');
         }
     }
-
+ 
     async deleteConnection(connectionId) {
         if (!confirm('Are you sure you want to delete this connection?')) return;
         try {
@@ -227,36 +227,36 @@ class AICopilotApp {
             this.showToast('Failed to delete connection', 'error');
         }
     }
-
+ 
     // ── Query ───────────────────────────────────────────────────────────────
     async executeQuery() {
         const connectionId = document.getElementById('query-connection').value;
         const naturalQuery = document.getElementById('natural-query').value.trim();
         const includeExpl  = document.getElementById('include-explanation').checked;
-
+ 
         if (!connectionId) { this.showToast('Please select a database connection', 'warning'); return; }
         if (!naturalQuery)  { this.showToast('Please enter a query', 'warning'); return; }
-
+ 
         const btn = document.getElementById('execute-query');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<span class="btn-icon">⏳</span> Processing...';
         btn.disabled = true;
-
+ 
         try {
             const res = await fetch(`${API}/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     connection_id: connectionId,
-                    natural_language: naturalQuery,  // ✅ FIXED: was 'query'
+                    natural_language: naturalQuery,
                     include_explanation: includeExpl
                 })
             });
             const result = await res.json();
-
+ 
             if (!res.ok || result.error) { this.showToast(result.detail || result.error || 'Query failed', 'error'); return; }
             if (!result.success) { this.showToast(`Query failed: ${result.error_message}`, 'error'); return; }
-
+ 
             this.currentQuery = result;
             this.displayResults(result);
             this.showToast(`Query executed: ${result.row_count} rows`, 'success');
@@ -267,14 +267,14 @@ class AICopilotApp {
             btn.disabled = false;
         }
     }
-
+ 
     displayResults(result) {
         const resultsSection = document.getElementById('query-results');
         resultsSection.classList.remove('hidden');
-
+ 
         document.getElementById('execution-time').textContent = `⏱ ${result.execution_time_ms?.toFixed(2)}ms`;
         document.getElementById('row-count').textContent = `📊 ${result.row_count} rows`;
-
+ 
         const showSQL = document.getElementById('show-sql').checked;
         const sqlDiv  = document.getElementById('generated-sql');
         if (showSQL && result.generated_sql) {
@@ -283,7 +283,7 @@ class AICopilotApp {
         } else {
             sqlDiv.classList.add('hidden');
         }
-
+ 
         const explainDiv = document.getElementById('sql-explanation');
         if (document.getElementById('include-explanation').checked && result.explanation) {
             explainDiv.classList.remove('hidden');
@@ -291,23 +291,30 @@ class AICopilotApp {
         } else {
             explainDiv.classList.add('hidden');
         }
-
+ 
         document.getElementById('results-head').innerHTML =
             '<tr>' + result.columns.map(col => `<th>${this.escapeHtml(col)}</th>`).join('') + '</tr>';
-
+ 
         document.getElementById('results-body').innerHTML =
             result.results.slice(0, 1000).map(row =>
                 '<tr>' + result.columns.map(col =>
                     `<td>${this.escapeHtml(String(row[col] ?? ''))}</td>`
                 ).join('') + '</tr>'
             ).join('');
-
+ 
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-
+ 
     // ── Export ──────────────────────────────────────────────────────────────
     async exportResults(format) {
         if (!this.currentQuery) { this.showToast('No query results to export', 'warning'); return; }
+ 
+        const btnId = format === 'xlsx' ? 'export-excel' : `export-${format}`;
+        const btn = document.getElementById(btnId);
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '⏳ Exporting...';
+        btn.disabled = true;
+ 
         try {
             const res = await fetch(`${API}/export`, {
                 method: 'POST',
@@ -319,23 +326,33 @@ class AICopilotApp {
                 })
             });
             const result = await res.json();
-            if (result.success) {
-                this.showToast(`Exported to ${format.toUpperCase()} successfully!`, 'success');
+ 
+            if (result.success && result.filepath) {
+                // Open the file using Electron shell
+                if (window.api && window.api.openFile) {
+                    await window.api.openFile(result.filepath);
+                    this.showToast(`${format.toUpperCase()} opened successfully!`, 'success');
+                } else {
+                    this.showToast(`Saved to: ${result.filepath}`, 'success');
+                }
             } else {
                 this.showToast(`Export failed: ${result.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             this.showToast('Failed to export results', 'error');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
     }
-
+ 
     copySQL() {
         const sql = document.getElementById('sql-code').textContent;
         navigator.clipboard.writeText(sql).then(() => {
             this.showToast('SQL copied to clipboard', 'success');
         });
     }
-
+ 
     // ── Schema ──────────────────────────────────────────────────────────────
     async loadSchema(forceRefresh = false) {
         const connectionId = document.getElementById('schema-connection').value;
@@ -349,7 +366,7 @@ class AICopilotApp {
             this.showToast('Failed to load schema', 'error');
         }
     }
-
+ 
     renderSchema(schemaData) {
         const container = document.getElementById('schema-content');
         if (!schemaData.tables || schemaData.tables.length === 0) {
@@ -377,7 +394,7 @@ class AICopilotApp {
             </div>
         `).join('');
     }
-
+ 
     // ── Reports ─────────────────────────────────────────────────────────────
     async generateSummaryReport() {
         const connectionId = document.getElementById('report-connection').value;
@@ -395,7 +412,7 @@ class AICopilotApp {
             this.showToast('Failed to generate report', 'error');
         }
     }
-
+ 
     // ── Alerts ──────────────────────────────────────────────────────────────
     async sendTestAlert() {
         const title    = document.getElementById('test-alert-title').value.trim();
@@ -403,10 +420,10 @@ class AICopilotApp {
         const channels = [];
         if (document.getElementById('channel-email').checked) channels.push('email');
         if (document.getElementById('channel-slack').checked) channels.push('slack');
-
+ 
         if (!title || !message) { this.showToast('Please fill in title and message', 'warning'); return; }
         if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
-
+ 
         try {
             const res = await fetch(`${API}/alerts/test`, {
                 method: 'POST',
@@ -424,7 +441,7 @@ class AICopilotApp {
             this.showToast('Failed to send test alert', 'error');
         }
     }
-
+ 
     // ── Toast ───────────────────────────────────────────────────────────────
     showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
@@ -439,12 +456,12 @@ class AICopilotApp {
         container.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
     }
-
+ 
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 }
-
+ 
 const app = new AICopilotApp();

@@ -1,8 +1,3 @@
-"""
-Database connection manager for PostgreSQL and MySQL.
-Provides async connection pooling and query execution.
-"""
-
 import ssl
 import json
 import socket
@@ -43,6 +38,8 @@ class DatabaseManager:
         self._engines: Dict[str, AsyncEngine] = {}
         self._sessions: Dict[str, sessionmaker] = {}
         self._connection_cache: Dict[str, DatabaseConnection] = {}
+        # Store resolved IPs separately
+        self._resolved_hosts: Dict[str, str] = {}
 
     # ---------------------------------------------------------
     # PERSISTENCE
@@ -73,11 +70,14 @@ class DatabaseManager:
 
             for conn_id, conn_data in data.items():
                 try:
+                    import asyncpg
                     conn = DatabaseConnection(**conn_data)
                     conn.id = conn_id
 
-                    import asyncpg
-                    resolved_host = self._resolve_host(conn.host)
+                    # Always resolve hostname to IP
+                    original_host = conn_data.get("host", conn.host)
+                    resolved_host = self._resolve_host(original_host)
+
                     ssl_ctx = self._build_ssl_context()
 
                     # Test with asyncpg directly using resolved IP
@@ -92,37 +92,12 @@ class DatabaseManager:
                     await pg_conn.execute("SELECT 1")
                     await pg_conn.close()
 
-                    # ✅ KEY FIX: Store resolved IP as host so all future queries use IP
-                    conn.host = resolved_host
-
-                    password = conn.password or ""
-                    async_url = (
-                        f"postgresql+asyncpg://{conn.username}:{password}"
-                        f"@{resolved_host}:{conn.port}/{conn.database}"
-                    )
-
-                    engine = create_async_engine(
-                        async_url,
-                        pool_size=5,
-                        max_overflow=10,
-                        pool_pre_ping=True,
-                        pool_recycle=3600,
-                        echo=False,
-                        connect_args={"ssl": ssl_ctx},
-                    )
-
-                    self._engines[conn_id] = engine
+                    # Store resolved IP
+                    self._resolved_hosts[conn_id] = resolved_host
                     self._connection_cache[conn_id] = conn
-
-                    async_session = sessionmaker(
-                        engine,
-                        class_=AsyncSession,
-                        expire_on_commit=False,
-                    )
-                    self._sessions[conn_id] = async_session
                     conn.status = ConnectionStatus.CONNECTED
 
-                    logger.info(f"Restored connection: {conn.name} [{conn_id}]")
+                    logger.info(f"Restored connection: {conn.name} [{conn_id}] -> {resolved_host}")
 
                 except Exception as e:
                     logger.error(f"Failed to restore connection {conn_id}: {e}")
@@ -172,58 +147,40 @@ class DatabaseManager:
         return connect_args
 
     # ---------------------------------------------------------
-    # ENGINE CREATION
+    # ASYNCPG CONNECTION HELPER
     # ---------------------------------------------------------
 
-    def _build_async_url(self, connection: DatabaseConnection, resolved_host: str) -> str:
-        dialect = connection.dialect.value
-        if dialect == "postgresql":
-            async_dialect = "postgresql+asyncpg"
-        elif dialect in ["mysql", "mariadb"]:
-            async_dialect = "mysql+aiomysql"
-        else:
-            raise ValueError(f"Unsupported dialect: {dialect}")
+    async def _get_asyncpg_conn(self, connection_id: str):
+        """Get a direct asyncpg connection using resolved IP."""
+        import asyncpg
+        conn = self._connection_cache.get(connection_id)
+        if not conn:
+            raise ValueError(f"No connection found for: {connection_id}")
 
-        password = connection.password or ""
-        return (
-            f"{async_dialect}://{connection.username}:{password}"
-            f"@{resolved_host}:{connection.port}/{connection.database}"
+        resolved_host = self._resolved_hosts.get(connection_id)
+        if not resolved_host:
+            resolved_host = self._resolve_host(conn.host)
+            self._resolved_hosts[connection_id] = resolved_host
+
+        ssl_ctx = self._build_ssl_context()
+
+        return await asyncpg.connect(
+            host=resolved_host,
+            port=conn.port,
+            user=conn.username,
+            password=conn.password or "",
+            database=conn.database,
+            ssl=ssl_ctx,
         )
+
+    # ---------------------------------------------------------
+    # ENGINE CREATION (kept for compatibility)
+    # ---------------------------------------------------------
 
     def _get_cache_key(self, connection: DatabaseConnection) -> str:
         if connection.id:
             return connection.id
         return f"{connection.username}@{connection.host}:{connection.port}/{connection.database}"
-
-    async def _create_engine(self, connection: DatabaseConnection) -> AsyncEngine:
-        cache_key = self._get_cache_key(connection)
-
-        if cache_key in self._engines:
-            return self._engines[cache_key]
-
-        # Always resolve hostname to IP to fix Windows DNS issue
-        resolved_host = self._resolve_host(connection.host)
-
-        # ✅ Store resolved IP so reconnects also use IP
-        connection.host = resolved_host
-
-        ssl_ctx = self._build_ssl_context()
-        async_url = self._build_async_url(connection, resolved_host)
-
-        engine = create_async_engine(
-            async_url,
-            pool_size=5,
-            max_overflow=10,
-            pool_pre_ping=True,
-            pool_recycle=3600,
-            echo=False,
-            connect_args={"ssl": ssl_ctx},
-        )
-
-        self._engines[cache_key] = engine
-        self._connection_cache[cache_key] = connection
-
-        return engine
 
     # ---------------------------------------------------------
     # CONNECTION MANAGEMENT
@@ -231,24 +188,32 @@ class DatabaseManager:
 
     async def connect(self, connection: DatabaseConnection) -> bool:
         try:
-            engine = await self._create_engine(connection)
-
-            async with engine.connect() as conn:
-                await conn.execute(text("SELECT 1"))
-
+            import asyncpg
             cache_key = self._get_cache_key(connection)
+            resolved_host = self._resolve_host(connection.host)
+            ssl_ctx = self._build_ssl_context()
 
-            async_session = sessionmaker(
-                engine,
-                class_=AsyncSession,
-                expire_on_commit=False,
+            # Test connection with asyncpg
+            pg_conn = await asyncpg.connect(
+                host=resolved_host,
+                port=connection.port,
+                user=connection.username,
+                password=connection.password or "",
+                database=connection.database,
+                ssl=ssl_ctx,
             )
+            await pg_conn.execute("SELECT 1")
+            await pg_conn.close()
 
-            self._sessions[cache_key] = async_session
+            # Store resolved IP and connection
+            self._resolved_hosts[cache_key] = resolved_host
             connection.status = ConnectionStatus.CONNECTED
             self._connection_cache[cache_key] = connection
 
-            logger.info(f"Connected to database: {connection.name}")
+            # Also store in _sessions as a marker that connection is active
+            self._sessions[cache_key] = True
+
+            logger.info(f"Connected to database: {connection.name} -> {resolved_host}")
             return True
 
         except Exception as e:
@@ -262,6 +227,7 @@ class DatabaseManager:
 
         self._sessions.pop(connection_id, None)
         self._connection_cache.pop(connection_id, None)
+        self._resolved_hosts.pop(connection_id, None)
         self._delete_persisted_connection(connection_id)
 
         return True
@@ -272,6 +238,7 @@ class DatabaseManager:
         self._engines.clear()
         self._sessions.clear()
         self._connection_cache.clear()
+        self._resolved_hosts.clear()
         logger.info("All database connections closed.")
 
     async def test_connection(self, connection: DatabaseConnection) -> Tuple[bool, str]:
@@ -295,15 +262,12 @@ class DatabaseManager:
                 return True, "Connection successful"
 
             elif dialect in ["mysql", "mariadb"]:
-                async_url = self._build_async_url(connection, resolved_host)
-                connect_args = self._build_connect_args(connection)
-                engine = create_async_engine(
-                    async_url,
-                    pool_size=1,
-                    max_overflow=0,
-                    echo=False,
-                    connect_args=connect_args,
+                password = connection.password or ""
+                async_url = (
+                    f"mysql+aiomysql://{connection.username}:{password}"
+                    f"@{resolved_host}:{connection.port}/{connection.database}"
                 )
+                engine = create_async_engine(async_url, pool_size=1, max_overflow=0, echo=False)
                 async with engine.connect() as conn:
                     await conn.execute(text("SELECT 1"))
                 await engine.dispose()
@@ -317,33 +281,19 @@ class DatabaseManager:
             return False, str(e)
 
     # ---------------------------------------------------------
-    # SESSION HANDLER
+    # SESSION HANDLER (kept for compatibility)
     # ---------------------------------------------------------
 
     @asynccontextmanager
     async def get_session(self, connection_id: str):
-        if connection_id not in self._sessions:
-            conn = self._connection_cache.get(connection_id)
-            if conn:
-                logger.warning(f"Session missing for {connection_id}, attempting reconnect...")
-                success = await self.connect(conn)
-                if not success:
-                    raise ValueError(f"Could not reconnect to database: {connection_id}")
-            else:
-                raise ValueError(f"No connection found for: {connection_id}")
-
-        async_session = self._sessions[connection_id]
-
-        async with async_session() as session:
-            try:
-                yield session
-                await session.commit()
-            except Exception:
-                await session.rollback()
-                raise
+        """Compatibility wrapper - yields a mock session for asyncpg usage."""
+        conn = self._connection_cache.get(connection_id)
+        if not conn:
+            raise ValueError(f"No connection found for: {connection_id}")
+        yield connection_id
 
     # ---------------------------------------------------------
-    # QUERY EXECUTION
+    # QUERY EXECUTION - Uses asyncpg directly
     # ---------------------------------------------------------
 
     async def execute_query(
@@ -353,36 +303,56 @@ class DatabaseManager:
         params: Optional[Dict[str, Any]] = None,
     ) -> tuple[bool, List[str], List[Dict[str, Any]], str]:
 
+        pg_conn = None
         try:
-            async with self.get_session(connection_id) as session:
-                result = await session.execute(text(sql), params or {})
-                columns = list(result.keys())
-                rows = result.fetchall()
-                data = [dict(zip(columns, row)) for row in rows]
-                return True, columns, data, ""
+            pg_conn = await self._get_asyncpg_conn(connection_id)
+            
+            if params:
+                rows = await pg_conn.fetch(sql, *params.values())
+            else:
+                rows = await pg_conn.fetch(sql)
 
-        except SQLAlchemyError as e:
+            if rows:
+                columns = list(rows[0].keys())
+                data = [dict(row) for row in rows]
+            else:
+                # Get column names from empty result
+                stmt = await pg_conn.prepare(sql)
+                columns = [attr.name for attr in stmt.get_attributes()]
+                data = []
+
+            return True, columns, data, ""
+
+        except Exception as e:
             logger.error(f"Query failed: {e}")
             return False, [], [], str(e)
+        finally:
+            if pg_conn:
+                await pg_conn.close()
 
     # ---------------------------------------------------------
-    # TABLE INFO
+    # TABLE INFO - Uses asyncpg directly
     # ---------------------------------------------------------
 
     async def list_tables(self, connection_id: str) -> List[str]:
+        pg_conn = None
         try:
-            engine = self._engines.get(connection_id)
-            if not engine:
-                return []
-
-            async with engine.begin() as conn:
-                return await conn.run_sync(
-                    lambda sync_conn: inspect(sync_conn).get_table_names()
-                )
+            pg_conn = await self._get_asyncpg_conn(connection_id)
+            rows = await pg_conn.fetch("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_type = 'BASE TABLE'
+                ORDER BY table_name
+            """)
+            return [row['table_name'] for row in rows]
 
         except Exception as e:
             logger.error(f"Failed to list tables: {e}")
             return []
+        finally:
+            if pg_conn:
+                await pg_conn.close()
 
     async def get_table_info(
         self,
@@ -390,58 +360,89 @@ class DatabaseManager:
         table_name: str,
     ) -> Optional[TableInfo]:
 
+        pg_conn = None
         try:
-            engine = self._engines.get(connection_id)
-            if not engine:
-                return None
+            pg_conn = await self._get_asyncpg_conn(connection_id)
 
-            async with engine.begin() as conn:
+            # Get columns
+            columns_rows = await pg_conn.fetch("""
+                SELECT 
+                    column_name,
+                    data_type,
+                    is_nullable,
+                    column_default,
+                    ordinal_position
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = $1
+                ORDER BY ordinal_position
+            """, table_name)
 
-                def get_metadata(sync_conn):
-                    inspector = inspect(sync_conn)
-                    columns_data = inspector.get_columns(table_name)
-                    pk_data = inspector.get_pk_constraint(table_name)
-                    fk_data = inspector.get_foreign_keys(table_name)
-                    return columns_data, pk_data, fk_data
+            # Get primary keys
+            pk_rows = await pg_conn.fetch("""
+                SELECT kcu.column_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                    ON tc.constraint_name = kcu.constraint_name
+                WHERE tc.constraint_type = 'PRIMARY KEY'
+                AND tc.table_name = $1
+                AND tc.table_schema = 'public'
+            """, table_name)
+            primary_keys = [row['column_name'] for row in pk_rows]
 
-                columns_raw, pk_raw, fk_raw = await conn.run_sync(get_metadata)
+            # Get foreign keys
+            fk_rows = await pg_conn.fetch("""
+                SELECT
+                    kcu.column_name,
+                    ccu.table_name AS referenced_table,
+                    ccu.column_name AS referenced_column,
+                    tc.constraint_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                    ON tc.constraint_name = kcu.constraint_name
+                JOIN information_schema.constraint_column_usage ccu
+                    ON tc.constraint_name = ccu.constraint_name
+                WHERE tc.constraint_type = 'FOREIGN KEY'
+                AND tc.table_name = $1
+                AND tc.table_schema = 'public'
+            """, table_name)
 
-                primary_keys = pk_raw.get("constrained_columns", [])
-
-                columns = [
-                    ColumnInfo(
-                        name=col["name"],
-                        data_type=str(col["type"]),
-                        is_nullable=col["nullable"],
-                        is_primary_key=col["name"] in primary_keys,
-                        default_value=str(col.get("default")) if col.get("default") else None,
-                        comment=col.get("comment"),
-                        ordinal_position=i,
-                    )
-                    for i, col in enumerate(columns_raw)
-                ]
-
-                foreign_keys = [
-                    ForeignKeyInfo(
-                        name=fk.get("name", ""),
-                        column=fk["constrained_columns"][0],
-                        referenced_table=fk["referred_table"],
-                        referenced_column=fk["referred_columns"][0],
-                    )
-                    for fk in fk_raw
-                ]
-
-                return TableInfo(
-                    name=table_name,
-                    columns=columns,
-                    primary_keys=primary_keys,
-                    foreign_keys=foreign_keys,
-                    row_count=0,
+            columns = [
+                ColumnInfo(
+                    name=row['column_name'],
+                    data_type=row['data_type'],
+                    is_nullable=row['is_nullable'] == 'YES',
+                    is_primary_key=row['column_name'] in primary_keys,
+                    default_value=str(row['column_default']) if row['column_default'] else None,
+                    comment=None,
+                    ordinal_position=row['ordinal_position'],
                 )
+                for row in columns_rows
+            ]
+
+            foreign_keys = [
+                ForeignKeyInfo(
+                    name=row['constraint_name'] or "",
+                    column=row['column_name'],
+                    referenced_table=row['referenced_table'],
+                    referenced_column=row['referenced_column'],
+                )
+                for row in fk_rows
+            ]
+
+            return TableInfo(
+                name=table_name,
+                columns=columns,
+                primary_keys=primary_keys,
+                foreign_keys=foreign_keys,
+                row_count=0,
+            )
 
         except Exception as e:
-            logger.error(f"Failed to get table info: {e}")
+            logger.error(f"Failed to get table info for {table_name}: {e}")
             return None
+        finally:
+            if pg_conn:
+                await pg_conn.close()
 
 
 # Global instance

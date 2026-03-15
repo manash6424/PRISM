@@ -1,12 +1,12 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-
+ 
 let mainWindow;
-
+ 
 // ── Persistent connections file ──────────────────────────────────────────────
 const connectionsFile = path.join(app.getPath('userData'), 'connections.json');
-
+ 
 function loadConnections() {
     try {
         if (fs.existsSync(connectionsFile)) {
@@ -15,15 +15,15 @@ function loadConnections() {
     } catch (e) { console.error('Failed to load connections:', e); }
     return {};
 }
-
+ 
 function saveConnectionsToDisk(data) {
     try {
         fs.writeFileSync(connectionsFile, JSON.stringify(data, null, 2));
     } catch (e) { console.error('Failed to save connections:', e); }
 }
-
+ 
 let connections = loadConnections();
-
+ 
 // ── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -35,32 +35,46 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js'),
-            webSecurity: false  // ✅ ADD THIS LINE
+            webSecurity: false
         },
         backgroundColor: '#1a1a2e',
         show: false
     });
-
-    // ✅ FIXED: correct path to your index.html
+ 
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-
+ 
     mainWindow.once('ready-to-show', () => mainWindow.show());
     mainWindow.on('closed', () => { mainWindow = null; });
 }
-
+ 
 app.whenReady().then(createWindow);
-
+ 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
-
+ 
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
-
+ 
 // ── API Base ─────────────────────────────────────────────────────────────────
 const API_BASE = 'http://localhost:8000/api/v1';
-
+ 
+// ── Open File (for exports) ───────────────────────────────────────────────────
+ipcMain.handle('open-file', async (event, filepath) => {
+    try {
+        const absolutePath = path.resolve(filepath);
+        const error = await shell.openPath(absolutePath);
+        if (error) {
+            console.error('Failed to open file:', error);
+            return { success: false, error };
+        }
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+ 
 // ── Generic API request ──────────────────────────────────────────────────────
 ipcMain.handle('api-request', async (event, { method, endpoint, data }) => {
     const url = `${API_BASE}${endpoint}`;
@@ -78,7 +92,7 @@ ipcMain.handle('api-request', async (event, { method, endpoint, data }) => {
         return { error: error.message };
     }
 });
-
+ 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 ipcMain.handle('auth-login', async (event, { email, password }) => {
     try {
@@ -94,7 +108,7 @@ ipcMain.handle('auth-login', async (event, { email, password }) => {
         return { success: false, message: 'Cannot reach server. Is the backend running?' };
     }
 });
-
+ 
 ipcMain.handle('auth-signup', async (event, { name, company, email, password }) => {
     try {
         const res = await fetch(`${API_BASE}/auth/register`, {
@@ -109,12 +123,12 @@ ipcMain.handle('auth-signup', async (event, { name, company, email, password }) 
         return { success: false, message: 'Cannot reach server. Is the backend running?' };
     }
 });
-
+ 
 // ── Connections ───────────────────────────────────────────────────────────────
 ipcMain.handle('get-connections', async () => {
     return Object.values(connections);
 });
-
+ 
 ipcMain.handle('save-connection', async (event, connection) => {
     try {
         const res = await fetch(`${API_BASE}/connections`, {
@@ -132,7 +146,7 @@ ipcMain.handle('save-connection', async (event, connection) => {
         return { error: err.message };
     }
 });
-
+ 
 ipcMain.handle('delete-connection', async (event, id) => {
     try {
         await fetch(`${API_BASE}/connections/${id}`, { method: 'DELETE' });
@@ -143,7 +157,7 @@ ipcMain.handle('delete-connection', async (event, id) => {
         return { error: err.message };
     }
 });
-
+ 
 ipcMain.handle('test-connection', async (event, id) => {
     try {
         const res = await fetch(`${API_BASE}/connections/${id}/test`, { method: 'POST' });

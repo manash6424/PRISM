@@ -43,8 +43,6 @@ class RawSQLRequest(BaseModel):
 
 @router.post("/connections", response_model=dict)
 async def create_connection(connection: DatabaseConnection):
-    """Create a new database connection."""
-
     is_valid, error = validate_connection_config(
         connection.host,
         connection.port,
@@ -61,7 +59,6 @@ async def create_connection(connection: DatabaseConnection):
         connection.status = ConnectionStatus.ERROR
         raise HTTPException(status_code=400, detail=f"Connection failed: {message}")
 
-    # ✅ connect() creates engine + session under connection.id
     connected = await db_manager.connect(connection)
     if not connected:
         raise HTTPException(status_code=400, detail="Failed to establish connection")
@@ -82,7 +79,6 @@ async def create_connection(connection: DatabaseConnection):
 
 @router.get("/connections", response_model=List[dict])
 async def list_connections():
-    """List all database connections."""
     connections = []
     for conn_id, conn in db_manager._connection_cache.items():
         connections.append({
@@ -98,7 +94,6 @@ async def list_connections():
 
 @router.post("/connections/{connection_id}/test")
 async def test_connection(connection_id: str):
-    """Test database connection."""
     conn = db_manager._connection_cache.get(connection_id)
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
@@ -116,7 +111,6 @@ async def test_connection(connection_id: str):
 
 @router.get("/connections/{connection_id}/schema")
 async def get_schema(connection_id: str, force_refresh: bool = False):
-    """Get database schema for a connection."""
     conn = db_manager._connection_cache.get(connection_id)
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
@@ -145,12 +139,13 @@ async def get_schema(connection_id: str, force_refresh: bool = False):
         return {"tables": tables, "connection_id": connection_id}
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/connections/{connection_id}", response_model=dict)
 async def get_connection(connection_id: str):
-    """Get connection details."""
     conn = db_manager._connection_cache.get(connection_id)
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
@@ -172,7 +167,6 @@ async def get_connection(connection_id: str):
 
 @router.delete("/connections/{connection_id}")
 async def delete_connection(connection_id: str):
-    """Delete a database connection."""
     success = await db_manager.disconnect(connection_id)
     if not success:
         raise HTTPException(status_code=404, detail="Connection not found")
@@ -185,13 +179,10 @@ async def delete_connection(connection_id: str):
 
 @router.post("/query", response_model=QueryResponse)
 async def execute_natural_language_query(request: QueryRequest):
-    """Execute a natural language query."""
-
     conn = db_manager._connection_cache.get(request.connection_id)
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
 
-    # ✅ Ensure session exists before executing query
     if request.connection_id not in db_manager._sessions:
         connected = await db_manager.connect(conn)
         if not connected:
@@ -215,13 +206,13 @@ async def execute_natural_language_query(request: QueryRequest):
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/query/raw", response_model=QueryResponse)
 async def execute_raw_sql(request: RawSQLRequest):
-    """Execute raw SQL query."""
-
     conn = db_manager._connection_cache.get(request.connection_id)
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
@@ -262,7 +253,6 @@ async def get_query_result(query_id: str):
 
 @router.post("/export")
 async def create_export(request: ExportRequest):
-
     query = query_executor.get_query_by_id(request.query_id)
     if not query:
         raise HTTPException(status_code=404, detail="Query not found")
@@ -283,6 +273,8 @@ async def create_export(request: ExportRequest):
         }
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -306,10 +298,13 @@ async def get_system_info():
         "ai_provider": settings.ai.provider,
         "ai_model": settings.ai.model,
     }
-    # ==================== Auth Endpoints ====================
+
+
+# ==================== Auth Endpoints ====================
 
 class ForgotPasswordRequest(BaseModel):
     email: str
+
 
 @router.post("/auth/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
