@@ -649,3 +649,42 @@ td {
     pointer-events: none;
     z-index: 1;
 }
+/* ── Light Mode ──────────────────────────────────────── */
+body.light-mode {
+    --bg-primary: #f8f9fa !important;
+    --bg-secondary: #ffffff !important;
+    --bg-tertiary: #e9ecef !important;
+    --text-primary: #1a1a2e !important;
+    --text-secondary: #495057 !important;
+    --text-muted: #6c757d !important;
+    --border-color: #dee2e6 !important;
+    background: #f8f9fa;
+    color: #1a1a2e;
+}
+
+body.light-mode .sidebar {
+    background: #ffffff;
+    border-right: 1px solid #dee2e6;
+}
+
+body.light-mode .nav-item {
+    color: #495057;
+}
+
+body.light-mode .nav-item:hover {
+    background: #e9ecef;
+}
+
+body.light-mode .nav-item.active {
+    background: #e8455a;
+    color: white;
+}
+
+body.light-mode .main-content {
+    background: #f8f9fa;
+}
+
+body.light-mode .query-container {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+}

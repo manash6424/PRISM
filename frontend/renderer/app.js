@@ -8,10 +8,15 @@ class AICopilotApp {
         this.init();
     }
  
-    init() {
+   init() {
         this.bindEvents();
         this.loadConnections();
         this.setupNavigation();
+        this.renderSavedQueries();
+        this.loadTheme();
+        this.initKeyboardShortcuts();
+        this.renderHistory();
+
     }
  
     // ── Event Bindings ──────────────────────────────────────────────────────
@@ -22,6 +27,18 @@ class AICopilotApp {
         });
  
         document.getElementById('execute-query').addEventListener('click', () => this.executeQuery());
+document.getElementById('natural-query').addEventListener('input', (e) => {
+            clearTimeout(this._suggestionTimer);
+            this._suggestionTimer = setTimeout(() => {
+                this.getQuerySuggestions(e.target.value);
+            }, 500);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.query-input-container')) {
+                document.getElementById('suggestions-box').style.display = 'none';
+            }
+        });
         document.getElementById('natural-query').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) this.executeQuery();
         });
@@ -62,6 +79,8 @@ class AICopilotApp {
         if (viewName === 'connections') this.loadConnections();
         else if (viewName === 'schema') this.populateSchemaConnectionSelect();
         else if (viewName === 'reports') this.populateReportConnectionSelect();
+        else if (viewName === 'exports') this.loadQueryHistory();
+        else if (viewName === 'dashboard') this.renderDashboard();
     }
  
     // ── Connections ─────────────────────────────────────────────────────────
@@ -301,10 +320,385 @@ class AICopilotApp {
                     `<td>${this.escapeHtml(String(row[col] ?? ''))}</td>`
                 ).join('') + '</tr>'
             ).join('');
- 
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+       this.renderChart(result);
+       this.saveToHistory(
+            document.getElementById('natural-query').value,
+            result.row_count,
+            `${result.execution_time_ms?.toFixed(2)}ms`
+        );
+        this.renderHistory(); 
+       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
  
+   // ── Query History ────────────────────────────────────────────────────────
+    saveToHistory(query, rowCount, executionTime) {
+        const history = JSON.parse(localStorage.getItem('query_history') || '[]');
+        history.unshift({
+            query,
+            rowCount,
+            executionTime,
+            timestamp: new Date().toLocaleString()
+        });
+        if (history.length > 50) history.pop();
+        localStorage.setItem('query_history', JSON.stringify(history));
+    }
+
+    renderHistory() {
+        const history = JSON.parse(localStorage.getItem('query_history') || '[]');
+        const container = document.getElementById('history-list');
+        if (!container) return;
+        if (history.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;">No query history yet</div>';
+            return;
+        }
+        container.innerHTML = history.map((h, i) => `
+            <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;" onclick="app.rerunQuery('${i}')">
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">${h.timestamp} · ${h.rowCount} rows · ${h.executionTime}</div>
+                <div style="color:var(--text-primary);font-size:14px;">${h.query}</div>
+            </div>
+        `).join('');
+    }
+
+    rerunQuery(index) {
+        const history = JSON.parse(localStorage.getItem('query_history') || '[]');
+        const h = history[index];
+        if (!h) return;
+        document.getElementById('natural-query').value = h.query;
+        document.querySelector('[data-view="query"]').click();
+        document.getElementById('execute-query').click();
+    }
+    // ── Search Results ───────────────────────────────────────────────────────
+    searchResults(query) {
+        if (!this.currentQuery) return;
+        const rows = this.currentQuery.results;
+        const filtered = query.trim() === '' ? rows : rows.filter(row =>
+            Object.values(row).some(val =>
+                String(val).toLowerCase().includes(query.toLowerCase())
+            )
+        );
+
+        document.getElementById('results-body').innerHTML =
+            filtered.map(row =>
+                '<tr>' + this.currentQuery.columns.map(col =>
+                    `<td>${this.escapeHtml(String(row[col] ?? ''))}</td>`
+                ).join('') + '</tr>'
+            ).join('');
+
+        document.getElementById('row-count').textContent = `📊 ${filtered.length} rows`;
+        this.saveToHistory(
+    document.getElementById('natural-query').value,
+    filtered.length,
+    ''
+);
+    }
+    // ── Theme Toggle ─────────────────────────────────────────────────────────
+    toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('theme-toggle');
+        const isLight = body.classList.toggle('light-mode');
+        btn.textContent = isLight ? '🌙 Dark Mode' : '☀️ Light Mode';
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    }
+    loadTheme() {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'light') {
+            document.body.classList.add('light-mode');
+            const btn = document.getElementById('theme-toggle');
+            if (btn) btn.textContent = '🌙 Dark Mode';
+        }
+    }
+    // ── Keyboard Shortcuts ───────────────────────────────────────────────────
+    initKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+               document.getElementById('execute-query')?.click();
+            }
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('natural-query')?.focus();
+            }
+            if (e.ctrlKey && e.key === '/') {
+                e.preventDefault();
+                app.toggleTheme();
+            }
+        });
+    }
+    // ── AI Query Suggestions ─────────────────────────────────────────────────
+    
+             async getQuerySuggestions(input) {
+        if (input.length < 3) {
+            document.getElementById('suggestions-box').style.display = 'none';
+            return;
+        }
+        try {
+            const response = await fetch(`${API}/suggestions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ input })
+            });
+            const data = await response.json();
+            this.showSuggestions(data.suggestions || []);
+        } catch (e) {
+            document.getElementById('suggestions-box').style.display = 'none';
+        }
+    }
+    showSuggestions(suggestions) {
+        const box = document.getElementById('suggestions-box');
+        if (!suggestions.length) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        box.innerHTML = suggestions.map(s => `
+            <div onclick="app.applySuggestion('${s.replace(/'/g, "\\'")}')"
+                style="padding:10px 14px;cursor:pointer;color:var(--text-primary);font-size:14px;border-bottom:1px solid var(--border-color);"
+                onmouseover="this.style.background='var(--bg-primary)'"
+                onmouseout="this.style.background='transparent'">
+                💡 ${s}
+            </div>
+        `).join('');
+    }
+
+    applySuggestion(text) {
+        document.getElementById('natural-query').value = text;
+        document.getElementById('suggestions-box').style.display = 'none';
+        document.getElementById('natural-query').focus();
+    }
+    // ── Templates ────────────────────────────────────────────────────────────
+    loadTemplate(value) {
+        if (!value) return;
+        document.getElementById('natural-query').value = value;
+        document.getElementById('template-select').value = '';
+        this.showToast('Template loaded! Click Execute to run.', 'info');
+    }
+    // ── Saved Queries ────────────────────────────────────────────────────────
+    async saveQuery() {
+        const query = document.getElementById('natural-query').value.trim();
+        if (!query) { this.showToast('Please enter a query first', 'warning'); return; }
+
+        const name = query.slice(0, 50);
+        const saved = JSON.parse(localStorage.getItem('savedQueries') || '[]');
+        if (saved.some(s => s.query === query)) {
+            this.showToast('Query already saved!', 'warning');
+            return;
+        }
+        saved.push({ name, query, savedAt: new Date().toISOString() });
+        localStorage.setItem('savedQueries', JSON.stringify(saved));
+        this.renderSavedQueries();
+
+        if (window.api && window.api.saveFile) {
+            const result = await window.api.saveFile(
+                'prism_saved_queries.json',
+                JSON.stringify(saved, null, 2)
+            );
+            if (result.success) {
+                this.showToast('Query saved to file!', 'success');
+            } else {
+                this.showToast('Query saved in app!', 'success');
+            }
+        } else {
+            this.showToast('Query saved! Click the tag to reuse it.', 'success');
+        }
+    }
+    renderSavedQueries() {
+        const saved = JSON.parse(localStorage.getItem('savedQueries') || '[]');
+        const bar = document.getElementById('saved-queries-bar');
+        if (!bar) return;
+
+        if (saved.length === 0) {
+            bar.innerHTML = '';
+            bar.style.display = 'none';
+            return;
+        }
+        bar.style.display = 'flex';
+
+        bar.innerHTML = saved.map((q, i) => `
+            <div style="display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:20px;padding:4px 12px;gap:6px;">
+                <span style="color:var(--text-primary);font-size:13px;cursor:pointer;" onclick="app.loadSavedQuery(${i})">⭐ ${this.escapeHtml(q.name)}</span>
+                <span style="color:var(--text-muted);cursor:pointer;font-size:16px;" onclick="app.deleteSavedQuery(${i})">×</span>
+            </div>
+        `).join('');
+    }
+
+    loadSavedQuery(index) {
+        const saved = JSON.parse(localStorage.getItem('savedQueries') || '[]');
+        if (saved[index]) {
+            document.getElementById('natural-query').value = saved[index].query;
+            this.showToast('Query loaded! Click Execute to run.', 'info');
+        }
+    }
+
+    deleteSavedQuery(index) {
+        const saved = JSON.parse(localStorage.getItem('savedQueries') || '[]');
+        saved.splice(index, 1);
+        localStorage.setItem('savedQueries', JSON.stringify(saved));
+        this.renderSavedQueries();
+        this.showToast('Query deleted', 'success');
+    }
+    // ── Dashboard ────────────────────────────────────────────────────────────
+    pinToDashboard() {
+        if (!this.currentQuery) { this.showToast('Run a query first!', 'warning'); return; }
+
+        const pinned = JSON.parse(localStorage.getItem('pinnedCharts') || '[]');
+        const chartType = document.getElementById('chart-type').value;
+        const xCol = document.getElementById('chart-x-axis').value;
+        const yCol = document.getElementById('chart-y-axis').value;
+
+        const pin = {
+            id: Date.now(),
+            title: this.currentQuery.natural_language.slice(0, 50),
+            chartType,
+            xCol,
+            yCol,
+            columns: this.currentQuery.columns,
+            results: this.currentQuery.results,
+            pinnedAt: new Date().toISOString()
+        };
+
+        if (pinned.some(p => p.title === pin.title)) {
+            this.showToast('Already pinned!', 'warning');
+            return;
+        }
+
+        pinned.push(pin);
+        localStorage.setItem('pinnedCharts', JSON.stringify(pinned));
+        this.showToast('Chart pinned to Dashboard!', 'success');
+    }
+
+    renderDashboard() {
+        const pinned = JSON.parse(localStorage.getItem('pinnedCharts') || '[]');
+        const container = document.getElementById('dashboard-content');
+        if (!container) return;
+
+        if (pinned.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;grid-column:1/-1;">No pinned charts yet. Run a query and click "Pin to Dashboard"!</div>';
+            return;
+        }
+
+        container.innerHTML = pinned.map((pin, i) => `
+            <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <h3 style="color:var(--text-primary);margin:0;font-size:14px;">📌 ${this.escapeHtml(pin.title)}</h3>
+                    <button onclick="app.unpinChart(${i})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;">×</button>
+                </div>
+                <canvas id="dashboard-chart-${pin.id}" height="200"></canvas>
+            </div>
+        `).join('');
+
+        // Render each chart
+        pinned.forEach(pin => {
+            const canvas = document.getElementById(`dashboard-chart-${pin.id}`);
+            if (!canvas) return;
+            const labels = pin.results.map(r => String(r[pin.xCol] ?? ''));
+            const data = pin.results.map(r => parseFloat(r[pin.yCol]) || 0);
+            const colors = ['#4472C4','#E8455A','#28C864','#F5A623','#9B59B6'];
+            new Chart(canvas, {
+                type: pin.chartType,
+                data: {
+                    labels,
+                    datasets: [{
+                        label: pin.yCol,
+                        data,
+                        backgroundColor: pin.chartType === 'bar' ? colors[0] : colors.slice(0, data.length),
+                        borderColor: pin.chartType === 'line' ? colors[0] : 'transparent',
+                        borderWidth: pin.chartType === 'line' ? 2 : 0,
+                        tension: 0.4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#a0aec0' } } },
+                    scales: pin.chartType === 'pie' || pin.chartType === 'doughnut' ? {} : {
+                        x: { ticks: { color: '#a0aec0' }, grid: { color: '#2d3748' } },
+                        y: { ticks: { color: '#a0aec0' }, grid: { color: '#2d3748' } }
+                    }
+                }
+            });
+        });
+    }
+
+    unpinChart(index) {
+        const pinned = JSON.parse(localStorage.getItem('pinnedCharts') || '[]');
+        pinned.splice(index, 1);
+        localStorage.setItem('pinnedCharts', JSON.stringify(pinned));
+        this.renderDashboard();
+        this.showToast('Chart unpinned!', 'success');
+    }
+    // ── Charts ──────────────────────────────────────────────────────────────
+    renderChart(result) {
+        const chartSection = document.getElementById('chart-section');
+        const columns = result.columns;
+        const rows = result.results;
+
+        // Populate X and Y axis selectors
+        const xSelect = document.getElementById('chart-x-axis');
+        const ySelect = document.getElementById('chart-y-axis');
+        xSelect.innerHTML = columns.map(col => `<option value="${col}">${col}</option>`).join('');
+        ySelect.innerHTML = columns.map(col => `<option value="${col}">${col}</option>`).join('');
+
+        // Auto-select: first column for X, first numeric column for Y
+        const numericCol = columns.find(col => rows.some(r => !isNaN(parseFloat(r[col]))));
+        if (numericCol) ySelect.value = numericCol;
+
+        chartSection.classList.remove('hidden');
+        this.updateChart(result);
+
+        // Update chart when selectors change
+        document.getElementById('chart-type').onchange = () => this.updateChart(result);
+        document.getElementById('chart-x-axis').onchange = () => this.updateChart(result);
+        document.getElementById('chart-y-axis').onchange = () => this.updateChart(result);
+    }
+
+    updateChart(result) {
+        const chartType = document.getElementById('chart-type').value;
+        const xCol = document.getElementById('chart-x-axis').value;
+        const yCol = document.getElementById('chart-y-axis').value;
+        const rows = result.results;
+
+        const labels = rows.map(r => String(r[xCol] ?? ''));
+        const data = rows.map(r => parseFloat(r[yCol]) || 0);
+
+        const colors = [
+            '#4472C4','#E8455A','#28C864','#F5A623','#9B59B6',
+            '#1ABC9C','#E67E22','#3498DB','#E91E63','#00BCD4'
+        ];
+
+        const canvas = document.getElementById('results-chart');
+        if (window._prismChart) window._prismChart.destroy();
+
+        window._prismChart = new Chart(canvas, {
+            type: chartType,
+            data: {
+                labels,
+                datasets: [{
+                    label: yCol,
+                    data,
+                    backgroundColor: chartType === 'bar' ? colors[0] : colors.slice(0, data.length),
+                    borderColor: chartType === 'line' ? colors[0] : 'transparent',
+                    borderWidth: chartType === 'line' ? 2 : 0,
+                    fill: false,
+                    tension: 0.4,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#a0aec0' } }
+                },
+                scales: chartType === 'pie' || chartType === 'doughnut' ? {} : {
+                    x: { ticks: { color: '#a0aec0' }, grid: { color: '#2d3748' } },
+                    y: { ticks: { color: '#a0aec0' }, grid: { color: '#2d3748' } }
+                }
+            }
+        });
+    }
+   getChartImage() {
+        const canvas = document.getElementById('results-chart');
+        if (!canvas) return null;
+        try {
+            return canvas.toDataURL('image/png');
+        } catch (e) {
+            return null;
+        }
+    }
     // ── Export ──────────────────────────────────────────────────────────────
     async exportResults(format) {
         if (!this.currentQuery) { this.showToast('No query results to export', 'warning'); return; }
@@ -319,21 +713,19 @@ class AICopilotApp {
             const res = await fetch(`${API}/export`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+             body: JSON.stringify({
                     query_id: this.currentQuery.query_id,
                     format: format,
-                    filename: `query_export_${Date.now()}`
+                    filename: `query_export_${Date.now()}`,
+                    chart_image: format === 'pdf' ? this.getChartImage() : null
                 })
             });
             const result = await res.json();
  
             if (result.success && result.filepath) {
-                // Open the file using Electron shell
+                this.showToast(`✅ ${format.toUpperCase()} saved! Opening...`, 'success');
                 if (window.api && window.api.openFile) {
-                    await window.api.openFile(result.filepath);
-                    this.showToast(`${format.toUpperCase()} opened successfully!`, 'success');
-                } else {
-                    this.showToast(`Saved to: ${result.filepath}`, 'success');
+                    window.api.openFile(result.filepath);
                 }
             } else {
                 this.showToast(`Export failed: ${result.error || 'Unknown error'}`, 'error');
@@ -351,6 +743,55 @@ class AICopilotApp {
         navigator.clipboard.writeText(sql).then(() => {
             this.showToast('SQL copied to clipboard', 'success');
         });
+    }
+    // ── Query History ───────────────────────────────────────────────────────
+    async loadQueryHistory() {
+        try {
+            const res = await fetch(`${API}/query/history?limit=50`);
+            const result = await res.json();
+            this.renderQueryHistory(result.history || []);
+        } catch (err) {
+            this.showToast('Failed to load query history', 'error');
+        }
+    }
+
+        renderQueryHistory(history) {
+        const container = document.getElementById('exports-list');
+        if (!container) return;
+
+        if (history.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:40px;">No query history yet. Run some queries first!</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div style="padding: 20px;">
+                <h3 style="color:var(--text-primary);margin-bottom:16px;">Query History</h3>
+                ${history.map(q => `
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;"
+                         onclick="app.rerunQuery('${this.escapeHtml(q.natural_language)}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="color:var(--text-primary);font-weight:500;">${this.escapeHtml(q.natural_language)}</span>
+                            <span style="color:var(--text-muted);font-size:12px;">${new Date(q.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div style="display:flex;gap:16px;">
+                            <span style="color:var(--text-muted);font-size:12px;">⏱ ${q.execution_time_ms?.toFixed(0)}ms</span>
+                            <span style="color:var(--text-muted);font-size:12px;">📊 ${q.row_count} rows</span>
+                            <span style="color:${q.success ? 'var(--success)' : 'var(--error)'};font-size:12px;">${q.success ? '✓ Success' : '✕ Failed'}</span>
+                        </div>
+                        <div style="margin-top:8px;font-family:monospace;font-size:11px;color:var(--text-muted);background:var(--bg-primary);padding:8px;border-radius:4px;">
+                            ${this.escapeHtml(q.generated_sql || '')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    rerunQuery(naturalLanguage) {
+        this.switchView('query');
+        document.getElementById('natural-query').value = naturalLanguage;
+        this.showToast('Query loaded! Click Execute to run.', 'info');
     }
  
     // ── Schema ──────────────────────────────────────────────────────────────

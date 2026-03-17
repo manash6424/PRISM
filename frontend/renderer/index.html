@@ -6,6 +6,7 @@
     <title>PRISM</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -161,6 +162,12 @@
             <button class="nav-item" data-view="schema">
                 <span class="nav-icon">📊</span><span class="nav-text">Schema</span>
             </button>
+           <button class="nav-item" data-view="dashboard">
+                <span class="nav-icon">📌</span><span class="nav-text">Dashboard</span>
+            </button>
+          <button class="nav-item" data-view="history">
+                <span class="nav-icon">🕐</span><span class="nav-text">History</span>
+            </button>
             <button class="nav-item" data-view="exports">
                 <span class="nav-icon">📥</span><span class="nav-text">Exports</span>
             </button>
@@ -171,6 +178,11 @@
                 <span class="nav-icon">🔔</span><span class="nav-text">Alerts</span>
             </button>
         </nav>
+       <div style="padding:12px 16px;border-top:1px solid var(--border-color);">
+            <button onclick="app.toggleTheme()" id="theme-toggle" style="width:100%;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px;font-size:13px;cursor:pointer;">
+                🌙 Dark Mode
+            </button>
+        </div>
         <div class="sidebar-footer">
             <div class="user-info" style="cursor:pointer;" id="user-avatar-btn">
                 <div class="user-avatar">👤</div>
@@ -191,10 +203,28 @@
                     <label>Database Connection:</label>
                     <select id="query-connection"><option value="">Select a connection...</option></select>
                 </div>
-                <div class="query-input-container">
+               <div style="margin-bottom:12px;">
+    <select id="template-select" onchange="app.loadTemplate(this.value)" style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px 12px;width:100%;font-size:14px;">
+        <option value="">⚡ Quick Templates — Select a template query...</option>
+        <option value="show all records">Show all records</option>
+        <option value="show top 10 records">Show top 10 records</option>
+        <option value="count total records">Count total records</option>
+        <option value="show records created today">Show records created today</option>
+        <option value="show records created this month">Show records created this month</option>
+        <option value="show most recent 5 records">Show most recent 5 records</option>
+        <option value="find duplicate records">Find duplicate records</option>
+        <option value="show records with missing email">Show records with missing email</option>
+    </select>
+</div>
+                <div class="saved-queries-bar" style="gap:8px;flex-wrap:wrap;display:none;" id="saved-queries-bar"></div>
+                <div class="query-input-container" style="position:relative;">
+                    <div id="suggestions-box" style="display:none;position:absolute;z-index:100;width:100%;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);margin-top:4px;"></div>
                     <textarea id="natural-query" placeholder="e.g., Show me total sales by customer for last month" rows="4"></textarea>
                     <button id="execute-query" class="btn-primary">
                         <span class="btn-icon">▶</span> Execute Query
+                    </button>
+                    <button id="save-query" class="btn-secondary" style="margin-left:8px;" onclick="app.saveQuery()">
+                        <span class="btn-icon">💾</span> Save Query
                     </button>
                 </div>
                 <div class="query-options">
@@ -228,7 +258,29 @@
                     <div id="sql-explanation" class="sql-explanation hidden">
                         <strong>Explanation:</strong> <span id="explanation-text"></span>
                     </div>
-                    <div class="table-container">
+                    <div id="chart-section" class="hidden" style="margin:20px 0;background:var(--bg-secondary);border-radius:12px;padding:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="color:var(--text-primary);margin:0;">📊 Chart</h3>
+        <button onclick="app.pinToDashboard()" class="btn-secondary" style="margin-left:8px;padding:4px 12px;font-size:12px;">📌 Pin to Dashboard</button>
+        <div style="display:flex;gap:8px;">
+            <select id="chart-type" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;">
+                <option value="bar">Bar Chart</option>
+                <option value="line">Line Chart</option>
+                <option value="pie">Pie Chart</option>
+                <option value="doughnut">Doughnut</option>
+            </select>
+            <select id="chart-x-axis" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;"></select>
+            <select id="chart-y-axis" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;"></select>
+        </div>
+    </div>
+    <canvas id="results-chart" style="max-height:300px;"></canvas>
+</div>
+<div style="margin:12px 0;">
+    <input type="text" id="results-search" placeholder="🔍 Search in results..." 
+    style="width:100%;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px 12px;font-size:14px;"
+    oninput="app.searchResults(this.value)">
+</div>                   
+<div class="table-container">
                         <table id="results-table">
                             <thead id="results-head"></thead>
                             <tbody id="results-body"></tbody>
@@ -269,6 +321,29 @@
             </div>
         </div>
 
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="view">
+            <div class="view-header">
+                <h1>Dashboard</h1>
+                <p>Your pinned charts and queries</p>
+            </div>
+            <div id="dashboard-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(500px,1fr));gap:20px;padding:20px;">
+                <div style="color:var(--text-muted);text-align:center;padding:40px;grid-column:1/-1;">
+                    No pinned charts yet. Run a query and click "Pin to Dashboard"!
+                </div>
+            </div>
+        </div>
+       <!-- History View -->
+<div id="history-view" class="view">
+    <div class="view-header">
+        <h1>Query History</h1>
+        <p>Your recent queries</p>
+    </div>
+    <div style="padding:20px;">
+        <button onclick="localStorage.removeItem('query_history');app.renderHistory();" class="btn-secondary" style="margin-bottom:16px;">🗑️ Clear History</button>
+        <div id="history-list"></div>
+    </div>
+</div>
         <!-- Exports View -->
         <div id="exports-view" class="view">
             <div class="view-header">

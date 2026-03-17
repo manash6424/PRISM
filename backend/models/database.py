@@ -132,6 +132,7 @@ class ExportRequest(BaseModel):
     include_headers: bool = Field(default=True)
     title: Optional[str] = Field(None)
     description: Optional[str] = Field(None)
+    chart_image: Optional[str] = Field(None)
 
 
 # ==================== Alert Model ====================

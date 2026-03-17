@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
  
@@ -164,5 +164,20 @@ ipcMain.handle('test-connection', async (event, id) => {
         return await res.json();
     } catch (err) {
         return { error: err.message };
+    }
+});
+// ── Save File Dialog ──────────────────────────────────────────────────────────
+ipcMain.handle('save-file', async (event, { filename, content }) => {
+    try {
+        const { filePath } = await dialog.showSaveDialog(mainWindow, {
+            title: 'Save Queries',
+            defaultPath: path.join(app.getPath('desktop'), filename),
+            filters: [{ name: 'JSON Files', extensions: ['json'] }]
+        });
+        if (!filePath) return { success: false };
+        fs.writeFileSync(filePath, content, 'utf8');
+        return { success: true, filePath };
+    } catch (err) {
+        return { success: false, error: err.message };
     }
 });

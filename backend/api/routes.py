@@ -319,3 +319,58 @@ async def forgot_password(request: ForgotPasswordRequest):
         return {"success": True, "message": "Reset link sent"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    # ==================== AI Suggestions Endpoint ====================
+
+class SuggestionsRequest(BaseModel):
+    input: str
+
+@router.post("/suggestions")
+async def get_suggestions(request: SuggestionsRequest):
+    try:
+        import httpx
+        import os
+        import json
+        
+        api_key = os.getenv("AI_API_KEY")
+        base_url = os.getenv("AI_BASE_URL")
+        model = os.getenv("AI_MODEL")
+        
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                f"{base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": model,
+                    "messages": [{
+                        "role": "user",
+                        "content": f'Give 3 short database query suggestions completing: "{request.input}". Reply ONLY with a JSON array of 3 strings, nothing else.'
+                    }],
+                    "max_tokens": 200
+                },
+                timeout=10.0
+            )
+            data = res.json()
+            text = data["choices"][0]["message"]["content"].strip()
+            suggestions = json.loads(text)
+            return {"suggestions": suggestions}
+    except Exception as e:
+        return {"suggestions": []}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
