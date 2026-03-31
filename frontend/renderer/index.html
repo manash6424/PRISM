@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRISM</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -13,33 +13,46 @@
 <!-- Login Screen -->
 <div id="login-screen" class="login-screen">
     <div class="login-left">
-        <div class="login-branding">
-            <div class="login-logo-large">
-                <span class="logo-icon">🤖</span>
-                <span class="login-title">PRISM</span>
+    <div class="login-branding">
+        <div class="login-logo-large">
+            <span class="logo-icon">🤖</span>
+            <span class="login-title">PRISM</span>
+        </div>
+        <p class="login-tagline">AI-Powered Database Copilot</p>
+        <div class="login-features">
+            <div class="login-feature">
+                <span class="feature-icon">⚡</span>
+                <span>Query databases in plain English</span>
             </div>
-            <p class="login-tagline">AI-Powered Database Copilot</p>
-            <div class="login-features">
-                <div class="login-feature">
-                    <span class="feature-icon">⚡</span>
-                    <span>Query databases in plain English</span>
-                </div>
-                <div class="login-feature">
-                    <span class="feature-icon">📊</span>
-                    <span>Auto-generate SQL instantly</span>
-                </div>
-                <div class="login-feature">
-                    <span class="feature-icon">📤</span>
-                    <span>Export to CSV, Excel & PDF</span>
-                </div>
-                <div class="login-feature">
-                    <span class="feature-icon">🔔</span>
-                    <span>Automated alerts & reports</span>
-                </div>
+            <div class="login-feature">
+                <span class="feature-icon">📊</span>
+                <span>Auto-generate SQL instantly</span>
+            </div>
+            <div class="login-feature">
+                <span class="feature-icon">📤</span>
+                <span>Export to CSV, Excel & PDF</span>
+            </div>
+            <div class="login-feature">
+                <span class="feature-icon">🔔</span>
+                <span>Automated alerts & reports</span>
+            </div>
+        </div>
+        <div class="login-stats">
+            <div>
+                <span class="login-stat-value">10x</span>
+                <span class="login-stat-label">Faster queries</span>
+            </div>
+            <div>
+                <span class="login-stat-value">99.9%</span>
+                <span class="login-stat-label">Uptime</span>
+            </div>
+            <div>
+                <span class="login-stat-value">3 DB</span>
+                <span class="login-stat-label">Supported</span>
             </div>
         </div>
     </div>
-
+</div>
     <div class="login-right">
         <div class="login-card">
             <div class="login-card-header">
@@ -376,36 +389,127 @@
                 </div>
             </div>
         </div>
+<!-- Alerts View -->
+<div id="alerts-view" class="view">
+    <div class="view-header">
+        <h1>Smart Alerts</h1>
+        <p>Get notified when your data crosses a threshold</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0;">
 
-        <!-- Alerts View -->
-        <div id="alerts-view" class="view">
-            <div class="view-header">
-                <h1>Alerts</h1>
-                <p>Configure automated alerts for your databases</p>
+        <!-- Create Alert Rule -->
+        <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+            <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+                ➕ Create Alert Rule
+            </h3>
+            <div class="form-group">
+                <label>Alert Name</label>
+                <input type="text" id="alert-name" placeholder="e.g. Low Sales Alert">
             </div>
-            <div class="alerts-container">
-                <div class="alerts-section">
-                    <h3>Alert Rules</h3>
-                    <div class="rules-list" id="rules-list">
-                        <div class="rules-placeholder">No alert rules configured</div>
-                    </div>
-                    <button class="btn-primary" id="create-alert-rule">+ Create Alert Rule</button>
+            <div class="form-group">
+                <label>Database Connection</label>
+                <select id="alert-connection">
+                    <option value="">Select a connection...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Query to Monitor</label>
+                <input type="text" id="alert-query" placeholder="e.g. total sales today">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Condition</label>
+                    <select id="alert-condition">
+                        <option value="less_than">Less than (&lt;)</option>
+                        <option value="greater_than">Greater than (&gt;)</option>
+                        <option value="equals">Equals (=)</option>
+                        <option value="not_equals">Not equals (≠)</option>
+                    </select>
                 </div>
-                <div class="alerts-section">
-                    <h3>Send Test Alert</h3>
-                    <div class="test-alert-form">
-                        <input type="text" id="test-alert-title" placeholder="Alert Title">
-                        <textarea id="test-alert-message" placeholder="Alert Message" rows="3"></textarea>
-                        <div class="channel-checkboxes">
-                            <label class="checkbox-label"><input type="checkbox" id="channel-email" checked> Email</label>
-                            <label class="checkbox-label"><input type="checkbox" id="channel-slack" checked> Slack</label>
-                        </div>
-                        <button class="btn-secondary" id="send-test-alert">Send Test Alert</button>
+                <div class="form-group">
+                    <label>Threshold Value</label>
+                    <input type="number" id="alert-threshold" placeholder="e.g. 1000">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notify Via</label>
+                <div style="display:flex;gap:16px;margin-top:4px;">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="alert-channel-email" checked> Email
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="alert-channel-slack"> Slack
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Check Every</label>
+                <select id="alert-frequency">
+                    <option value="5">Every 5 minutes</option>
+                    <option value="15">Every 15 minutes</option>
+                    <option value="30">Every 30 minutes</option>
+                    <option value="60" selected>Every hour</option>
+                    <option value="1440">Every day</option>
+                </select>
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:4px;" onclick="app.createAlertRule()">
+                🔔 Create Alert Rule
+            </button>
+        </div>
+
+        <!-- Right column -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <!-- Send Test Alert -->
+            <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+                <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+                    🧪 Send Test Alert
+                </h3>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="test-alert-title" placeholder="Alert Title">
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="test-alert-message" placeholder="Alert Message" rows="3"></textarea>
+                </div>
+                <div style="display:flex;gap:16px;margin-bottom:16px;">
+                    <label class="checkbox-label"><input type="checkbox" id="channel-email" checked> Email</label>
+                    <label class="checkbox-label"><input type="checkbox" id="channel-slack"> Slack</label>
+                </div>
+                <button class="btn-secondary" style="width:100%;" id="send-test-alert">
+                    📤 Send Test Alert
+                </button>
+            </div>
+
+            <!-- Alert History -->
+            <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;flex:1;">
+                <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+                    📋 Alert History
+                </h3>
+                <div id="alert-history-list">
+                    <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">
+                        No alerts triggered yet
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+
+    <!-- Active Alert Rules -->
+    <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-top:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+            <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin:0;">
+                ⚡ Active Alert Rules
+            </h3>
+            <span id="alert-rules-count" style="font-size:12px;color:var(--text-muted);">0 rules</span>
+        </div>
+        <div id="alert-rules-list">
+            <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;border:1px dashed var(--border);border-radius:10px;">
+                No alert rules yet. Create one above!
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal -->

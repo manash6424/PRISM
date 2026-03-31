@@ -81,6 +81,11 @@ document.getElementById('natural-query').addEventListener('input', (e) => {
         else if (viewName === 'reports') this.populateReportConnectionSelect();
         else if (viewName === 'exports') this.loadQueryHistory();
         else if (viewName === 'dashboard') this.renderDashboard();
+else if (viewName === 'alerts') {
+    this.renderAlertRules();
+    this.renderAlertHistory();
+    this.populateConnectionSelects();
+}
     }
  
     // ── Connections ─────────────────────────────────────────────────────────
@@ -855,34 +860,177 @@ document.getElementById('natural-query').addEventListener('input', (e) => {
     }
  
     // ── Alerts ──────────────────────────────────────────────────────────────
-    async sendTestAlert() {
-        const title    = document.getElementById('test-alert-title').value.trim();
-        const message  = document.getElementById('test-alert-message').value.trim();
-        const channels = [];
-        if (document.getElementById('channel-email').checked) channels.push('email');
-        if (document.getElementById('channel-slack').checked) channels.push('slack');
- 
-        if (!title || !message) { this.showToast('Please fill in title and message', 'warning'); return; }
-        if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
- 
-        try {
-            const res = await fetch(`${API}/alerts/test`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, message, channels })
-            });
-            const result = await res.json();
-            const hasSuccess = Object.values(result).some(v => v === true);
-            if (hasSuccess) {
-                this.showToast('Test alert sent successfully', 'success');
-            } else {
-                this.showToast('Failed to send test alert', 'error');
-            }
-        } catch (err) {
+   async sendTestAlert() {
+    const title    = document.getElementById('test-alert-title').value.trim();
+    const message  = document.getElementById('test-alert-message').value.trim();
+    const channels = [];
+    if (document.getElementById('channel-email').checked) channels.push('email');
+    if (document.getElementById('channel-slack').checked) channels.push('slack');
+
+    if (!title || !message) { this.showToast('Please fill in title and message', 'warning'); return; }
+    if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
+
+    try {
+        const res = await fetch(`${API}/alerts/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, message, channels })
+        });
+        const result = await res.json();
+        const hasSuccess = Object.values(result).some(v => v === true);
+        if (hasSuccess) {
+            this.showToast('Test alert sent!', 'success');
+            this.addAlertHistory(title, message, channels, true);
+        } else {
             this.showToast('Failed to send test alert', 'error');
         }
+    } catch (err) {
+        this.showToast('Failed to send test alert', 'error');
     }
- 
+}
+
+createAlertRule() {
+    const name      = document.getElementById('alert-name').value.trim();
+    const connId    = document.getElementById('alert-connection').value;
+    const query     = document.getElementById('alert-query').value.trim();
+    const condition = document.getElementById('alert-condition').value;
+    const threshold = document.getElementById('alert-threshold').value;
+    const frequency = document.getElementById('alert-frequency').value;
+    const channels  = [];
+    if (document.getElementById('alert-channel-email').checked) channels.push('email');
+    if (document.getElementById('alert-channel-slack').checked) channels.push('slack');
+
+    if (!name)      { this.showToast('Please enter an alert name', 'warning'); return; }
+    if (!connId)    { this.showToast('Please select a connection', 'warning'); return; }
+    if (!query)     { this.showToast('Please enter a query to monitor', 'warning'); return; }
+    if (!threshold) { this.showToast('Please enter a threshold value', 'warning'); return; }
+    if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
+
+    const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
+    const rule = {
+        id: Date.now(),
+        name,
+        connId,
+        query,
+        condition,
+        threshold: parseFloat(threshold),
+        channels,
+        frequency: parseInt(frequency),
+        active: true,
+        createdAt: new Date().toLocaleString(),
+        triggeredCount: 0
+    };
+
+    rules.push(rule);
+    localStorage.setItem('alert_rules', JSON.stringify(rules));
+
+    // Clear form
+    document.getElementById('alert-name').value = '';
+    document.getElementById('alert-query').value = '';
+    document.getElementById('alert-threshold').value = '';
+
+    this.renderAlertRules();
+    this.showToast(`Alert rule "${name}" created!`, 'success');
+}
+
+renderAlertRules() {
+    const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
+    const container = document.getElementById('alert-rules-list');
+    const countEl   = document.getElementById('alert-rules-count');
+    if (!container) return;
+
+    if (countEl) countEl.textContent = `${rules.length} rule${rules.length !== 1 ? 's' : ''}`;
+
+    if (rules.length === 0) {
+        container.innerHTML = `
+            <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;border:1px dashed var(--border);border-radius:10px;">
+                No alert rules yet. Create one above!
+            </div>`;
+        return;
+    }
+
+    const conditionLabels = {
+        less_than: '<', greater_than: '>', equals: '=', not_equals: '≠'
+    };
+
+    container.innerHTML = rules.map((rule, i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:${rule.active ? '#22c55e' : '#6b7280'};flex-shrink:0;box-shadow:${rule.active ? '0 0 6px rgba(34,197,94,0.5)' : 'none'}"></div>
+                <div>
+                    <div style="color:var(--text-primary);font-size:14px;font-weight:600;">${rule.name}</div>
+                    <div style="color:var(--text-muted);font-size:12px;margin-top:2px;font-family:'JetBrains Mono',monospace;">
+                        "${rule.query}" ${conditionLabels[rule.condition]} ${rule.threshold}
+                    </div>
+                    <div style="color:var(--text-muted);font-size:11px;margin-top:3px;">
+                        Every ${rule.frequency >= 60 ? rule.frequency/60 + 'h' : rule.frequency + 'min'} · ${rule.channels.join(', ')} · Triggered ${rule.triggeredCount}x
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+                <button onclick="app.toggleAlertRule(${i})" style="padding:5px 12px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-secondary);cursor:pointer;">
+                    ${rule.active ? '⏸ Pause' : '▶ Resume'}
+                </button>
+                <button onclick="app.deleteAlertRule(${i})" style="padding:5px 12px;font-size:12px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:#ef4444;cursor:pointer;">
+                    🗑 Delete
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+toggleAlertRule(index) {
+    const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
+    rules[index].active = !rules[index].active;
+    localStorage.setItem('alert_rules', JSON.stringify(rules));
+    this.renderAlertRules();
+    this.showToast(rules[index].active ? 'Alert resumed' : 'Alert paused', 'info');
+}
+
+deleteAlertRule(index) {
+    if (!confirm('Delete this alert rule?')) return;
+    const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
+    const name = rules[index].name;
+    rules.splice(index, 1);
+    localStorage.setItem('alert_rules', JSON.stringify(rules));
+    this.renderAlertRules();
+    this.showToast(`"${name}" deleted`, 'success');
+}
+
+addAlertHistory(title, message, channels, success) {
+    const history = JSON.parse(localStorage.getItem('alert_history') || '[]');
+    history.unshift({
+        title,
+        message,
+        channels,
+        success,
+        timestamp: new Date().toLocaleString()
+    });
+    if (history.length > 20) history.pop();
+    localStorage.setItem('alert_history', JSON.stringify(history));
+    this.renderAlertHistory();
+}
+
+renderAlertHistory() {
+    const history = JSON.parse(localStorage.getItem('alert_history') || '[]');
+    const container = document.getElementById('alert-history-list');
+    if (!container) return;
+
+    if (history.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">No alerts triggered yet</div>`;
+        return;
+    }
+
+    container.innerHTML = history.map(h => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--bg-elevated);margin-bottom:6px;">
+            <span style="font-size:16px;">${h.success ? '✅' : '❌'}</span>
+            <div style="flex:1;min-width:0;">
+                <div style="color:var(--text-primary);font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${h.title}</div>
+                <div style="color:var(--text-muted);font-size:11px;">${h.timestamp} · ${h.channels.join(', ')}</div>
+            </div>
+        </div>
+    `).join('');
+}
     // ── Toast ───────────────────────────────────────────────────────────────
     showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
