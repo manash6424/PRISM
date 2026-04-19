@@ -68,6 +68,9 @@ app.add_middleware(
 app.include_router(router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")   # ✅ NEW
 
+from backend.upload_api import router as upload_router
+app.include_router(upload_router, prefix="/api/v1")
+
 
 @app.get("/")
 async def root():

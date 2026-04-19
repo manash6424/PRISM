@@ -5,152 +5,220 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRISM</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <!-- Login Screen -->
 <div id="login-screen" class="login-screen">
+
+    <!-- Animated orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
     <div class="login-left">
-    <div class="login-branding">
-        <div class="login-logo-large">
-            <span class="logo-icon">🤖</span>
-            <span class="login-title">PRISM</span>
-        </div>
-        <p class="login-tagline">AI-Powered Database Copilot</p>
-        <div class="login-features">
-            <div class="login-feature">
-                <span class="feature-icon">⚡</span>
-                <span>Query databases in plain English</span>
+        <div class="login-branding">
+
+            <div class="login-logo-large">
+                <div class="logo-badge">
+                    <span class="logo-icon">🤖</span>
+                    <div class="logo-pulse"></div>
+                </div>
+                <div>
+                    <span class="login-title">PRISM</span>
+                    <div class="logo-version">v2.0 · AI COPILOT</div>
+                </div>
             </div>
-            <div class="login-feature">
-                <span class="feature-icon">📊</span>
-                <span>Auto-generate SQL instantly</span>
+
+            <p class="login-tagline">Your data speaks. PRISM listens.</p>
+
+            <div class="login-features">
+                <div class="login-feature">
+                    <div class="feature-icon-wrap">⚡</div>
+                    <div class="feature-text">
+                        <strong>Natural Language Queries</strong>
+                        <span>Ask in plain English, get instant SQL</span>
+                    </div>
+                </div>
+                <div class="login-feature">
+                    <div class="feature-icon-wrap">📊</div>
+                    <div class="feature-text">
+                        <strong>Auto-Generate SQL</strong>
+                        <span>Groq AI powers blazing fast queries</span>
+                    </div>
+                </div>
+                <div class="login-feature">
+                    <div class="feature-icon-wrap">📤</div>
+                    <div class="feature-text">
+                        <strong>Export Anywhere</strong>
+                        <span>CSV, Excel & PDF in one click</span>
+                    </div>
+                </div>
+                <div class="login-feature">
+                    <div class="feature-icon-wrap">🔔</div>
+                    <div class="feature-text">
+                        <strong>Smart Alerts</strong>
+                        <span>Get notified when data changes</span>
+                    </div>
+                </div>
             </div>
-            <div class="login-feature">
-                <span class="feature-icon">📤</span>
-                <span>Export to CSV, Excel & PDF</span>
+
+            <div class="login-stats">
+                <div class="stat-item">
+                    <span class="login-stat-value">10x</span>
+                    <span class="login-stat-label">Faster Queries</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="login-stat-value">99.9%</span>
+                    <span class="login-stat-label">Uptime</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="login-stat-value">3 DB</span>
+                    <span class="login-stat-label">Supported</span>
+                </div>
             </div>
-            <div class="login-feature">
-                <span class="feature-icon">🔔</span>
-                <span>Automated alerts & reports</span>
-            </div>
-        </div>
-        <div class="login-stats">
-            <div>
-                <span class="login-stat-value">10x</span>
-                <span class="login-stat-label">Faster queries</span>
-            </div>
-            <div>
-                <span class="login-stat-value">99.9%</span>
-                <span class="login-stat-label">Uptime</span>
-            </div>
-            <div>
-                <span class="login-stat-value">3 DB</span>
-                <span class="login-stat-label">Supported</span>
-            </div>
+
         </div>
     </div>
-</div>
+
     <div class="login-right">
         <div class="login-card">
-            <div class="login-card-header">
-                <h2 id="auth-heading">Welcome back</h2>
-                <p id="auth-subheading">Sign in to your PRISM account</p>
+
+            <!-- Skeleton loader -->
+            <div class="skeleton-loader" id="skeleton-loader">
+                <div class="skel skel-title"></div>
+                <div class="skel skel-sub"></div>
+                <div class="skel skel-tabs"></div>
+                <div class="skel skel-input"></div>
+                <div class="skel skel-input"></div>
+                <div class="skel skel-btn"></div>
             </div>
 
-            <div class="auth-tabs">
-                <button class="auth-tab active" id="login-tab">Login</button>
-                <button class="auth-tab" id="signup-tab">Sign Up</button>
-            </div>
+            <!-- Actual form (hidden until loaded) -->
+            <div class="login-form-wrapper" id="login-form-wrapper" style="display:none;">
 
-            <div id="auth-error" class="auth-message auth-message-error" style="display:none;"></div>
-            <div id="auth-success" class="auth-message auth-message-success" style="display:none;"></div>
-
-            <!-- Login Form -->
-            <div id="login-form" class="login-form">
-                <div class="form-group">
-                    <label>Email address</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">✉️</span>
-                        <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email">
-                    </div>
+                <div class="login-card-header">
+                    <h2 id="auth-heading">Welcome back</h2>
+                    <p id="auth-subheading">Sign in to your PRISM account</p>
                 </div>
-                <div class="form-group">
-                    <div class="label-row">
+
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="login-tab">Login</button>
+                    <button class="auth-tab" id="signup-tab">Sign Up</button>
+                </div>
+
+                <div id="auth-error" class="auth-message auth-message-error" style="display:none;"></div>
+                <div id="auth-success" class="auth-message auth-message-success" style="display:none;"></div>
+
+                <!-- Login Form -->
+                <div id="login-form" class="login-form">
+                    <div class="form-group">
+                        <label>Email address</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">✉️</span>
+                            <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email">
+                            <div class="input-glow"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="label-row">
+                            <label>Password</label>
+                            <button type="button" class="forgot-password-btn" id="forgot-password-btn">Forgot password?</button>
+                        </div>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
+                            <span onclick="togglePassword('login-password', this)" class="password-toggle">👁️</span>
+                            <div class="input-glow"></div>
+                        </div>
+                    </div>
+                    <div class="remember-me-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="remember-me">
+                            <span class="checkbox-custom"></span>
+                            <span>Remember me for 30 days</span>
+                        </label>
+                    </div>
+                    <button id="login-btn" class="btn-primary login-btn">
+                        <span class="btn-text">Sign in</span>
+                        <span class="btn-arrow">→</span>
+                        <div class="btn-loader hidden" id="login-loader">
+                            <div class="spinner"></div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div id="forgot-form" class="login-form hidden">
+                    <div class="back-btn-row">
+                        <button type="button" id="back-to-login-btn" class="back-btn">← Back to login</button>
+                    </div>
+                    <p class="forgot-description">Enter your email and we'll send you a link to reset your password.</p>
+                    <div class="form-group">
+                        <label>Email address</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">✉️</span>
+                            <input type="email" id="forgot-email" placeholder="you@company.com">
+                            <div class="input-glow"></div>
+                        </div>
+                    </div>
+                    <button id="forgot-btn" class="btn-primary login-btn">Send Reset Link</button>
+                </div>
+
+                <!-- Sign Up Form -->
+                <div id="signup-form" class="login-form hidden">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">👤</span>
+                            <input type="text" id="signup-name" placeholder="John Doe">
+                            <div class="input-glow"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Company Name</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🏢</span>
+                            <input type="text" id="signup-company" placeholder="Acme Inc.">
+                            <div class="input-glow"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email address</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">✉️</span>
+                            <input type="email" id="signup-email" placeholder="you@company.com">
+                            <div class="input-glow"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label>Password</label>
-                        <button type="button" class="forgot-password-btn" id="forgot-password-btn">Forgot password?</button>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="signup-password" placeholder="Min 6 characters">
+                            <span onclick="togglePassword('signup-password', this)" class="password-toggle">👁️</span>
+                            <div class="input-glow"></div>
+                        </div>
+                        <div class="password-strength-bar" id="strength-bar">
+                            <div class="strength-fill" id="strength-fill"></div>
+                        </div>
+                        <div class="password-strength" id="password-strength"></div>
                     </div>
-                    <div class="input-wrapper">
-                        <span class="input-icon">🔒</span>
-                        <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
-                        <span onclick="togglePassword('login-password', this)" class="password-toggle">👁️</span>
+                    <button id="signup-btn" class="btn-primary login-btn">
+                        <span class="btn-text">Create Account</span>
+                        <span class="btn-arrow">→</span>
+                    </button>
+                    <div class="terms-text">
+                        By creating an account you agree to our
+                        <a href="about.html">Privacy Policy</a> and
+                        <a href="about.html">Terms & Conditions</a>
                     </div>
                 </div>
-                <div class="remember-me-row">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="remember-me">
-                        <span>Remember me for 30 days</span>
-                    </label>
-                </div>
-                <button id="login-btn" class="btn-primary login-btn">Sign in</button>
-            </div>
 
-            <!-- Forgot Password Form -->
-            <div id="forgot-form" class="login-form hidden">
-                <div class="back-btn-row">
-                    <button type="button" id="back-to-login-btn" class="back-btn">← Back to login</button>
-                </div>
-                <p class="forgot-description">Enter your email and we'll send you a link to reset your password.</p>
-                <div class="form-group">
-                    <label>Email address</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">✉️</span>
-                        <input type="email" id="forgot-email" placeholder="you@company.com">
-                    </div>
-                </div>
-                <button id="forgot-btn" class="btn-primary login-btn">Send Reset Link</button>
-            </div>
-
-            <!-- Sign Up Form -->
-            <div id="signup-form" class="login-form hidden">
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">👤</span>
-                        <input type="text" id="signup-name" placeholder="John Doe">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Company Name</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">🏢</span>
-                        <input type="text" id="signup-company" placeholder="Acme Inc.">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Email address</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">✉️</span>
-                        <input type="email" id="signup-email" placeholder="you@company.com">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">🔒</span>
-                        <input type="password" id="signup-password" placeholder="Min 6 characters">
-                        <span onclick="togglePassword('signup-password', this)" class="password-toggle">👁️</span>
-                    </div>
-                    <div class="password-strength" id="password-strength"></div>
-                </div>
-                <button id="signup-btn" class="btn-primary login-btn">Create Account</button>
-                <div class="terms-text">
-                    By creating an account you agree to our
-                    <a href="about.html">Privacy Policy</a> and
-                    <a href="about.html">Terms & Conditions</a>
-                </div>
             </div>
         </div>
     </div>
@@ -175,10 +243,10 @@
             <button class="nav-item" data-view="schema">
                 <span class="nav-icon">📊</span><span class="nav-text">Schema</span>
             </button>
-           <button class="nav-item" data-view="dashboard">
+            <button class="nav-item" data-view="dashboard">
                 <span class="nav-icon">📌</span><span class="nav-text">Dashboard</span>
             </button>
-          <button class="nav-item" data-view="history">
+            <button class="nav-item" data-view="history">
                 <span class="nav-icon">🕐</span><span class="nav-text">History</span>
             </button>
             <button class="nav-item" data-view="exports">
@@ -190,8 +258,11 @@
             <button class="nav-item" data-view="alerts">
                 <span class="nav-icon">🔔</span><span class="nav-text">Alerts</span>
             </button>
+            <button class="nav-item" onclick="window.location.href='upload.html'">
+                <span class="nav-icon">📂</span><span class="nav-text">Upload</span>
+            </button>
         </nav>
-       <div style="padding:12px 16px;border-top:1px solid var(--border-color);">
+        <div style="padding:12px 16px;border-top:1px solid var(--border-color);">
             <button onclick="app.toggleTheme()" id="theme-toggle" style="width:100%;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px;font-size:13px;cursor:pointer;">
                 🌙 Dark Mode
             </button>
@@ -216,19 +287,19 @@
                     <label>Database Connection:</label>
                     <select id="query-connection"><option value="">Select a connection...</option></select>
                 </div>
-               <div style="margin-bottom:12px;">
-    <select id="template-select" onchange="app.loadTemplate(this.value)" style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px 12px;width:100%;font-size:14px;">
-        <option value="">⚡ Quick Templates — Select a template query...</option>
-        <option value="show all records">Show all records</option>
-        <option value="show top 10 records">Show top 10 records</option>
-        <option value="count total records">Count total records</option>
-        <option value="show records created today">Show records created today</option>
-        <option value="show records created this month">Show records created this month</option>
-        <option value="show most recent 5 records">Show most recent 5 records</option>
-        <option value="find duplicate records">Find duplicate records</option>
-        <option value="show records with missing email">Show records with missing email</option>
-    </select>
-</div>
+                <div style="margin-bottom:12px;">
+                    <select id="template-select" onchange="app.loadTemplate(this.value)" style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px 12px;width:100%;font-size:14px;">
+                        <option value="">⚡ Quick Templates — Select a template query...</option>
+                        <option value="show all records">Show all records</option>
+                        <option value="show top 10 records">Show top 10 records</option>
+                        <option value="count total records">Count total records</option>
+                        <option value="show records created today">Show records created today</option>
+                        <option value="show records created this month">Show records created this month</option>
+                        <option value="show most recent 5 records">Show most recent 5 records</option>
+                        <option value="find duplicate records">Find duplicate records</option>
+                        <option value="show records with missing email">Show records with missing email</option>
+                    </select>
+                </div>
                 <div class="saved-queries-bar" style="gap:8px;flex-wrap:wrap;display:none;" id="saved-queries-bar"></div>
                 <div class="query-input-container" style="position:relative;">
                     <div id="suggestions-box" style="display:none;position:absolute;z-index:100;width:100%;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);margin-top:4px;"></div>
@@ -272,28 +343,28 @@
                         <strong>Explanation:</strong> <span id="explanation-text"></span>
                     </div>
                     <div id="chart-section" class="hidden" style="margin:20px 0;background:var(--bg-secondary);border-radius:12px;padding:20px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3 style="color:var(--text-primary);margin:0;">📊 Chart</h3>
-        <button onclick="app.pinToDashboard()" class="btn-secondary" style="margin-left:8px;padding:4px 12px;font-size:12px;">📌 Pin to Dashboard</button>
-        <div style="display:flex;gap:8px;">
-            <select id="chart-type" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;">
-                <option value="bar">Bar Chart</option>
-                <option value="line">Line Chart</option>
-                <option value="pie">Pie Chart</option>
-                <option value="doughnut">Doughnut</option>
-            </select>
-            <select id="chart-x-axis" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;"></select>
-            <select id="chart-y-axis" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;"></select>
-        </div>
-    </div>
-    <canvas id="results-chart" style="max-height:300px;"></canvas>
-</div>
-<div style="margin:12px 0;">
-    <input type="text" id="results-search" placeholder="🔍 Search in results..." 
-    style="width:100%;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px 12px;font-size:14px;"
-    oninput="app.searchResults(this.value)">
-</div>                   
-<div class="table-container">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h3 style="color:var(--text-primary);margin:0;">📊 Chart</h3>
+                            <button onclick="app.pinToDashboard()" class="btn-secondary" style="margin-left:8px;padding:4px 12px;font-size:12px;">📌 Pin to Dashboard</button>
+                            <div style="display:flex;gap:8px;">
+                                <select id="chart-type" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="line">Line Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut</option>
+                                </select>
+                                <select id="chart-x-axis" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;"></select>
+                                <select id="chart-y-axis" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 8px;"></select>
+                            </div>
+                        </div>
+                        <canvas id="results-chart" style="max-height:300px;"></canvas>
+                    </div>
+                    <div style="margin:12px 0;">
+                        <input type="text" id="results-search" placeholder="🔍 Search in results..."
+                        style="width:100%;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px 12px;font-size:14px;"
+                        oninput="app.searchResults(this.value)">
+                    </div>
+                    <div class="table-container">
                         <table id="results-table">
                             <thead id="results-head"></thead>
                             <tbody id="results-body"></tbody>
@@ -346,17 +417,19 @@
                 </div>
             </div>
         </div>
-       <!-- History View -->
-<div id="history-view" class="view">
-    <div class="view-header">
-        <h1>Query History</h1>
-        <p>Your recent queries</p>
-    </div>
-    <div style="padding:20px;">
-        <button onclick="localStorage.removeItem('query_history');app.renderHistory();" class="btn-secondary" style="margin-bottom:16px;">🗑️ Clear History</button>
-        <div id="history-list"></div>
-    </div>
-</div>
+
+        <!-- History View -->
+        <div id="history-view" class="view">
+            <div class="view-header">
+                <h1>Query History</h1>
+                <p>Your recent queries</p>
+            </div>
+            <div style="padding:20px;">
+                <button onclick="localStorage.removeItem('query_history');app.renderHistory();" class="btn-secondary" style="margin-bottom:16px;">🗑️ Clear History</button>
+                <div id="history-list"></div>
+            </div>
+        </div>
+
         <!-- Exports View -->
         <div id="exports-view" class="view">
             <div class="view-header">
@@ -389,127 +462,98 @@
                 </div>
             </div>
         </div>
-<!-- Alerts View -->
-<div id="alerts-view" class="view">
-    <div class="view-header">
-        <h1>Smart Alerts</h1>
-        <p>Get notified when your data crosses a threshold</p>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0;">
 
-        <!-- Create Alert Rule -->
-        <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
-            <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-                ➕ Create Alert Rule
-            </h3>
-            <div class="form-group">
-                <label>Alert Name</label>
-                <input type="text" id="alert-name" placeholder="e.g. Low Sales Alert">
+        <!-- Alerts View -->
+        <div id="alerts-view" class="view">
+            <div class="view-header">
+                <h1>Smart Alerts</h1>
+                <p>Get notified when your data crosses a threshold</p>
             </div>
-            <div class="form-group">
-                <label>Database Connection</label>
-                <select id="alert-connection">
-                    <option value="">Select a connection...</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Query to Monitor</label>
-                <input type="text" id="alert-query" placeholder="e.g. total sales today">
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="form-group">
-                    <label>Condition</label>
-                    <select id="alert-condition">
-                        <option value="less_than">Less than (&lt;)</option>
-                        <option value="greater_than">Greater than (&gt;)</option>
-                        <option value="equals">Equals (=)</option>
-                        <option value="not_equals">Not equals (≠)</option>
-                    </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0;">
+                <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+                    <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);">➕ Create Alert Rule</h3>
+                    <div class="form-group">
+                        <label>Alert Name</label>
+                        <input type="text" id="alert-name" placeholder="e.g. Low Sales Alert">
+                    </div>
+                    <div class="form-group">
+                        <label>Database Connection</label>
+                        <select id="alert-connection"><option value="">Select a connection...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Query to Monitor</label>
+                        <input type="text" id="alert-query" placeholder="e.g. total sales today">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label>Condition</label>
+                            <select id="alert-condition">
+                                <option value="less_than">Less than (&lt;)</option>
+                                <option value="greater_than">Greater than (&gt;)</option>
+                                <option value="equals">Equals (=)</option>
+                                <option value="not_equals">Not equals (≠)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Threshold Value</label>
+                            <input type="number" id="alert-threshold" placeholder="e.g. 1000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notify Via</label>
+                        <div style="display:flex;gap:16px;margin-top:4px;">
+                            <label class="checkbox-label"><input type="checkbox" id="alert-channel-email" checked> Email</label>
+                            <label class="checkbox-label"><input type="checkbox" id="alert-channel-slack"> Slack</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Check Every</label>
+                        <select id="alert-frequency">
+                            <option value="5">Every 5 minutes</option>
+                            <option value="15">Every 15 minutes</option>
+                            <option value="30">Every 30 minutes</option>
+                            <option value="60" selected>Every hour</option>
+                            <option value="1440">Every day</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" style="width:100%;margin-top:4px;" onclick="app.createAlertRule()">🔔 Create Alert Rule</button>
                 </div>
-                <div class="form-group">
-                    <label>Threshold Value</label>
-                    <input type="number" id="alert-threshold" placeholder="e.g. 1000">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Notify Via</label>
-                <div style="display:flex;gap:16px;margin-top:4px;">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="alert-channel-email" checked> Email
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="alert-channel-slack"> Slack
-                    </label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Check Every</label>
-                <select id="alert-frequency">
-                    <option value="5">Every 5 minutes</option>
-                    <option value="15">Every 15 minutes</option>
-                    <option value="30">Every 30 minutes</option>
-                    <option value="60" selected>Every hour</option>
-                    <option value="1440">Every day</option>
-                </select>
-            </div>
-            <button class="btn-primary" style="width:100%;margin-top:4px;" onclick="app.createAlertRule()">
-                🔔 Create Alert Rule
-            </button>
-        </div>
-
-        <!-- Right column -->
-        <div style="display:flex;flex-direction:column;gap:20px;">
-
-            <!-- Send Test Alert -->
-            <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
-                <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-                    🧪 Send Test Alert
-                </h3>
-                <div class="form-group">
-                    <label>Title</label>
-                    <input type="text" id="test-alert-title" placeholder="Alert Title">
-                </div>
-                <div class="form-group">
-                    <label>Message</label>
-                    <textarea id="test-alert-message" placeholder="Alert Message" rows="3"></textarea>
-                </div>
-                <div style="display:flex;gap:16px;margin-bottom:16px;">
-                    <label class="checkbox-label"><input type="checkbox" id="channel-email" checked> Email</label>
-                    <label class="checkbox-label"><input type="checkbox" id="channel-slack"> Slack</label>
-                </div>
-                <button class="btn-secondary" style="width:100%;" id="send-test-alert">
-                    📤 Send Test Alert
-                </button>
-            </div>
-
-            <!-- Alert History -->
-            <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;flex:1;">
-                <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-                    📋 Alert History
-                </h3>
-                <div id="alert-history-list">
-                    <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">
-                        No alerts triggered yet
+                <div style="display:flex;flex-direction:column;gap:20px;">
+                    <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+                        <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);">🧪 Send Test Alert</h3>
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" id="test-alert-title" placeholder="Alert Title">
+                        </div>
+                        <div class="form-group">
+                            <label>Message</label>
+                            <textarea id="test-alert-message" placeholder="Alert Message" rows="3"></textarea>
+                        </div>
+                        <div style="display:flex;gap:16px;margin-bottom:16px;">
+                            <label class="checkbox-label"><input type="checkbox" id="channel-email" checked> Email</label>
+                            <label class="checkbox-label"><input type="checkbox" id="channel-slack"> Slack</label>
+                        </div>
+                        <button class="btn-secondary" style="width:100%;" id="send-test-alert">📤 Send Test Alert</button>
+                    </div>
+                    <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;flex:1;">
+                        <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">📋 Alert History</h3>
+                        <div id="alert-history-list">
+                            <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">No alerts triggered yet</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Active Alert Rules -->
-    <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-top:20px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-            <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin:0;">
-                ⚡ Active Alert Rules
-            </h3>
-            <span id="alert-rules-count" style="font-size:12px;color:var(--text-muted);">0 rules</span>
-        </div>
-        <div id="alert-rules-list">
-            <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;border:1px dashed var(--border);border-radius:10px;">
-                No alert rules yet. Create one above!
+            <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-top:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+                    <h3 style="color:var(--text-primary);font-size:15px;font-weight:600;margin:0;">⚡ Active Alert Rules</h3>
+                    <span id="alert-rules-count" style="font-size:12px;color:var(--text-muted);">0 rules</span>
+                </div>
+                <div id="alert-rules-list">
+                    <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;border:1px dashed var(--border);border-radius:10px;">No alert rules yet. Create one above!</div>
+                </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <!-- Modal -->
@@ -589,11 +633,28 @@
 <script src="app.js"></script>
 <script>
 
+// ── Skeleton loader ───────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        document.getElementById('skeleton-loader').style.display = 'none';
+        document.getElementById('login-form-wrapper').style.display = 'block';
+        document.getElementById('login-form-wrapper').style.animation = 'formReveal 0.4s ease both';
+        const rememberedEmail = localStorage.getItem('remembered_email');
+        if (rememberedEmail) {
+            document.getElementById('login-email').value = rememberedEmail;
+            document.getElementById('remember-me').checked = true;
+        }
+        document.getElementById('login-email').focus();
+    }, 800);
+});
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function showError(msg) {
     const el = document.getElementById('auth-error');
     el.textContent = msg;
     el.style.display = 'block';
+    el.style.animation = 'shake 0.4s ease';
+    setTimeout(() => el.style.animation = '', 400);
     document.getElementById('auth-success').style.display = 'none';
 }
 
@@ -657,21 +718,10 @@ if (savedSession) {
     });
 }
 
-// ── Pre-fill remembered email ─────────────────────────────────────────────────
-window.addEventListener('load', () => {
-    const rememberedEmail = localStorage.getItem('remembered_email');
-    if (rememberedEmail) {
-        document.getElementById('login-email').value = rememberedEmail;
-        document.getElementById('remember-me').checked = true;
-    }
-    document.getElementById('login-email').focus();
-});
-
 // ── Enter key support ─────────────────────────────────────────────────────────
 document.getElementById('login-email').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('login-password').focus();
 });
-
 document.getElementById('login-password').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('login-btn').click();
 });
@@ -687,7 +737,8 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     if (!email.includes('@')) { showError('Please enter a valid email address.'); return; }
     if (password.length < 6)  { showError('Password must be at least 6 characters.'); return; }
 
-    btn.textContent = 'Signing in...';
+    btn.querySelector('.btn-text').textContent = 'Signing in...';
+    btn.querySelector('.btn-arrow').style.display = 'none';
     btn.disabled = true;
 
     try {
@@ -705,7 +756,8 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     } catch (err) {
         showError('Cannot reach server. Is the backend running?');
     } finally {
-        btn.textContent = 'Sign in';
+        btn.querySelector('.btn-text').textContent = 'Sign in';
+        btn.querySelector('.btn-arrow').style.display = 'inline';
         btn.disabled = false;
     }
 });
@@ -723,7 +775,7 @@ document.getElementById('signup-btn').addEventListener('click', async () => {
     if (!email.includes('@'))          { showError('Please enter a valid email address.'); return; }
     if (password.length < 6)           { showError('Password must be at least 6 characters.'); return; }
 
-    btn.textContent = 'Creating account...';
+    btn.querySelector('.btn-text').textContent = 'Creating account...';
     btn.disabled = true;
 
     try {
@@ -743,7 +795,7 @@ document.getElementById('signup-btn').addEventListener('click', async () => {
     } catch (err) {
         showError('Cannot reach server. Is the backend running?');
     } finally {
-        btn.textContent = 'Create Account';
+        btn.querySelector('.btn-text').textContent = 'Create Account';
         btn.disabled = false;
     }
 });
@@ -769,19 +821,14 @@ document.getElementById('forgot-btn').addEventListener('click', async () => {
     const email = document.getElementById('forgot-email').value.trim();
     const btn   = document.getElementById('forgot-btn');
     if (!email) { showError('Please enter your email.'); return; }
-
     btn.textContent = 'Sending...';
     btn.disabled = true;
-
     try {
         const { error } = await window.supabase.auth.resetPasswordForEmail(email, {
             redirectTo: 'prism://reset-password'
         });
-        if (error) {
-            showError(error.message);
-        } else {
-            showSuccess('Reset link sent! Check your email inbox.');
-        }
+        if (error) showError(error.message);
+        else showSuccess('Reset link sent! Check your email inbox.');
     } catch (err) {
         showError('Something went wrong. Try again.');
     } finally {
@@ -792,18 +839,25 @@ document.getElementById('forgot-btn').addEventListener('click', async () => {
 
 // ── Password strength ─────────────────────────────────────────────────────────
 document.getElementById('signup-password').addEventListener('input', (e) => {
-    const val = e.target.value;
-    const el  = document.getElementById('password-strength');
-    if (!val) { el.textContent = ''; return; }
+    const val  = e.target.value;
+    const el   = document.getElementById('password-strength');
+    const fill = document.getElementById('strength-fill');
+    if (!val) { el.textContent = ''; fill.style.width = '0%'; fill.style.background = ''; return; }
     if (val.length < 6) {
         el.textContent = '⚠️ Too short';
         el.style.color = '#e8455a';
+        fill.style.width = '30%';
+        fill.style.background = '#e8455a';
     } else if (val.length < 10) {
         el.textContent = '🟡 Medium strength';
-        el.style.color = '#f5a623';
+        el.style.color = '#f59e0b';
+        fill.style.width = '65%';
+        fill.style.background = '#f59e0b';
     } else {
         el.textContent = '✅ Strong password';
-        el.style.color = '#28c864';
+        el.style.color = '#22c55e';
+        fill.style.width = '100%';
+        fill.style.background = '#22c55e';
     }
 });
 
