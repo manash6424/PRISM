@@ -1,29 +1,19 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
- 
+
 let mainWindow;
- 
-// ── Persistent connections file ──────────────────────────────────────────────
-const connectionsFile = path.join(app.getPath('userData'), 'connections.json');
- 
-function loadConnections() {
-    try {
-        if (fs.existsSync(connectionsFile)) {
-            return JSON.parse(fs.readFileSync(connectionsFile, 'utf8'));
-        }
-    } catch (e) { console.error('Failed to load connections:', e); }
-    return {};
+
+// ── Token Storage ─────────────────────────────────────────────────────────────
+let accessToken = null;
+
+function getAuthHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
+    };
 }
- 
-function saveConnectionsToDisk(data) {
-    try {
-        fs.writeFileSync(connectionsFile, JSON.stringify(data, null, 2));
-    } catch (e) { console.error('Failed to save connections:', e); }
-}
- 
-let connections = loadConnections();
- 
+
 // ── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -40,26 +30,26 @@ function createWindow() {
         backgroundColor: '#1a1a2e',
         show: false
     });
- 
+
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
- 
+
     mainWindow.once('ready-to-show', () => mainWindow.show());
     mainWindow.on('closed', () => { mainWindow = null; });
 }
- 
+
 app.whenReady().then(createWindow);
- 
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
- 
+
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
- 
+
 // ── API Base ─────────────────────────────────────────────────────────────────
 const API_BASE = 'http://localhost:8000/api/v1';
- 
+
 // ── Open File (for exports) ───────────────────────────────────────────────────
 ipcMain.handle('open-file', async (event, filepath) => {
     try {
@@ -74,13 +64,13 @@ ipcMain.handle('open-file', async (event, filepath) => {
         return { success: false, error: err.message };
     }
 });
- 
+
 // ── Generic API request ──────────────────────────────────────────────────────
 ipcMain.handle('api-request', async (event, { method, endpoint, data }) => {
     const url = `${API_BASE}${endpoint}`;
     const config = {
         method,
-        headers: { 'Content-Type': 'application/json' }
+        headers: getAuthHeaders()  // ✅ auth token
     };
     if (data && ['POST', 'PUT', 'PATCH'].includes(method)) {
         config.body = JSON.stringify(data);
@@ -92,7 +82,7 @@ ipcMain.handle('api-request', async (event, { method, endpoint, data }) => {
         return { error: error.message };
     }
 });
- 
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 ipcMain.handle('auth-login', async (event, { email, password }) => {
     try {
@@ -102,13 +92,17 @@ ipcMain.handle('auth-login', async (event, { email, password }) => {
             body: JSON.stringify({ email, password })
         });
         const data = await res.json();
-        if (res.ok) return { success: true, user: data };
+        if (res.ok && data.access_token) {
+            accessToken = data.access_token;  // ✅ save token in main process
+            console.log('✅ Token saved for user:', data.user?.email);
+            return { success: true, user: data.user, access_token: data.access_token };
+        }
         return { success: false, message: data.detail || 'Invalid email or password' };
     } catch (err) {
         return { success: false, message: 'Cannot reach server. Is the backend running?' };
     }
 });
- 
+
 ipcMain.handle('auth-signup', async (event, { name, company, email, password }) => {
     try {
         const res = await fetch(`${API_BASE}/auth/register`, {
@@ -123,49 +117,67 @@ ipcMain.handle('auth-signup', async (event, { name, company, email, password }) 
         return { success: false, message: 'Cannot reach server. Is the backend running?' };
     }
 });
- 
+
+ipcMain.handle('auth-logout', async () => {
+    accessToken = null;  // ✅ clear token on logout
+    return { success: true };
+});
+
+ipcMain.handle('auth-set-token', async (event, token) => {
+    accessToken = token;  // ✅ allow renderer to set token
+    return { success: true };
+});
+
 // ── Connections ───────────────────────────────────────────────────────────────
 ipcMain.handle('get-connections', async () => {
-    return Object.values(connections);
+    try {
+        const res = await fetch(`${API_BASE}/connections`, {
+            headers: getAuthHeaders()  // ✅ auth token
+        });
+        if (res.status === 401) return [];
+        return await res.json();
+    } catch (err) {
+        return [];
+    }
 });
- 
+
 ipcMain.handle('save-connection', async (event, connection) => {
     try {
         const res = await fetch(`${API_BASE}/connections`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),  // ✅ auth token
             body: JSON.stringify(connection)
         });
-        const saved = await res.json();
-        if (saved.id) {
-            connections[saved.id] = saved;
-            saveConnectionsToDisk(connections);
-        }
-        return saved;
-    } catch (err) {
-        return { error: err.message };
-    }
-});
- 
-ipcMain.handle('delete-connection', async (event, id) => {
-    try {
-        await fetch(`${API_BASE}/connections/${id}`, { method: 'DELETE' });
-        delete connections[id];
-        saveConnectionsToDisk(connections);
-        return { success: true };
-    } catch (err) {
-        return { error: err.message };
-    }
-});
- 
-ipcMain.handle('test-connection', async (event, id) => {
-    try {
-        const res = await fetch(`${API_BASE}/connections/${id}/test`, { method: 'POST' });
         return await res.json();
     } catch (err) {
         return { error: err.message };
     }
 });
+
+ipcMain.handle('delete-connection', async (event, id) => {
+    try {
+        await fetch(`${API_BASE}/connections/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()  // ✅ auth token
+        });
+        return { success: true };
+    } catch (err) {
+        return { error: err.message };
+    }
+});
+
+ipcMain.handle('test-connection', async (event, id) => {
+    try {
+        const res = await fetch(`${API_BASE}/connections/${id}/test`, {
+            method: 'POST',
+            headers: getAuthHeaders()  // ✅ auth token
+        });
+        return await res.json();
+    } catch (err) {
+        return { error: err.message };
+    }
+});
+
 // ── Save File Dialog ──────────────────────────────────────────────────────────
 ipcMain.handle('save-file', async (event, { filename, content }) => {
     try {

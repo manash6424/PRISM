@@ -18,6 +18,42 @@ class AICopilotApp {
         this.renderHistory();
     }
 
+    // ── Auth Token ──────────────────────────────────────────────────────────
+    getToken() {
+        const session = localStorage.getItem('prism_session');
+        if (session) {
+            try {
+                const parsed = JSON.parse(session);
+                return parsed.token || localStorage.getItem('access_token') || 'dev-token';
+            } catch { return 'dev-token'; }
+        }
+        return localStorage.getItem('access_token') || 'dev-token';
+    }
+
+    authHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.getToken()}`
+        };
+    }
+
+    async authFetch(url, options = {}) {
+        const token = this.getToken();
+        const headers = {
+            ...options.headers,
+            'Content-Type': options.headers?.['Content-Type'] || 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(url, { ...options, headers });
+
+        if (res.status === 401) {
+            localStorage.removeItem('access_token');
+        }
+
+        return res;
+    }
+
     // ── Event Bindings ──────────────────────────────────────────────────────
     bindEvents() {
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -91,7 +127,8 @@ class AICopilotApp {
     // ── Connections ─────────────────────────────────────────────────────────
     async loadConnections() {
         try {
-            const res = await fetch(`${API}/connections`);
+            const res = await this.authFetch(`${API}/connections`); // ✅ auth
+            if (!res) return;
             const result = await res.json();
             this.connections = Array.isArray(result) ? result : [];
             this.renderConnections();
@@ -186,11 +223,11 @@ class AICopilotApp {
             password: document.getElementById('conn-password').value,
         };
         try {
-            const res = await fetch(`${API}/connections`, {
+            const res = await this.authFetch(`${API}/connections`, { // ✅ auth
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(connection)
             });
+            if (!res) return;
             const result = await res.json();
             if (result.error) { this.showToast(result.error, 'error'); return; }
             this.closeConnectionModal();
@@ -212,11 +249,11 @@ class AICopilotApp {
             password: document.getElementById('conn-password').value,
         };
         try {
-            const res = await fetch(`${API}/connections`, {
+            const res = await this.authFetch(`${API}/connections`, { // ✅ auth
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(connection)
             });
+            if (!res) return;
             const result = await res.json();
             if (result.status === 'connected') {
                 this.showToast('Connection successful!', 'success');
@@ -230,7 +267,10 @@ class AICopilotApp {
 
     async testConnection(connectionId) {
         try {
-            const res = await fetch(`${API}/connections/${connectionId}/test`, { method: 'POST' });
+            const res = await this.authFetch(`${API}/connections/${connectionId}/test`, { // ✅ auth
+                method: 'POST'
+            });
+            if (!res) return;
             const result = await res.json();
             if (result.success) {
                 this.showToast('Connection test successful!', 'success');
@@ -245,7 +285,10 @@ class AICopilotApp {
     async deleteConnection(connectionId) {
         if (!confirm('Are you sure you want to delete this connection?')) return;
         try {
-            const res = await fetch(`${API}/connections/${connectionId}`, { method: 'DELETE' });
+            const res = await this.authFetch(`${API}/connections/${connectionId}`, { // ✅ auth
+                method: 'DELETE'
+            });
+            if (!res) return;
             if (res.ok) {
                 this.loadConnections();
                 this.showToast('Connection deleted', 'success');
@@ -272,15 +315,15 @@ class AICopilotApp {
         btn.disabled = true;
 
         try {
-            const res = await fetch(`${API}/query`, {
+            const res = await this.authFetch(`${API}/query`, { // ✅ auth
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     connection_id: connectionId,
                     natural_language: naturalQuery,
                     include_explanation: includeExpl
                 })
             });
+            if (!res) return;
             const result = await res.json();
 
             if (!res.ok || result.error) { this.showToast(result.detail || result.error || 'Query failed', 'error'); return; }
@@ -344,12 +387,7 @@ class AICopilotApp {
     // ── Query History ────────────────────────────────────────────────────────
     saveToHistory(query, rowCount, executionTime) {
         const history = JSON.parse(localStorage.getItem('query_history') || '[]');
-        history.unshift({
-            query,
-            rowCount,
-            executionTime,
-            timestamp: new Date().toLocaleString()
-        });
+        history.unshift({ query, rowCount, executionTime, timestamp: new Date().toLocaleString() });
         if (history.length > 50) history.pop();
         localStorage.setItem('query_history', JSON.stringify(history));
     }
@@ -414,7 +452,6 @@ class AICopilotApp {
             ).join('');
 
         document.getElementById('row-count').textContent = `📊 ${filtered.length} rows`;
-        this.saveToHistory(document.getElementById('natural-query').value, filtered.length, '');
     }
 
     // ── Theme Toggle ─────────────────────────────────────────────────────────
@@ -460,12 +497,12 @@ class AICopilotApp {
             return;
         }
         try {
-            const response = await fetch(`${API}/suggestions`, {
+            const res = await this.authFetch(`${API}/suggestions`, { // ✅ auth
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ input })
             });
-            const data = await response.json();
+            if (!res) return;
+            const data = await res.json();
             this.showSuggestions(data.suggestions || []);
         } catch (e) {
             document.getElementById('suggestions-box').style.display = 'none';
@@ -512,20 +549,7 @@ class AICopilotApp {
         saved.push({ name, query, savedAt: new Date().toISOString() });
         localStorage.setItem('savedQueries', JSON.stringify(saved));
         this.renderSavedQueries();
-
-        if (window.api && window.api.saveFile) {
-            const result = await window.api.saveFile(
-                'prism_saved_queries.json',
-                JSON.stringify(saved, null, 2)
-            );
-            if (result.success) {
-                this.showToast('Query saved to file!', 'success');
-            } else {
-                this.showToast('Query saved in app!', 'success');
-            }
-        } else {
-            this.showToast('Query saved! Click the tag to reuse it.', 'success');
-        }
+        this.showToast('Query saved! Click the tag to reuse it.', 'success');
     }
 
     renderSavedQueries() {
@@ -575,9 +599,7 @@ class AICopilotApp {
         const pin = {
             id: Date.now(),
             title: this.currentQuery.natural_language.slice(0, 50),
-            chartType,
-            xCol,
-            yCol,
+            chartType, xCol, yCol,
             columns: this.currentQuery.columns,
             results: this.currentQuery.results,
             pinnedAt: new Date().toISOString()
@@ -723,11 +745,8 @@ class AICopilotApp {
     getChartImage() {
         const canvas = document.getElementById('results-chart');
         if (!canvas) return null;
-        try {
-            return canvas.toDataURL('image/png');
-        } catch (e) {
-            return null;
-        }
+        try { return canvas.toDataURL('image/png'); }
+        catch (e) { return null; }
     }
 
     // ── Export ──────────────────────────────────────────────────────────────
@@ -741,9 +760,8 @@ class AICopilotApp {
         btn.disabled = true;
 
         try {
-            const res = await fetch(`${API}/export`, {
+            const res = await this.authFetch(`${API}/export`, { // ✅ auth
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     query_id: this.currentQuery.query_id,
                     format: format,
@@ -751,6 +769,7 @@ class AICopilotApp {
                     chart_image: format === 'pdf' ? this.getChartImage() : null
                 })
             });
+            if (!res) return;
             const result = await res.json();
 
             if (result.success && result.filepath) {
@@ -779,7 +798,8 @@ class AICopilotApp {
     // ── Query History (Exports view) ─────────────────────────────────────────
     async loadQueryHistory() {
         try {
-            const res = await fetch(`${API}/query/history?limit=50`);
+            const res = await this.authFetch(`${API}/query/history?limit=50`); // ✅ auth
+            if (!res) return;
             const result = await res.json();
             this.renderQueryHistory(result.history || []);
         } catch (err) {
@@ -832,7 +852,10 @@ class AICopilotApp {
         const connectionId = document.getElementById('schema-connection').value;
         if (!connectionId) { this.showToast('Please select a connection', 'warning'); return; }
         try {
-            const res = await fetch(`${API}/connections/${connectionId}/schema?force_refresh=${forceRefresh}`);
+            const res = await this.authFetch( // ✅ auth
+                `${API}/connections/${connectionId}/schema?force_refresh=${forceRefresh}`
+            );
+            if (!res) return;
             const result = await res.json();
             if (result.error) { this.showToast('Failed to load schema', 'error'); return; }
             this.renderSchema(result);
@@ -874,11 +897,11 @@ class AICopilotApp {
         const connectionId = document.getElementById('report-connection').value;
         if (!connectionId) { this.showToast('Please select a connection', 'warning'); return; }
         try {
-            const res = await fetch(`${API}/reports/summary`, {
+            const res = await this.authFetch(`${API}/reports/summary`, { // ✅ auth
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ connection_id: connectionId })
             });
+            if (!res) return;
             const result = await res.json();
             if (result.error) { this.showToast('Failed to generate report', 'error'); return; }
             this.showToast('Summary report generated successfully', 'success');
@@ -899,11 +922,11 @@ class AICopilotApp {
         if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
 
         try {
-            const res = await fetch(`${API}/alerts/test`, {
+            const res = await this.authFetch(`${API}/alerts/test`, { // ✅ auth
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title, message, channels })
             });
+            if (!res) return;
             const result = await res.json();
             const hasSuccess = Object.values(result).some(v => v === true);
             if (hasSuccess) {
@@ -936,14 +959,10 @@ class AICopilotApp {
 
         const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
         const rule = {
-            id: Date.now(),
-            name, connId, query, condition,
-            threshold: parseFloat(threshold),
-            channels,
-            frequency: parseInt(frequency),
-            active: true,
-            createdAt: new Date().toLocaleString(),
-            triggeredCount: 0
+            id: Date.now(), name, connId, query, condition,
+            threshold: parseFloat(threshold), channels,
+            frequency: parseInt(frequency), active: true,
+            createdAt: new Date().toLocaleString(), triggeredCount: 0
         };
 
         rules.push(rule);
@@ -975,9 +994,7 @@ class AICopilotApp {
             return;
         }
 
-        const conditionLabels = {
-            less_than: '<', greater_than: '>', equals: '=', not_equals: '≠'
-        };
+        const conditionLabels = { less_than: '<', greater_than: '>', equals: '=', not_equals: '≠' };
 
         container.innerHTML = rules.map((rule, i) => `
             <div class="alert-rule-card ${rule.active ? 'active-rule' : 'paused-rule'}">
@@ -995,9 +1012,7 @@ class AICopilotApp {
                     <button class="btn-secondary" onclick="app.toggleAlertRule(${i})">
                         ${rule.active ? '⏸ Pause' : '▶ Resume'}
                     </button>
-                    <button class="btn-danger" onclick="app.deleteAlertRule(${i})">
-                        🗑 Delete
-                    </button>
+                    <button class="btn-danger" onclick="app.deleteAlertRule(${i})">🗑 Delete</button>
                 </div>
             </div>
         `).join('');

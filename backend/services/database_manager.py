@@ -3,10 +3,11 @@ import json
 import socket
 import logging
 import os
+import hashlib
 from typing import Optional, List, Dict, Any, Tuple
 from contextlib import asynccontextmanager
 
-from sqlalchemy import text, inspect
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     AsyncSession,
@@ -25,103 +26,170 @@ from ..models.database import (
 
 logger = logging.getLogger(__name__)
 
-CONNECTIONS_FILE = os.path.join(
+CONNECTIONS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "../../connections.json"
+    "../../connections"
 )
+
+os.makedirs(CONNECTIONS_DIR, exist_ok=True)
+
+# ✅ Supabase pooler hosts — never resolve to IP, use hostname directly
+POOLER_HOSTS = [
+    "pooler.supabase.com",
+    "supabase.co",
+    "supabase.in",
+]
+
+def is_pooler_host(host: str) -> bool:
+    return any(h in host for h in POOLER_HOSTS)
 
 
 class DatabaseManager:
-    """Production-grade async database manager with persistence."""
+    """Production-grade async database manager with per-user persistence."""
 
     def __init__(self):
         self._engines: Dict[str, AsyncEngine] = {}
         self._sessions: Dict[str, sessionmaker] = {}
         self._connection_cache: Dict[str, DatabaseConnection] = {}
-        # Store resolved IPs separately
         self._resolved_hosts: Dict[str, str] = {}
+        self._connection_users: Dict[str, str] = {}
 
     # ---------------------------------------------------------
-    # PERSISTENCE
+    # PERSISTENCE — Per User
     # ---------------------------------------------------------
 
-    def _save_connections(self) -> None:
+    def _get_connections_file(self, user_id: str) -> str:
+        safe_id = hashlib.md5(user_id.encode()).hexdigest()
+        return os.path.join(CONNECTIONS_DIR, f"connections_{safe_id}.json")
+
+    def _save_connections(self, user_id: str) -> None:
         try:
+            filepath = self._get_connections_file(user_id)
             data = {}
             for conn_id, conn in self._connection_cache.items():
-                data[conn_id] = conn.model_dump(mode="json")
-            with open(CONNECTIONS_FILE, "w") as f:
+                if self._connection_users.get(conn_id) == user_id:
+                    data[conn_id] = conn.model_dump(mode="json")
+            with open(filepath, "w") as f:
                 json.dump(data, f, indent=2, default=str)
-            logger.info(f"Saved {len(data)} connection(s) to disk.")
+            logger.info(f"Saved {len(data)} connection(s) for user {user_id[:8]}...")
         except Exception as e:
             logger.error(f"Failed to save connections: {e}")
 
-    async def load_connections(self) -> None:
-        """Load and reconnect all persisted connections on startup."""
-        if not os.path.exists(CONNECTIONS_FILE):
-            logger.info("No persisted connections found.")
+    async def load_connections_for_user(self, user_id: str) -> None:
+        filepath = self._get_connections_file(user_id)
+        if not os.path.exists(filepath):
+            logger.info(f"No persisted connections for user {user_id[:8]}...")
             return
 
         try:
-            with open(CONNECTIONS_FILE, "r") as f:
+            with open(filepath, "r") as f:
                 data = json.load(f)
 
-            logger.info(f"Loading {len(data)} persisted connection(s)...")
-
             for conn_id, conn_data in data.items():
+                if conn_id in self._connection_cache:
+                    continue
                 try:
-                    import asyncpg
                     conn = DatabaseConnection(**conn_data)
                     conn.id = conn_id
-
-                    # Always resolve hostname to IP
                     original_host = conn_data.get("host", conn.host)
                     resolved_host = self._resolve_host(original_host)
-
-                    ssl_ctx = self._build_ssl_context()
-
-                    # Test with asyncpg directly using resolved IP
-                    pg_conn = await asyncpg.connect(
-                        host=resolved_host,
-                        port=conn.port,
-                        user=conn.username,
-                        password=conn.password or "",
-                        database=conn.database,
-                        ssl=ssl_ctx,
+                    pg_conn = await self._make_asyncpg_connection(
+                        resolved_host, conn.port, conn.username,
+                        conn.password or "", conn.database
                     )
                     await pg_conn.execute("SELECT 1")
                     await pg_conn.close()
 
-                    # Store resolved IP
                     self._resolved_hosts[conn_id] = resolved_host
                     self._connection_cache[conn_id] = conn
+                    self._connection_users[conn_id] = user_id
+                    self._sessions[conn_id] = True
                     conn.status = ConnectionStatus.CONNECTED
-
-                    logger.info(f"Restored connection: {conn.name} [{conn_id}] -> {resolved_host}")
-
+                    logger.info(f"Restored connection: {conn.name}")
                 except Exception as e:
                     logger.error(f"Failed to restore connection {conn_id}: {e}")
 
         except Exception as e:
-            logger.error(f"Failed to load connections file: {e}")
+            logger.error(f"Failed to load connections for user {user_id[:8]}...: {e}")
 
-    def _delete_persisted_connection(self, connection_id: str) -> None:
-        if not os.path.exists(CONNECTIONS_FILE):
+    async def load_connections(self) -> None:
+        if not os.path.exists(CONNECTIONS_DIR):
             return
         try:
-            with open(CONNECTIONS_FILE, "r") as f:
+            for filename in os.listdir(CONNECTIONS_DIR):
+                if filename.startswith("connections_") and filename.endswith(".json"):
+                    filepath = os.path.join(CONNECTIONS_DIR, filename)
+                    try:
+                        with open(filepath, "r") as f:
+                            data = json.load(f)
+                        for conn_id, conn_data in data.items():
+                            if conn_id in self._connection_cache:
+                                continue
+                            try:
+                                conn = DatabaseConnection(**conn_data)
+                                conn.id = conn_id
+                                original_host = conn_data.get("host", conn.host)
+                                resolved_host = self._resolve_host(original_host)
+                                pg_conn = await self._make_asyncpg_connection(
+                                    resolved_host, conn.port, conn.username,
+                                    conn.password or "", conn.database
+                                )
+                                await pg_conn.execute("SELECT 1")
+                                await pg_conn.close()
+                                self._resolved_hosts[conn_id] = resolved_host
+                                self._connection_cache[conn_id] = conn
+                                self._sessions[conn_id] = True
+                                conn.status = ConnectionStatus.CONNECTED
+                                user_hash = filename.replace("connections_", "").replace(".json", "")
+                                self._connection_users[conn_id] = conn_data.get("user_id", user_hash)
+                                logger.info(f"Restored connection: {conn.name}")
+                            except Exception as e:
+                                logger.error(f"Failed to restore connection {conn_id}: {e}")
+                    except Exception as e:
+                        logger.error(f"Failed to load {filename}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to load connections: {e}")
+
+    def _delete_persisted_connection(self, connection_id: str) -> None:
+        user_id = self._connection_users.get(connection_id)
+        if not user_id:
+            return
+        filepath = self._get_connections_file(user_id)
+        if not os.path.exists(filepath):
+            return
+        try:
+            with open(filepath, "r") as f:
                 data = json.load(f)
             data.pop(connection_id, None)
-            with open(CONNECTIONS_FILE, "w") as f:
+            with open(filepath, "w") as f:
                 json.dump(data, f, indent=2, default=str)
         except Exception as e:
             logger.error(f"Failed to delete persisted connection: {e}")
+
+    # ---------------------------------------------------------
+    # USER ISOLATION
+    # ---------------------------------------------------------
+
+    def get_user_connections(self, user_id: str) -> Dict[str, DatabaseConnection]:
+        return {
+            conn_id: conn
+            for conn_id, conn in self._connection_cache.items()
+            if self._connection_users.get(conn_id) == user_id
+        }
+
+    def is_connection_owned_by_user(self, connection_id: str, user_id: str) -> bool:
+        return self._connection_users.get(connection_id) == user_id
 
     # ---------------------------------------------------------
     # DNS RESOLVER
     # ---------------------------------------------------------
 
     def _resolve_host(self, host: str) -> str:
+        """Resolve hostname to IP, but keep pooler/supabase hosts as-is."""
+        # ✅ Never resolve Supabase hosts — pass hostname directly to asyncpg
+        if is_pooler_host(host):
+            logger.info(f"Supabase host detected, using hostname directly: {host}")
+            return host
         try:
             ip = socket.gethostbyname(host)
             logger.info(f"Resolved {host} -> {ip}")
@@ -140,19 +208,38 @@ class DatabaseManager:
         ssl_ctx.verify_mode = ssl.CERT_NONE
         return ssl_ctx
 
-    def _build_connect_args(self, connection: DatabaseConnection) -> dict:
-        connect_args = {}
-        if connection.ssl_mode and connection.ssl_mode.lower() == "require":
-            connect_args["ssl"] = self._build_ssl_context()
-        return connect_args
+    # ---------------------------------------------------------
+    # ✅ CENTRAL ASYNCPG CONNECTION BUILDER
+    # ---------------------------------------------------------
+
+    async def _make_asyncpg_connection(
+        self,
+        host: str,
+        port: int,
+        user: str,
+        password: str,
+        database: str,
+    ):
+        """Build asyncpg connection — handles both direct and pooler connections."""
+        import asyncpg
+        ssl_ctx = self._build_ssl_context()
+
+        return await asyncpg.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
+            ssl=ssl_ctx,
+            timeout=30,
+            command_timeout=60,
+        )
 
     # ---------------------------------------------------------
     # ASYNCPG CONNECTION HELPER
     # ---------------------------------------------------------
 
     async def _get_asyncpg_conn(self, connection_id: str):
-        """Get a direct asyncpg connection using resolved IP."""
-        import asyncpg
         conn = self._connection_cache.get(connection_id)
         if not conn:
             raise ValueError(f"No connection found for: {connection_id}")
@@ -162,19 +249,13 @@ class DatabaseManager:
             resolved_host = self._resolve_host(conn.host)
             self._resolved_hosts[connection_id] = resolved_host
 
-        ssl_ctx = self._build_ssl_context()
-
-        return await asyncpg.connect(
-            host=resolved_host,
-            port=conn.port,
-            user=conn.username,
-            password=conn.password or "",
-            database=conn.database,
-            ssl=ssl_ctx,
+        return await self._make_asyncpg_connection(
+            resolved_host, conn.port, conn.username,
+            conn.password or "", conn.database
         )
 
     # ---------------------------------------------------------
-    # ENGINE CREATION (kept for compatibility)
+    # ENGINE CREATION
     # ---------------------------------------------------------
 
     def _get_cache_key(self, connection: DatabaseConnection) -> str:
@@ -186,32 +267,25 @@ class DatabaseManager:
     # CONNECTION MANAGEMENT
     # ---------------------------------------------------------
 
-    async def connect(self, connection: DatabaseConnection) -> bool:
+    async def connect(self, connection: DatabaseConnection, user_id: str = None) -> bool:
         try:
-            import asyncpg
             cache_key = self._get_cache_key(connection)
             resolved_host = self._resolve_host(connection.host)
-            ssl_ctx = self._build_ssl_context()
 
-            # Test connection with asyncpg
-            pg_conn = await asyncpg.connect(
-                host=resolved_host,
-                port=connection.port,
-                user=connection.username,
-                password=connection.password or "",
-                database=connection.database,
-                ssl=ssl_ctx,
+            pg_conn = await self._make_asyncpg_connection(
+                resolved_host, connection.port, connection.username,
+                connection.password or "", connection.database
             )
             await pg_conn.execute("SELECT 1")
             await pg_conn.close()
 
-            # Store resolved IP and connection
             self._resolved_hosts[cache_key] = resolved_host
             connection.status = ConnectionStatus.CONNECTED
             self._connection_cache[cache_key] = connection
-
-            # Also store in _sessions as a marker that connection is active
             self._sessions[cache_key] = True
+
+            if user_id:
+                self._connection_users[cache_key] = user_id
 
             logger.info(f"Connected to database: {connection.name} -> {resolved_host}")
             return True
@@ -229,7 +303,7 @@ class DatabaseManager:
         self._connection_cache.pop(connection_id, None)
         self._resolved_hosts.pop(connection_id, None)
         self._delete_persisted_connection(connection_id)
-
+        self._connection_users.pop(connection_id, None)
         return True
 
     async def disconnect_all(self) -> None:
@@ -239,6 +313,7 @@ class DatabaseManager:
         self._sessions.clear()
         self._connection_cache.clear()
         self._resolved_hosts.clear()
+        self._connection_users.clear()
         logger.info("All database connections closed.")
 
     async def test_connection(self, connection: DatabaseConnection) -> Tuple[bool, str]:
@@ -247,18 +322,12 @@ class DatabaseManager:
             resolved_host = self._resolve_host(connection.host)
 
             if dialect == "postgresql":
-                import asyncpg
-                ssl_ctx = self._build_ssl_context()
-                conn = await asyncpg.connect(
-                    host=resolved_host,
-                    port=connection.port,
-                    user=connection.username,
-                    password=connection.password or "",
-                    database=connection.database,
-                    ssl=ssl_ctx,
+                pg_conn = await self._make_asyncpg_connection(
+                    resolved_host, connection.port, connection.username,
+                    connection.password or "", connection.database
                 )
-                await conn.execute("SELECT 1")
-                await conn.close()
+                await pg_conn.execute("SELECT 1")
+                await pg_conn.close()
                 return True, "Connection successful"
 
             elif dialect in ["mysql", "mariadb"]:
@@ -281,19 +350,18 @@ class DatabaseManager:
             return False, str(e)
 
     # ---------------------------------------------------------
-    # SESSION HANDLER (kept for compatibility)
+    # SESSION HANDLER
     # ---------------------------------------------------------
 
     @asynccontextmanager
     async def get_session(self, connection_id: str):
-        """Compatibility wrapper - yields a mock session for asyncpg usage."""
         conn = self._connection_cache.get(connection_id)
         if not conn:
             raise ValueError(f"No connection found for: {connection_id}")
         yield connection_id
 
     # ---------------------------------------------------------
-    # QUERY EXECUTION - Uses asyncpg directly
+    # QUERY EXECUTION
     # ---------------------------------------------------------
 
     async def execute_query(
@@ -306,7 +374,7 @@ class DatabaseManager:
         pg_conn = None
         try:
             pg_conn = await self._get_asyncpg_conn(connection_id)
-            
+
             if params:
                 rows = await pg_conn.fetch(sql, *params.values())
             else:
@@ -316,7 +384,6 @@ class DatabaseManager:
                 columns = list(rows[0].keys())
                 data = [dict(row) for row in rows]
             else:
-                # Get column names from empty result
                 stmt = await pg_conn.prepare(sql)
                 columns = [attr.name for attr in stmt.get_attributes()]
                 data = []
@@ -331,7 +398,7 @@ class DatabaseManager:
                 await pg_conn.close()
 
     # ---------------------------------------------------------
-    # TABLE INFO - Uses asyncpg directly
+    # TABLE INFO
     # ---------------------------------------------------------
 
     async def list_tables(self, connection_id: str) -> List[str]:
@@ -346,7 +413,6 @@ class DatabaseManager:
                 ORDER BY table_name
             """)
             return [row['table_name'] for row in rows]
-
         except Exception as e:
             logger.error(f"Failed to list tables: {e}")
             return []
@@ -364,20 +430,13 @@ class DatabaseManager:
         try:
             pg_conn = await self._get_asyncpg_conn(connection_id)
 
-            # Get columns
             columns_rows = await pg_conn.fetch("""
-                SELECT 
-                    column_name,
-                    data_type,
-                    is_nullable,
-                    column_default,
-                    ordinal_position
+                SELECT column_name, data_type, is_nullable, column_default, ordinal_position
                 FROM information_schema.columns
                 WHERE table_schema = 'public' AND table_name = $1
                 ORDER BY ordinal_position
             """, table_name)
 
-            # Get primary keys
             pk_rows = await pg_conn.fetch("""
                 SELECT kcu.column_name
                 FROM information_schema.table_constraints tc
@@ -389,13 +448,9 @@ class DatabaseManager:
             """, table_name)
             primary_keys = [row['column_name'] for row in pk_rows]
 
-            # Get foreign keys
             fk_rows = await pg_conn.fetch("""
-                SELECT
-                    kcu.column_name,
-                    ccu.table_name AS referenced_table,
-                    ccu.column_name AS referenced_column,
-                    tc.constraint_name
+                SELECT kcu.column_name, ccu.table_name AS referenced_table,
+                       ccu.column_name AS referenced_column, tc.constraint_name
                 FROM information_schema.table_constraints tc
                 JOIN information_schema.key_column_usage kcu
                     ON tc.constraint_name = kcu.constraint_name

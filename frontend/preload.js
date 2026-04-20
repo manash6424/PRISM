@@ -9,6 +9,12 @@ contextBridge.exposeInMainWorld('api', {
     signup: (name, company, email, password) =>
         ipcRenderer.invoke('auth-signup', { name, company, email, password }),
 
+    setToken: (token) =>                          // ✅ NEW
+        ipcRenderer.invoke('auth-set-token', token),
+
+    logout: () =>                                  // ✅ NEW
+        ipcRenderer.invoke('auth-logout'),
+
     // ── Connections ──────────────────────────────────────────────────────────
     getConnections: () =>
         ipcRenderer.invoke('get-connections'),

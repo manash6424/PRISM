@@ -3,10 +3,11 @@ Authentication routes for PRISM.
 Uses Supabase for user management.
 """
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, HTTPException, Header
+from pydantic import BaseModel
 import os
 import httpx
+from typing import Optional
 
 auth_router = APIRouter()
 
@@ -28,17 +29,48 @@ class RegisterRequest(BaseModel):
     password: str
 
 
+# ── Auth Dependency ───────────────────────────────────────────────────────────
+
+async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+    """Extract and verify user from Bearer token."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    token = authorization.replace("Bearer ", "")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{SUPABASE_URL}/auth/v1/user",
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Authorization": f"Bearer {token}"
+                },
+                timeout=10.0
+            )
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+        user = response.json()
+        return {
+            "id": user.get("id"),
+            "email": user.get("email"),
+            "name": user.get("user_metadata", {}).get("full_name", ""),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Authentication failed")
+
+
 # ── Auth Endpoints ────────────────────────────────────────────────────────────
 
 @auth_router.post("/auth/login")
 async def login(request: LoginRequest):
-    """Login with email and password via Supabase."""
-
     if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-        raise HTTPException(
-            status_code=500,
-            detail="Supabase not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to .env"
-        )
+        raise HTTPException(status_code=500, detail="Supabase not configured")
 
     try:
         async with httpx.AsyncClient() as client:
@@ -48,10 +80,7 @@ async def login(request: LoginRequest):
                     "apikey": SUPABASE_ANON_KEY,
                     "Content-Type": "application/json"
                 },
-                json={
-                    "email": request.email,
-                    "password": request.password
-                },
+                json={"email": request.email, "password": request.password},
                 timeout=10.0
             )
 
@@ -80,13 +109,8 @@ async def login(request: LoginRequest):
 
 @auth_router.post("/auth/register")
 async def register(request: RegisterRequest):
-    """Register a new user via Supabase."""
-
     if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-        raise HTTPException(
-            status_code=500,
-            detail="Supabase not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to .env"
-        )
+        raise HTTPException(status_code=500, detail="Supabase not configured")
 
     if len(request.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
@@ -128,32 +152,5 @@ async def register(request: RegisterRequest):
 
 
 @auth_router.get("/auth/me")
-async def get_current_user(token: str):
-    """Get current user info from Supabase."""
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{SUPABASE_URL}/auth/v1/user",
-                headers={
-                    "apikey": SUPABASE_ANON_KEY,
-                    "Authorization": f"Bearer {token}"
-                },
-                timeout=10.0
-            )
-
-        if response.status_code != 200:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        user = response.json()
-        return {
-            "id": user.get("id"),
-            "email": user.get("email"),
-            "name": user.get("user_metadata", {}).get("full_name", ""),
-            "company": user.get("user_metadata", {}).get("company", ""),
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def get_me(current_user: dict = __import__('fastapi').Depends(get_current_user)):
+    return current_user

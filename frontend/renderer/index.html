@@ -696,6 +696,8 @@ function showApp(user) {
 function showLogin() {
     sessionStorage.clear();
     localStorage.removeItem('prism_session');
+    localStorage.removeItem('access_token');  // ✅ clear token
+    localStorage.removeItem('user_id');        // ✅ clear user id
     document.getElementById('app-container').style.display = 'none';
     document.getElementById('app-container').classList.add('hidden');
     document.getElementById('login-screen').style.display = 'flex';
@@ -748,9 +750,19 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             body: JSON.stringify({ email, password })
         });
         const result = await res.json();
-        if (res.ok && result.success) {
-            showApp(result.user);
-        } else {
+        // ✅ Replace with
+if (res.ok && result.success) {
+    localStorage.setItem('access_token', result.access_token);
+    localStorage.setItem('user_id', result.user?.id);
+    
+    // Send token to main process
+    if (window.api && window.api.setToken) {
+        window.api.setToken(result.access_token);
+    }
+    
+    showApp(result.user);
+}
+        else {
             showError(result.detail || 'Invalid email or password.');
         }
     } catch (err) {
@@ -902,8 +914,14 @@ document.addEventListener('click', () => {
 });
 
 // ── Logout ────────────────────────────────────────────────────────────────────
+// ✅ Replace with
 document.getElementById('logout-btn').addEventListener('click', () => {
-    if (confirm('Are you sure you want to logout?')) showLogin();
+    if (confirm('Are you sure you want to logout?')) {
+        if (window.api && window.api.logout) {
+            window.api.logout();
+        }
+        showLogin();
+    }
 });
 
 </script>
