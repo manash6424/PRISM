@@ -26,14 +26,9 @@ from ..models.database import (
 
 logger = logging.getLogger(__name__)
 
-CONNECTIONS_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "../../connections"
-)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 
-os.makedirs(CONNECTIONS_DIR, exist_ok=True)
-
-# ✅ Supabase pooler hosts — never resolve to IP, use hostname directly
 POOLER_HOSTS = [
     "pooler.supabase.com",
     "supabase.co",
@@ -45,7 +40,7 @@ def is_pooler_host(host: str) -> bool:
 
 
 class DatabaseManager:
-    """Production-grade async database manager with per-user persistence."""
+    """Production-grade async database manager with Supabase persistence."""
 
     def __init__(self):
         self._engines: Dict[str, AsyncEngine] = {}
@@ -53,118 +48,119 @@ class DatabaseManager:
         self._connection_cache: Dict[str, DatabaseConnection] = {}
         self._resolved_hosts: Dict[str, str] = {}
         self._connection_users: Dict[str, str] = {}
+        self._user_tokens: Dict[str, str] = {}  # user_id -> JWT token
 
     # ---------------------------------------------------------
-    # PERSISTENCE — Per User
+    # SUPABASE PERSISTENCE
     # ---------------------------------------------------------
 
-    def _get_connections_file(self, user_id: str) -> str:
-        safe_id = hashlib.md5(user_id.encode()).hexdigest()
-        return os.path.join(CONNECTIONS_DIR, f"connections_{safe_id}.json")
-
-    def _save_connections(self, user_id: str) -> None:
+    async def _supabase_save_connection(self, conn_id: str, conn: DatabaseConnection, user_id: str, user_token: str = None) -> None:
         try:
-            filepath = self._get_connections_file(user_id)
-            data = {}
-            for conn_id, conn in self._connection_cache.items():
-                if self._connection_users.get(conn_id) == user_id:
-                    data[conn_id] = conn.model_dump(mode="json")
-            with open(filepath, "w") as f:
-                json.dump(data, f, indent=2, default=str)
-            logger.info(f"Saved {len(data)} connection(s) for user {user_id[:8]}...")
+            import httpx
+            url = f"{SUPABASE_URL}/rest/v1/user_connections"
+            # Use user's JWT token for RLS — falls back to anon key
+            auth_token = user_token or SUPABASE_ANON_KEY
+            headers = {
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {auth_token}",
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates",
+            }
+            payload = {
+                "id": conn_id,
+                "user_id": user_id,
+                "name": conn.name,
+                "host": conn.host,
+                "port": conn.port,
+                "database": conn.database,
+                "username": conn.username,
+                "password": conn.password or "",
+                "dialect": conn.dialect.value if hasattr(conn.dialect, 'value') else str(conn.dialect),
+            }
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(url, headers=headers, json=payload)
+                if resp.status_code in [200, 201]:
+                    logger.info(f"Saved connection {conn.name} to Supabase")
+                else:
+                    logger.error(f"Failed to save to Supabase: {resp.status_code} {resp.text}")
         except Exception as e:
-            logger.error(f"Failed to save connections: {e}")
+            logger.error(f"Supabase save error: {e}")
 
-    async def load_connections_for_user(self, user_id: str) -> None:
-        filepath = self._get_connections_file(user_id)
-        if not os.path.exists(filepath):
-            logger.info(f"No persisted connections for user {user_id[:8]}...")
-            return
-
+    async def _supabase_delete_connection(self, conn_id: str, user_id: str = None) -> None:
         try:
-            with open(filepath, "r") as f:
-                data = json.load(f)
+            import httpx
+            url = f"{SUPABASE_URL}/rest/v1/user_connections?id=eq.{conn_id}"
+            # Use user's JWT token for RLS
+            user_token = self._user_tokens.get(user_id) if user_id else None
+            auth_token = user_token or SUPABASE_ANON_KEY
+            headers = {
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {auth_token}",
+            }
+            async with httpx.AsyncClient() as client:
+                resp = await client.delete(url, headers=headers)
+                if resp.status_code in [200, 204]:
+                    logger.info(f"Deleted connection {conn_id} from Supabase")
+                else:
+                    logger.error(f"Failed to delete from Supabase: {resp.status_code}")
+        except Exception as e:
+            logger.error(f"Supabase delete error: {e}")
 
-            for conn_id, conn_data in data.items():
-                if conn_id in self._connection_cache:
-                    continue
-                try:
-                    conn = DatabaseConnection(**conn_data)
-                    conn.id = conn_id
-                    original_host = conn_data.get("host", conn.host)
-                    resolved_host = self._resolve_host(original_host)
-                    pg_conn = await self._make_asyncpg_connection(
-                        resolved_host, conn.port, conn.username,
-                        conn.password or "", conn.database
-                    )
-                    await pg_conn.execute("SELECT 1")
-                    await pg_conn.close()
+    async def load_connections_for_user(self, user_id: str, user_token: str = None) -> None:
+        try:
+            import httpx
+            url = f"{SUPABASE_URL}/rest/v1/user_connections?user_id=eq.{user_id}"
+            auth_token = user_token or SUPABASE_ANON_KEY
+            headers = {
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {auth_token}",
+            }
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url, headers=headers)
+                if resp.status_code != 200:
+                    logger.error(f"Failed to load connections from Supabase: {resp.status_code}")
+                    return
 
-                    self._resolved_hosts[conn_id] = resolved_host
-                    self._connection_cache[conn_id] = conn
-                    self._connection_users[conn_id] = user_id
-                    self._sessions[conn_id] = True
-                    conn.status = ConnectionStatus.CONNECTED
-                    logger.info(f"Restored connection: {conn.name}")
-                except Exception as e:
-                    logger.error(f"Failed to restore connection {conn_id}: {e}")
+                rows = resp.json()
+                logger.info(f"Found {len(rows)} saved connection(s) for user {user_id[:8]}...")
+
+                for row in rows:
+                    conn_id = row["id"]
+                    if conn_id in self._connection_cache:
+                        continue
+                    try:
+                        conn = DatabaseConnection(
+                            id=conn_id,
+                            name=row["name"],
+                            host=row["host"],
+                            port=row["port"],
+                            database=row["database"],
+                            username=row["username"],
+                            password=row["password"],
+                            dialect=row["dialect"],
+                        )
+                        resolved_host = self._resolve_host(conn.host)
+                        pg_conn = await self._make_asyncpg_connection(
+                            resolved_host, conn.port, conn.username,
+                            conn.password or "", conn.database
+                        )
+                        await pg_conn.execute("SELECT 1")
+                        await pg_conn.close()
+
+                        self._resolved_hosts[conn_id] = resolved_host
+                        self._connection_cache[conn_id] = conn
+                        self._connection_users[conn_id] = user_id
+                        self._sessions[conn_id] = True
+                        conn.status = ConnectionStatus.CONNECTED
+                        logger.info(f"Restored connection: {conn.name}")
+                    except Exception as e:
+                        logger.error(f"Failed to restore connection {row.get('name')}: {e}")
 
         except Exception as e:
-            logger.error(f"Failed to load connections for user {user_id[:8]}...: {e}")
+            logger.error(f"Failed to load connections from Supabase: {e}")
 
     async def load_connections(self) -> None:
-        if not os.path.exists(CONNECTIONS_DIR):
-            return
-        try:
-            for filename in os.listdir(CONNECTIONS_DIR):
-                if filename.startswith("connections_") and filename.endswith(".json"):
-                    filepath = os.path.join(CONNECTIONS_DIR, filename)
-                    try:
-                        with open(filepath, "r") as f:
-                            data = json.load(f)
-                        for conn_id, conn_data in data.items():
-                            if conn_id in self._connection_cache:
-                                continue
-                            try:
-                                conn = DatabaseConnection(**conn_data)
-                                conn.id = conn_id
-                                original_host = conn_data.get("host", conn.host)
-                                resolved_host = self._resolve_host(original_host)
-                                pg_conn = await self._make_asyncpg_connection(
-                                    resolved_host, conn.port, conn.username,
-                                    conn.password or "", conn.database
-                                )
-                                await pg_conn.execute("SELECT 1")
-                                await pg_conn.close()
-                                self._resolved_hosts[conn_id] = resolved_host
-                                self._connection_cache[conn_id] = conn
-                                self._sessions[conn_id] = True
-                                conn.status = ConnectionStatus.CONNECTED
-                                user_hash = filename.replace("connections_", "").replace(".json", "")
-                                self._connection_users[conn_id] = conn_data.get("user_id", user_hash)
-                                logger.info(f"Restored connection: {conn.name}")
-                            except Exception as e:
-                                logger.error(f"Failed to restore connection {conn_id}: {e}")
-                    except Exception as e:
-                        logger.error(f"Failed to load {filename}: {e}")
-        except Exception as e:
-            logger.error(f"Failed to load connections: {e}")
-
-    def _delete_persisted_connection(self, connection_id: str) -> None:
-        user_id = self._connection_users.get(connection_id)
-        if not user_id:
-            return
-        filepath = self._get_connections_file(user_id)
-        if not os.path.exists(filepath):
-            return
-        try:
-            with open(filepath, "r") as f:
-                data = json.load(f)
-            data.pop(connection_id, None)
-            with open(filepath, "w") as f:
-                json.dump(data, f, indent=2, default=str)
-        except Exception as e:
-            logger.error(f"Failed to delete persisted connection: {e}")
+        logger.info("Connections will be loaded per user on login from Supabase.")
 
     # ---------------------------------------------------------
     # USER ISOLATION
@@ -185,8 +181,6 @@ class DatabaseManager:
     # ---------------------------------------------------------
 
     def _resolve_host(self, host: str) -> str:
-        """Resolve hostname to IP, but keep pooler/supabase hosts as-is."""
-        # ✅ Never resolve Supabase hosts — pass hostname directly to asyncpg
         if is_pooler_host(host):
             logger.info(f"Supabase host detected, using hostname directly: {host}")
             return host
@@ -209,21 +203,12 @@ class DatabaseManager:
         return ssl_ctx
 
     # ---------------------------------------------------------
-    # ✅ CENTRAL ASYNCPG CONNECTION BUILDER
+    # ASYNCPG CONNECTION BUILDER
     # ---------------------------------------------------------
 
-    async def _make_asyncpg_connection(
-        self,
-        host: str,
-        port: int,
-        user: str,
-        password: str,
-        database: str,
-    ):
-        """Build asyncpg connection — handles both direct and pooler connections."""
+    async def _make_asyncpg_connection(self, host, port, user, password, database):
         import asyncpg
         ssl_ctx = self._build_ssl_context()
-
         return await asyncpg.connect(
             host=host,
             port=port,
@@ -235,23 +220,16 @@ class DatabaseManager:
             command_timeout=60,
         )
 
-    # ---------------------------------------------------------
-    # ASYNCPG CONNECTION HELPER
-    # ---------------------------------------------------------
-
     async def _get_asyncpg_conn(self, connection_id: str):
         conn = self._connection_cache.get(connection_id)
         if not conn:
             raise ValueError(f"No connection found for: {connection_id}")
-
         resolved_host = self._resolved_hosts.get(connection_id)
         if not resolved_host:
             resolved_host = self._resolve_host(conn.host)
             self._resolved_hosts[connection_id] = resolved_host
-
         return await self._make_asyncpg_connection(
-            resolved_host, conn.port, conn.username,
-            conn.password or "", conn.database
+            resolved_host, conn.port, conn.username, conn.password or "", conn.database
         )
 
     # ---------------------------------------------------------
@@ -267,7 +245,7 @@ class DatabaseManager:
     # CONNECTION MANAGEMENT
     # ---------------------------------------------------------
 
-    async def connect(self, connection: DatabaseConnection, user_id: str = None) -> bool:
+    async def connect(self, connection: DatabaseConnection, user_id: str = None, user_token: str = None) -> bool:
         try:
             cache_key = self._get_cache_key(connection)
             resolved_host = self._resolve_host(connection.host)
@@ -286,6 +264,9 @@ class DatabaseManager:
 
             if user_id:
                 self._connection_users[cache_key] = user_id
+                if user_token:
+                    self._user_tokens[user_id] = user_token
+                await self._supabase_save_connection(cache_key, connection, user_id, user_token)
 
             logger.info(f"Connected to database: {connection.name} -> {resolved_host}")
             return True
@@ -295,6 +276,8 @@ class DatabaseManager:
             return False
 
     async def disconnect(self, connection_id: str) -> bool:
+        user_id = self._connection_users.get(connection_id)
+
         if connection_id in self._engines:
             await self._engines[connection_id].dispose()
             del self._engines[connection_id]
@@ -302,8 +285,9 @@ class DatabaseManager:
         self._sessions.pop(connection_id, None)
         self._connection_cache.pop(connection_id, None)
         self._resolved_hosts.pop(connection_id, None)
-        self._delete_persisted_connection(connection_id)
         self._connection_users.pop(connection_id, None)
+
+        await self._supabase_delete_connection(connection_id, user_id)
         return True
 
     async def disconnect_all(self) -> None:
@@ -314,6 +298,7 @@ class DatabaseManager:
         self._connection_cache.clear()
         self._resolved_hosts.clear()
         self._connection_users.clear()
+        self._user_tokens.clear()
         logger.info("All database connections closed.")
 
     async def test_connection(self, connection: DatabaseConnection) -> Tuple[bool, str]:
@@ -374,7 +359,6 @@ class DatabaseManager:
         pg_conn = None
         try:
             pg_conn = await self._get_asyncpg_conn(connection_id)
-
             if params:
                 rows = await pg_conn.fetch(sql, *params.values())
             else:
@@ -420,12 +404,7 @@ class DatabaseManager:
             if pg_conn:
                 await pg_conn.close()
 
-    async def get_table_info(
-        self,
-        connection_id: str,
-        table_name: str,
-    ) -> Optional[TableInfo]:
-
+    async def get_table_info(self, connection_id: str, table_name: str) -> Optional[TableInfo]:
         pg_conn = None
         try:
             pg_conn = await self._get_asyncpg_conn(connection_id)

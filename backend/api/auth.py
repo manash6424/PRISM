@@ -57,6 +57,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
             "id": user.get("id"),
             "email": user.get("email"),
             "name": user.get("user_metadata", {}).get("full_name", ""),
+            "token": token,  # ✅ include token so routes can pass it to db_manager
         }
 
     except HTTPException:

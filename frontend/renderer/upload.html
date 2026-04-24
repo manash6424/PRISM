@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRISM — Upload Data</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- ✅ NEW: Chart.js for Marketing Dashboard -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <style>
         :root {
             --bg-base:       #060810;
@@ -623,6 +625,141 @@
 
         body.light-mode .drop-zone { background: var(--bg-elevated); }
         body.light-mode .code-content { color: var(--text-primary); }
+
+        /* ── NEW: Marketing Dashboard styles ── */
+        .mkt-dashboard {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px 32px;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .mkt-dashboard.visible { display: flex; }
+
+        .mkt-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .mkt-kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+        }
+
+        .mkt-kpi-label {
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .mkt-kpi-value {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .mkt-chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .mkt-chart-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+
+        .mkt-chart-title {
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+        }
+
+        .mkt-table-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            overflow-x: auto;
+        }
+
+        .mkt-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .mkt-table th {
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .mkt-table td {
+            padding: 9px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 13px;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .mkt-table tbody tr:last-child td { border-bottom: none; }
+        .mkt-table tbody tr:hover td { background: var(--accent-dim); }
+
+        .mkt-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            align-self: flex-start;
+        }
+
+        .mkt-back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .mkt-detected {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            line-height: 1.8;
+        }
     </style>
 </head>
 <body>
@@ -735,6 +872,8 @@
                 <div class="results-actions">
                     <button class="btn-secondary" onclick="exportCSV()">⬇ CSV</button>
                     <button class="btn-secondary" onclick="toggleCode()">{ } Code</button>
+                    <!-- ✅ NEW: Marketing Dashboard button — hidden until file is uploaded -->
+                    <button class="btn-secondary" id="dashboard-btn" onclick="showMarketingDashboard()" style="display:none;">📊 Marketing KPIs</button>
                 </div>
             </div>
 
@@ -765,6 +904,54 @@
                     </table>
                 </div>
             </div>
+
+        </div>
+
+        <!-- ✅ NEW: Marketing Dashboard Panel -->
+        <div class="mkt-dashboard" id="mkt-dashboard">
+
+            <button class="mkt-back-btn" onclick="hideMktDashboard()">← Back to Results</button>
+
+            <!-- KPI Cards -->
+            <div class="mkt-kpi-grid" id="mkt-kpi-grid"></div>
+
+            <!-- Charts Row -->
+            <div class="mkt-chart-row">
+                <div class="mkt-chart-card">
+                    <div class="mkt-chart-title">Daily Spend Trend</div>
+                    <div style="position:relative;width:100%;height:180px;">
+                        <canvas id="mkt-spend-chart" role="img" aria-label="Daily spend trend line chart"></canvas>
+                    </div>
+                </div>
+                <div class="mkt-chart-card">
+                    <div class="mkt-chart-title">ROAS by Campaign</div>
+                    <div style="position:relative;width:100%;height:180px;">
+                        <canvas id="mkt-roas-chart" role="img" aria-label="ROAS by campaign bar chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campaign Table -->
+            <div class="mkt-table-card">
+                <div class="mkt-chart-title">Campaign Breakdown</div>
+                <table class="mkt-table">
+                    <thead>
+                        <tr>
+                            <th>Campaign</th>
+                            <th>Spend</th>
+                            <th>Revenue</th>
+                            <th>ROAS</th>
+                            <th>CTR</th>
+                            <th>Clicks</th>
+                            <th>Conv.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mkt-camp-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Detected Columns Info -->
+            <div class="mkt-detected" id="mkt-detected-cols"></div>
 
         </div>
 
@@ -853,6 +1040,9 @@
             generateExamples(result.columns);
             showPreview(result.preview, result.columns, result.filename, result.row_count);
             showToast(`✅ ${result.filename} loaded — ${result.row_count} rows`, 'success');
+
+            // ✅ NEW: Show the Marketing KPIs button after file is loaded
+            document.getElementById('dashboard-btn').style.display = 'flex';
 
         } catch (err) {
             document.getElementById('drop-zone').style.display = 'block';
@@ -1031,6 +1221,12 @@
         document.getElementById('code-block').classList.remove('visible');
         document.getElementById('ai-answer').classList.remove('visible');
         document.getElementById('status-bar').classList.remove('visible');
+
+        // ✅ NEW: Reset dashboard state on clear
+        document.getElementById('dashboard-btn').style.display = 'none';
+        document.getElementById('mkt-dashboard').classList.remove('visible');
+        if (mktSpendChart) { mktSpendChart.destroy(); mktSpendChart = null; }
+        if (mktRoasChart)  { mktRoasChart.destroy();  mktRoasChart  = null; }
     }
 
     // ── Status Bar ─────────────────────────────────────────────────────────
@@ -1071,6 +1267,154 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ✅ NEW: Marketing Dashboard logic — all new, nothing above touched
+    // ─────────────────────────────────────────────────────────────────────────
+
+    let mktSpendChart = null;
+    let mktRoasChart  = null;
+
+    function fmtNum(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000)    return (n / 1000).toFixed(1) + 'K';
+        return Number(n).toLocaleString();
+    }
+
+    async function showMarketingDashboard() {
+        if (!sessionId) return;
+
+        showToast('Loading KPIs...', 'info');
+
+        try {
+            const res = await fetch(`${API}/upload/${sessionId}/marketing-kpis`);
+            const data = await res.json();
+
+            if (!data.success) {
+                showToast('Could not compute KPIs from this file', 'error');
+                return;
+            }
+
+            // Hide results panel, show marketing dashboard
+            document.getElementById('results-panel').style.display = 'none';
+            document.getElementById('mkt-dashboard').classList.add('visible');
+
+            const { kpis, campaigns, daily_spend, detected_columns } = data;
+
+            // ── KPI Cards ──
+            const cards = [
+                { label: 'Total Spend',   value: '₹' + fmtNum(kpis.total_spend),       color: '#e8455a' },
+                { label: 'ROAS',          value: kpis.roas + 'x',                       color: kpis.roas >= 3 ? '#22c55e' : '#f59e0b' },
+                { label: 'Impressions',   value: fmtNum(kpis.total_impressions),         color: '#3b82f6' },
+                { label: 'CTR',           value: kpis.ctr + '%',                        color: '#a855f7' },
+                { label: 'Clicks',        value: fmtNum(kpis.total_clicks),              color: '#06b6d4' },
+                { label: 'CPC',           value: '₹' + kpis.cpc,                        color: '#f59e0b' },
+                { label: 'Conversions',   value: fmtNum(kpis.total_conversions),         color: '#22c55e' },
+                { label: 'CPA',           value: '₹' + kpis.cpa,                        color: '#ef4444' },
+            ];
+
+            document.getElementById('mkt-kpi-grid').innerHTML = cards.map(c => `
+                <div class="mkt-kpi-card">
+                    <div class="mkt-kpi-label">${c.label}</div>
+                    <div class="mkt-kpi-value" style="color:${c.color};">${c.value}</div>
+                </div>
+            `).join('');
+
+            // ── Daily Spend Chart ──
+            if (mktSpendChart) mktSpendChart.destroy();
+            if (daily_spend.length > 0) {
+                mktSpendChart = new Chart(document.getElementById('mkt-spend-chart'), {
+                    type: 'line',
+                    data: {
+                        labels: daily_spend.map(d => d.date),
+                        datasets: [{
+                            label: 'Spend',
+                            data: daily_spend.map(d => d.spend),
+                            borderColor: '#e8455a',
+                            backgroundColor: 'rgba(232,69,90,0.08)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { font: { size: 10 }, color: '#7f8db0', maxRotation: 0, autoSkip: true } },
+                            y: { ticks: { font: { size: 10 }, color: '#7f8db0', callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0)+'K' : v) } }
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('mkt-spend-chart').parentElement.innerHTML =
+                    '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">No date column detected</div>';
+            }
+
+            // ── ROAS by Campaign Chart ──
+            if (mktRoasChart) mktRoasChart.destroy();
+            if (campaigns.length > 0) {
+                const top = campaigns.slice(0, 6);
+                mktRoasChart = new Chart(document.getElementById('mkt-roas-chart'), {
+                    type: 'bar',
+                    data: {
+                        labels: top.map(c => c.name.length > 20 ? c.name.slice(0, 20) + '…' : c.name),
+                        datasets: [{
+                            label: 'ROAS',
+                            data: top.map(c => c.roas),
+                            backgroundColor: top.map(c => c.roas >= 3 ? 'rgba(34,197,94,0.7)' : 'rgba(245,158,11,0.7)'),
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { callback: v => v + 'x', font: { size: 10 }, color: '#7f8db0' } },
+                            y: { ticks: { font: { size: 10 }, color: '#7f8db0' } }
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('mkt-roas-chart').parentElement.innerHTML =
+                    '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">No campaign column detected</div>';
+            }
+
+            // ── Campaign Table ──
+            document.getElementById('mkt-camp-tbody').innerHTML = campaigns.map(c => `
+                <tr>
+                    <td title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</td>
+                    <td>₹${fmtNum(c.spend)}</td>
+                    <td>₹${fmtNum(c.revenue)}</td>
+                    <td style="color:${c.roas >= 3 ? '#22c55e' : '#f59e0b'};">${c.roas}x</td>
+                    <td>${c.ctr}%</td>
+                    <td>${fmtNum(c.clicks)}</td>
+                    <td>${fmtNum(c.conversions)}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" style="color:var(--text-muted);text-align:center;padding:20px;">No campaign data found</td></tr>';
+
+            // ── Detected columns info ──
+            const dc = detected_columns;
+            document.getElementById('mkt-detected-cols').innerHTML =
+                '🔍 Detected — ' +
+                Object.entries(dc).map(([k, v]) => `${k}: <strong>${v || 'not found'}</strong>`).join(' &nbsp;·&nbsp; ');
+
+            showToast('✅ Marketing dashboard ready', 'success');
+
+        } catch (err) {
+            showToast('Failed to load KPIs: ' + err.message, 'error');
+        }
+    }
+
+    function hideMktDashboard() {
+        document.getElementById('mkt-dashboard').classList.remove('visible');
+        document.getElementById('results-panel').style.display = 'flex';
+        document.getElementById('results-panel').style.flexDirection = 'column';
     }
 </script>
 </body>

@@ -46,9 +46,10 @@ class RawSQLRequest(BaseModel):
 @router.post("/connections", response_model=dict)
 async def create_connection(
     connection: DatabaseConnection,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
+    user_token = current_user.get("token")
 
     is_valid, error = validate_connection_config(
         connection.host,
@@ -66,14 +67,13 @@ async def create_connection(
         connection.status = ConnectionStatus.ERROR
         raise HTTPException(status_code=400, detail=f"Connection failed: {message}")
 
-    connected = await db_manager.connect(connection, user_id=user_id)  # ✅ pass user_id
+    connected = await db_manager.connect(connection, user_id=user_id, user_token=user_token)
     if not connected:
         raise HTTPException(status_code=400, detail="Failed to establish connection")
 
     connection.status = ConnectionStatus.CONNECTED
     connection.last_connected_at = datetime.now(timezone.utc)
 
-    db_manager._save_connections(user_id)  # ✅ save per user
     schema_discovery.clear_cache(connection.id)
 
     return {
@@ -86,14 +86,13 @@ async def create_connection(
 
 @router.get("/connections", response_model=List[dict])
 async def list_connections(
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
+    user_token = current_user.get("token")
 
-    # ✅ Load user's connections if not already loaded
-    await db_manager.load_connections_for_user(user_id)
+    await db_manager.load_connections_for_user(user_id, user_token)
 
-    # ✅ Only return this user's connections
     user_connections = db_manager.get_user_connections(user_id)
 
     connections = []
@@ -112,11 +111,10 @@ async def list_connections(
 @router.post("/connections/{connection_id}/test")
 async def test_connection(
     connection_id: str,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
 
-    # ✅ Check ownership
     if not db_manager.is_connection_owned_by_user(connection_id, user_id):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -139,11 +137,10 @@ async def test_connection(
 async def get_schema(
     connection_id: str,
     force_refresh: bool = False,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
 
-    # ✅ Check ownership
     if not db_manager.is_connection_owned_by_user(connection_id, user_id):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -183,11 +180,10 @@ async def get_schema(
 @router.get("/connections/{connection_id}", response_model=dict)
 async def get_connection(
     connection_id: str,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
 
-    # ✅ Check ownership
     if not db_manager.is_connection_owned_by_user(connection_id, user_id):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -213,11 +209,10 @@ async def get_connection(
 @router.delete("/connections/{connection_id}")
 async def delete_connection(
     connection_id: str,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
 
-    # ✅ Check ownership
     if not db_manager.is_connection_owned_by_user(connection_id, user_id):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -234,11 +229,11 @@ async def delete_connection(
 @router.post("/query", response_model=QueryResponse)
 async def execute_natural_language_query(
     request: QueryRequest,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
+    user_token = current_user.get("token")
 
-    # ✅ Check ownership
     if not db_manager.is_connection_owned_by_user(request.connection_id, user_id):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -247,7 +242,7 @@ async def execute_natural_language_query(
         raise HTTPException(status_code=404, detail="Connection not found")
 
     if request.connection_id not in db_manager._sessions:
-        connected = await db_manager.connect(conn, user_id=user_id)
+        connected = await db_manager.connect(conn, user_id=user_id, user_token=user_token)
         if not connected:
             raise HTTPException(status_code=400, detail="Failed to reconnect to database")
 
@@ -277,11 +272,10 @@ async def execute_natural_language_query(
 @router.post("/query/raw", response_model=QueryResponse)
 async def execute_raw_sql(
     request: RawSQLRequest,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
 
-    # ✅ Check ownership
     if not db_manager.is_connection_owned_by_user(request.connection_id, user_id):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -306,7 +300,7 @@ async def execute_raw_sql(
 @router.get("/query/history")
 async def get_query_history(
     limit: int = 50,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     return {
         "history": [
@@ -318,7 +312,7 @@ async def get_query_history(
 @router.get("/query/{query_id}")
 async def get_query_result(
     query_id: str,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     query = query_executor.get_query_by_id(query_id)
     if not query:
@@ -332,7 +326,7 @@ async def get_query_result(
 @router.post("/export")
 async def create_export(
     request: ExportRequest,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     query = query_executor.get_query_by_id(request.query_id)
     if not query:
@@ -411,7 +405,7 @@ class SuggestionsRequest(BaseModel):
 @router.post("/suggestions")
 async def get_suggestions(
     request: SuggestionsRequest,
-    current_user: dict = Depends(get_current_user)  # ✅ protected
+    current_user: dict = Depends(get_current_user)
 ):
     try:
         import httpx
