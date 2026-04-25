@@ -38,6 +38,23 @@ POOLER_HOSTS = [
 def is_pooler_host(host: str) -> bool:
     return any(h in host for h in POOLER_HOSTS)
 
+import base64
+import hashlib
+
+def _encrypt(password: str) -> str:
+    from cryptography.fernet import Fernet
+    raw = os.getenv("ENCRYPTION_KEY", "PrismSecretKey2024XYZ1234567890")
+    key = base64.urlsafe_b64encode(hashlib.sha256(raw.encode()).digest())
+    return Fernet(key).encrypt(password.encode()).decode()
+
+def _decrypt(token: str) -> str:
+    from cryptography.fernet import Fernet
+    raw = os.getenv("ENCRYPTION_KEY", "PrismSecretKey2024XYZ1234567890")
+    key = base64.urlsafe_b64encode(hashlib.sha256(raw.encode()).digest())
+    try:
+        return Fernet(key).decrypt(token.encode()).decode()
+    except Exception:
+        return token  # old unencrypted row — return as-is
 
 class DatabaseManager:
     """Production-grade async database manager with Supabase persistence."""
@@ -74,7 +91,7 @@ class DatabaseManager:
                 "port": conn.port,
                 "database": conn.database,
                 "username": conn.username,
-                "password": conn.password or "",
+                "password": _encrypt(conn.password or ""),
                 "dialect": conn.dialect.value if hasattr(conn.dialect, 'value') else str(conn.dialect),
             }
             async with httpx.AsyncClient() as client:
@@ -136,7 +153,7 @@ class DatabaseManager:
                             port=row["port"],
                             database=row["database"],
                             username=row["username"],
-                            password=row["password"],
+                            password=_decrypt(row["password"]),
                             dialect=row["dialect"],
                         )
                         resolved_host = self._resolve_host(conn.host)

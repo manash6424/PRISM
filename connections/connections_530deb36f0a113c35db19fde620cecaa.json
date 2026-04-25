@@ -1,0 +1,18 @@
+{
+  "dd0a561c-b2e1-4865-a1d8-e7cce05630ed": {
+    "id": "dd0a561c-b2e1-4865-a1d8-e7cce05630ed",
+    "name": "My Supabase DB",
+    "dialect": "postgresql",
+    "host": "db.ycejbrbkcqutfdlhawik.supabase.co",
+    "port": 5432,
+    "database": "postgres",
+    "username": "postgres",
+    "password": "Manash6424@@",
+    "db_schema": "public",
+    "ssl_mode": null,
+    "status": "connected",
+    "created_at": "2026-04-20T04:13:33.231323Z",
+    "updated_at": "2026-04-20T04:13:33.231333Z",
+    "last_connected_at": "2026-04-20T04:13:34.575661Z"
+  }
+}

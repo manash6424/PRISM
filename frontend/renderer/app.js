@@ -127,7 +127,7 @@ class AICopilotApp {
     // ── Connections ─────────────────────────────────────────────────────────
     async loadConnections() {
         try {
-            const res = await this.authFetch(`${API}/connections`); // ✅ auth
+            const res = await this.authFetch(`${API}/connections`);
             if (!res) return;
             const result = await res.json();
             this.connections = Array.isArray(result) ? result : [];
@@ -172,7 +172,8 @@ class AICopilotApp {
     }
 
     populateConnectionSelects() {
-        ['query-connection', 'schema-connection', 'report-connection'].forEach(selectId => {
+        // ✅ FIX: alert-connection added to the list
+        ['query-connection', 'schema-connection', 'report-connection', 'alert-connection'].forEach(selectId => {
             const select = document.getElementById(selectId);
             if (!select) return;
             const currentValue = select.value;
@@ -223,7 +224,7 @@ class AICopilotApp {
             password: document.getElementById('conn-password').value,
         };
         try {
-            const res = await this.authFetch(`${API}/connections`, { // ✅ auth
+            const res = await this.authFetch(`${API}/connections`, {
                 method: 'POST',
                 body: JSON.stringify(connection)
             });
@@ -249,7 +250,7 @@ class AICopilotApp {
             password: document.getElementById('conn-password').value,
         };
         try {
-            const res = await this.authFetch(`${API}/connections`, { // ✅ auth
+            const res = await this.authFetch(`${API}/connections`, {
                 method: 'POST',
                 body: JSON.stringify(connection)
             });
@@ -267,7 +268,7 @@ class AICopilotApp {
 
     async testConnection(connectionId) {
         try {
-            const res = await this.authFetch(`${API}/connections/${connectionId}/test`, { // ✅ auth
+            const res = await this.authFetch(`${API}/connections/${connectionId}/test`, {
                 method: 'POST'
             });
             if (!res) return;
@@ -285,7 +286,7 @@ class AICopilotApp {
     async deleteConnection(connectionId) {
         if (!confirm('Are you sure you want to delete this connection?')) return;
         try {
-            const res = await this.authFetch(`${API}/connections/${connectionId}`, { // ✅ auth
+            const res = await this.authFetch(`${API}/connections/${connectionId}`, {
                 method: 'DELETE'
             });
             if (!res) return;
@@ -315,7 +316,7 @@ class AICopilotApp {
         btn.disabled = true;
 
         try {
-            const res = await this.authFetch(`${API}/query`, { // ✅ auth
+            const res = await this.authFetch(`${API}/query`, {
                 method: 'POST',
                 body: JSON.stringify({
                     connection_id: connectionId,
@@ -497,7 +498,7 @@ class AICopilotApp {
             return;
         }
         try {
-            const res = await this.authFetch(`${API}/suggestions`, { // ✅ auth
+            const res = await this.authFetch(`${API}/suggestions`, {
                 method: 'POST',
                 body: JSON.stringify({ input })
             });
@@ -760,7 +761,7 @@ class AICopilotApp {
         btn.disabled = true;
 
         try {
-            const res = await this.authFetch(`${API}/export`, { // ✅ auth
+            const res = await this.authFetch(`${API}/export`, {
                 method: 'POST',
                 body: JSON.stringify({
                     query_id: this.currentQuery.query_id,
@@ -798,7 +799,7 @@ class AICopilotApp {
     // ── Query History (Exports view) ─────────────────────────────────────────
     async loadQueryHistory() {
         try {
-            const res = await this.authFetch(`${API}/query/history?limit=50`); // ✅ auth
+            const res = await this.authFetch(`${API}/query/history?limit=50`);
             if (!res) return;
             const result = await res.json();
             this.renderQueryHistory(result.history || []);
@@ -852,7 +853,7 @@ class AICopilotApp {
         const connectionId = document.getElementById('schema-connection').value;
         if (!connectionId) { this.showToast('Please select a connection', 'warning'); return; }
         try {
-            const res = await this.authFetch( // ✅ auth
+            const res = await this.authFetch(
                 `${API}/connections/${connectionId}/schema?force_refresh=${forceRefresh}`
             );
             if (!res) return;
@@ -897,7 +898,7 @@ class AICopilotApp {
         const connectionId = document.getElementById('report-connection').value;
         if (!connectionId) { this.showToast('Please select a connection', 'warning'); return; }
         try {
-            const res = await this.authFetch(`${API}/reports/summary`, { // ✅ auth
+            const res = await this.authFetch(`${API}/reports/summary`, {
                 method: 'POST',
                 body: JSON.stringify({ connection_id: connectionId })
             });
@@ -922,7 +923,7 @@ class AICopilotApp {
         if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
 
         try {
-            const res = await this.authFetch(`${API}/alerts/test`, { // ✅ auth
+            const res = await this.authFetch(`${API}/alerts/test`, {
                 method: 'POST',
                 body: JSON.stringify({ title, message, channels })
             });
@@ -940,13 +941,13 @@ class AICopilotApp {
         }
     }
 
-    createAlertRule() {
+    // ✅ FIX: Now calls backend API instead of only localStorage
+    async createAlertRule() {
         const name      = document.getElementById('alert-name').value.trim();
         const connId    = document.getElementById('alert-connection').value;
         const query     = document.getElementById('alert-query').value.trim();
         const condition = document.getElementById('alert-condition').value;
         const threshold = document.getElementById('alert-threshold').value;
-        const frequency = document.getElementById('alert-frequency').value;
         const channels  = [];
         if (document.getElementById('alert-channel-email').checked) channels.push('email');
         if (document.getElementById('alert-channel-slack').checked) channels.push('slack');
@@ -957,27 +958,67 @@ class AICopilotApp {
         if (!threshold) { this.showToast('Please enter a threshold value', 'warning'); return; }
         if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
 
-        const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
-        const rule = {
-            id: Date.now(), name, connId, query, condition,
-            threshold: parseFloat(threshold), channels,
-            frequency: parseInt(frequency), active: true,
-            createdAt: new Date().toLocaleString(), triggeredCount: 0
+        // Map UI condition values to backend format
+        const conditionMap = {
+            'less_than': 'lt',
+            'greater_than': 'gt',
+            'equals': 'eq',
+            'not_equals': 'eq',
+            'Less than (<)': 'lt',
+            'Greater than (>)': 'gt',
         };
 
-        rules.push(rule);
-        localStorage.setItem('alert_rules', JSON.stringify(rules));
+        // Get user email for notifications
+        let userEmail = 'manashmandal117@gmail.com';
+        try {
+            const session = JSON.parse(localStorage.getItem('prism_session') || '{}');
+            userEmail = session.email || userEmail;
+        } catch (e) {}
 
-        document.getElementById('alert-name').value = '';
-        document.getElementById('alert-query').value = '';
-        document.getElementById('alert-threshold').value = '';
-
-        this.renderAlertRules();
-        this.showToast(`Alert rule "${name}" created!`, 'success');
+        try {
+            const res = await this.authFetch(`${API}/alerts`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    name,
+                    metric: name,
+                    condition: conditionMap[condition] || 'gt',
+                    threshold: parseFloat(threshold),
+                    connection_id: connId,
+                    sql_query: query,
+                    recipients: channels.includes('email') ? [userEmail] : [],
+                    severity: 'warning',
+                    description: `Alert: ${name}`
+                })
+            });
+            if (!res) return;
+            const result = await res.json();
+            if (result.success) {
+                document.getElementById('alert-name').value = '';
+                document.getElementById('alert-query').value = '';
+                document.getElementById('alert-threshold').value = '';
+                this.renderAlertRules();
+                this.showToast(`Alert "${name}" created!`, 'success');
+            } else {
+                this.showToast(`Failed: ${result.detail || 'Unknown error'}`, 'error');
+            }
+        } catch (err) {
+            this.showToast('Failed to create alert', 'error');
+        }
     }
 
-    renderAlertRules() {
-        const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
+    // ✅ FIX: Loads alert rules from backend API
+    async renderAlertRules() {
+        let rules = [];
+        try {
+            const res = await this.authFetch(`${API}/alerts`);
+            if (res && res.ok) {
+                const data = await res.json();
+                rules = data.alerts || [];
+            }
+        } catch (e) {
+            rules = [];
+        }
+
         const container = document.getElementById('alert-rules-list');
         const countEl   = document.getElementById('alert-rules-count');
         if (!container) return;
@@ -994,46 +1035,69 @@ class AICopilotApp {
             return;
         }
 
-        const conditionLabels = { less_than: '<', greater_than: '>', equals: '=', not_equals: '≠' };
+        const conditionLabels = { lt: '<', gt: '>', gte: '≥', lte: '≤', eq: '=' };
 
-        container.innerHTML = rules.map((rule, i) => `
-            <div class="alert-rule-card ${rule.active ? 'active-rule' : 'paused-rule'}">
-                <div class="alert-rule-dot ${rule.active ? 'active' : 'paused'}"></div>
+        container.innerHTML = rules.map((rule) => `
+            <div class="alert-rule-card ${rule.is_active ? 'active-rule' : 'paused-rule'}">
+                <div class="alert-rule-dot ${rule.is_active ? 'active' : 'paused'}"></div>
                 <div class="alert-rule-body">
                     <div class="alert-rule-name">${this.escapeHtml(rule.name)}</div>
-                    <div class="alert-rule-query">"${this.escapeHtml(rule.query)}" ${conditionLabels[rule.condition]} ${rule.threshold}</div>
+                    <div class="alert-rule-query">"${this.escapeHtml(rule.metric)}" ${conditionLabels[rule.condition] || rule.condition} ${rule.threshold}</div>
                     <div class="alert-rule-meta">
-                        Every ${rule.frequency >= 60 ? rule.frequency/60 + 'h' : rule.frequency + 'min'}
-                        · ${rule.channels.join(', ')}
-                        · Triggered ${rule.triggeredCount}x
+                        Severity: ${rule.severity}
+                        · Triggered ${rule.trigger_count || 0}x
+                        · ${rule.recipients?.join(', ') || 'No recipients'}
                     </div>
                 </div>
                 <div class="alert-rule-actions">
-                    <button class="btn-secondary" onclick="app.toggleAlertRule(${i})">
-                        ${rule.active ? '⏸ Pause' : '▶ Resume'}
+                    <button class="btn-secondary" onclick="app.checkAlert('${rule.id}')">▶ Check Now</button>
+                    <button class="btn-secondary" onclick="app.toggleAlert('${rule.id}', ${rule.is_active})">
+                        ${rule.is_active ? '⏸ Pause' : '▶ Resume'}
                     </button>
-                    <button class="btn-danger" onclick="app.deleteAlertRule(${i})">🗑 Delete</button>
+                    <button class="btn-danger" onclick="app.deleteAlert('${rule.id}')">🗑 Delete</button>
                 </div>
             </div>
         `).join('');
     }
 
-    toggleAlertRule(index) {
-        const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
-        rules[index].active = !rules[index].active;
-        localStorage.setItem('alert_rules', JSON.stringify(rules));
-        this.renderAlertRules();
-        this.showToast(rules[index].active ? 'Alert resumed' : 'Alert paused', 'info');
+    async checkAlert(alertId) {
+        try {
+            const res = await this.authFetch(`${API}/alerts/${alertId}/check`, { method: 'POST' });
+            if (!res) return;
+            const result = await res.json();
+            if (result.triggered) {
+                this.showToast(`⚠️ Alert triggered! Value: ${result.current_value}`, 'warning');
+                this.renderAlertHistory();
+            } else {
+                this.showToast(`✅ OK — Current value: ${result.current_value}`, 'success');
+            }
+        } catch (e) {
+            this.showToast('Failed to check alert', 'error');
+        }
     }
 
-    deleteAlertRule(index) {
+    async toggleAlert(alertId, isActive) {
+        const endpoint = isActive ? 'pause' : 'resume';
+        try {
+            const res = await this.authFetch(`${API}/alerts/${alertId}/${endpoint}`, { method: 'POST' });
+            if (!res) return;
+            this.renderAlertRules();
+            this.showToast(isActive ? 'Alert paused' : 'Alert resumed', 'info');
+        } catch (e) {
+            this.showToast('Failed to update alert', 'error');
+        }
+    }
+
+    async deleteAlert(alertId) {
         if (!confirm('Delete this alert rule?')) return;
-        const rules = JSON.parse(localStorage.getItem('alert_rules') || '[]');
-        const name = rules[index].name;
-        rules.splice(index, 1);
-        localStorage.setItem('alert_rules', JSON.stringify(rules));
-        this.renderAlertRules();
-        this.showToast(`"${name}" deleted`, 'success');
+        try {
+            const res = await this.authFetch(`${API}/alerts/${alertId}`, { method: 'DELETE' });
+            if (!res) return;
+            this.renderAlertRules();
+            this.showToast('Alert deleted', 'success');
+        } catch (e) {
+            this.showToast('Failed to delete alert', 'error');
+        }
     }
 
     addAlertHistory(title, message, channels, success) {
@@ -1044,8 +1108,19 @@ class AICopilotApp {
         this.renderAlertHistory();
     }
 
-    renderAlertHistory() {
-        const history = JSON.parse(localStorage.getItem('alert_history') || '[]');
+    async renderAlertHistory() {
+        // Try backend first
+        let history = [];
+        try {
+            const res = await this.authFetch(`${API}/alerts/history/all?limit=50`);
+            if (res && res.ok) {
+                const data = await res.json();
+                history = data.history || [];
+            }
+        } catch (e) {
+            history = JSON.parse(localStorage.getItem('alert_history') || '[]');
+        }
+
         const container = document.getElementById('alert-history-list');
         if (!container) return;
 
@@ -1061,10 +1136,14 @@ class AICopilotApp {
 
         container.innerHTML = history.map(h => `
             <div class="alert-history-item">
-                <span class="alert-history-icon">${h.success ? '✅' : '❌'}</span>
+                <span class="alert-history-icon">⚠️</span>
                 <div class="alert-history-body">
-                    <div class="alert-history-title">${this.escapeHtml(h.title)}</div>
-                    <div class="alert-history-meta">${h.timestamp} · ${h.channels.join(', ')}</div>
+                    <div class="alert-history-title">${this.escapeHtml(h.alert_name || h.title || 'Alert')}</div>
+                    <div class="alert-history-meta">
+                        ${h.triggered_at || h.timestamp}
+                        · Value: ${h.current_value ?? '—'}
+                        · Severity: ${h.severity || '—'}
+                    </div>
                 </div>
             </div>
         `).join('');

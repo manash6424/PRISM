@@ -24,6 +24,8 @@ from ..services.database_manager import db_manager
 from ..services.schema_discovery import schema_discovery
 from ..services.query_executor import query_executor
 from ..services.export_service import export_service
+from ..services.alert_service import alert_service
+from ..services.report_generator import report_generator
 from ..config import get_settings
 from ..utils.validators import (
     validate_connection_config,
@@ -439,3 +441,209 @@ async def get_suggestions(
             return {"suggestions": suggestions}
     except Exception as e:
         return {"suggestions": []}
+
+
+# ==================== Alert Endpoints ====================
+
+class AlertCreateRequest(BaseModel):
+    name: str
+    metric: str
+    condition: str
+    threshold: float
+    connection_id: str
+    sql_query: str
+    recipients: List[str]
+    severity: str = "warning"
+    description: str = ""
+
+
+class AlertUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    threshold: Optional[float] = None
+    condition: Optional[str] = None
+    recipients: Optional[List[str]] = None
+    severity: Optional[str] = None
+    description: Optional[str] = None
+
+
+@router.post("/alerts")
+async def create_alert(
+    request: AlertCreateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        alert = alert_service.create_alert(
+            name=request.name,
+            metric=request.metric,
+            condition=request.condition,
+            threshold=request.threshold,
+            connection_id=request.connection_id,
+            sql_query=request.sql_query,
+            recipients=request.recipients,
+            severity=request.severity,
+            description=request.description,
+        )
+        return {"success": True, "alert": alert}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/alerts")
+async def list_alerts(current_user: dict = Depends(get_current_user)):
+    return {"alerts": alert_service.list_alerts()}
+
+
+@router.get("/alerts/history/all")
+async def get_all_alert_history(
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user)
+):
+    return {"history": alert_service.get_history(limit=limit)}
+
+
+@router.get("/alerts/{alert_id}")
+async def get_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+    alert = alert_service.get_alert(alert_id)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return alert
+
+
+@router.put("/alerts/{alert_id}")
+async def update_alert(
+    alert_id: str,
+    request: AlertUpdateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    updates = {k: v for k, v in request.dict().items() if v is not None}
+    alert = alert_service.update_alert(alert_id, updates)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"success": True, "alert": alert}
+
+
+@router.delete("/alerts/{alert_id}")
+async def delete_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+    success = alert_service.delete_alert(alert_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"success": True, "message": "Alert deleted"}
+
+
+@router.post("/alerts/{alert_id}/pause")
+async def pause_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+    success = alert_service.pause_alert(alert_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"success": True, "message": "Alert paused"}
+
+
+@router.post("/alerts/{alert_id}/resume")
+async def resume_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+    success = alert_service.resume_alert(alert_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"success": True, "message": "Alert resumed"}
+
+
+@router.post("/alerts/{alert_id}/check")
+async def check_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+    result = await alert_service.check_alert(alert_id)
+    return result
+
+
+@router.get("/alerts/{alert_id}/history")
+async def get_alert_history(
+    alert_id: str,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    return {"history": alert_service.get_history(alert_id=alert_id, limit=limit)}
+
+
+# ==================== Report Endpoints ====================
+
+class ReportCreateRequest(BaseModel):
+    name: str
+    description: str = ""
+    connection_id: str
+    sql_query: str
+    schedule: Optional[str] = None
+    recipients: Optional[List[str]] = []
+    format: str = "excel"
+
+
+@router.post("/reports")
+async def create_report_template(
+    request: ReportCreateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        template = report_generator.register_template(
+            name=request.name,
+            description=request.description,
+            connection_id=request.connection_id,
+            sql_query=request.sql_query,
+            schedule=request.schedule,
+            recipients=request.recipients,
+            format=request.format,
+        )
+        return {"success": True, "template": template}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/reports")
+async def list_report_templates(current_user: dict = Depends(get_current_user)):
+    return {"templates": report_generator.list_templates()}
+
+
+@router.get("/reports/{template_id}")
+async def get_report_template(
+    template_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    template = report_generator.get_template(template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+
+@router.delete("/reports/{template_id}")
+async def delete_report_template(
+    template_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    success = report_generator.delete_template(template_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"success": True, "message": "Template deleted"}
+
+
+@router.post("/reports/{template_id}/run")
+async def run_report(
+    template_id: str,
+    send_email: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    result = await report_generator.generate_report(
+        template_id=template_id,
+        send_email=send_email,
+    )
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error"))
+    return result
+
+
+@router.post("/reports/{template_id}/send")
+async def send_report_now(
+    template_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    result = await report_generator.generate_report(
+        template_id=template_id,
+        send_email=True,
+    )
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error"))
+    return result
