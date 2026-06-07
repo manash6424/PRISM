@@ -75,7 +75,6 @@ class DatabaseManager:
         try:
             import httpx
             url = f"{SUPABASE_URL}/rest/v1/user_connections"
-            # Use user's JWT token for RLS — falls back to anon key
             auth_token = user_token or SUPABASE_ANON_KEY
             headers = {
                 "apikey": SUPABASE_ANON_KEY,
@@ -107,7 +106,6 @@ class DatabaseManager:
         try:
             import httpx
             url = f"{SUPABASE_URL}/rest/v1/user_connections?id=eq.{conn_id}"
-            # Use user's JWT token for RLS
             user_token = self._user_tokens.get(user_id) if user_id else None
             auth_token = user_token or SUPABASE_ANON_KEY
             headers = {
@@ -198,6 +196,7 @@ class DatabaseManager:
     # ---------------------------------------------------------
 
     def _resolve_host(self, host: str) -> str:
+        host = host.strip()
         if is_pooler_host(host):
             logger.info(f"Supabase host detected, using hostname directly: {host}")
             return host
@@ -264,9 +263,11 @@ class DatabaseManager:
 
     async def connect(self, connection: DatabaseConnection, user_id: str = None, user_token: str = None) -> bool:
         try:
+            connection.host = connection.host.strip()
+            connection.database = connection.database.strip()
+            connection.username = connection.username.strip()
             cache_key = self._get_cache_key(connection)
             resolved_host = self._resolve_host(connection.host)
-
             pg_conn = await self._make_asyncpg_connection(
                 resolved_host, connection.port, connection.username,
                 connection.password or "", connection.database
@@ -321,6 +322,9 @@ class DatabaseManager:
     async def test_connection(self, connection: DatabaseConnection) -> Tuple[bool, str]:
         try:
             dialect = connection.dialect.value
+            connection.host = connection.host.strip()
+            connection.database = connection.database.strip()
+            connection.username = connection.username.strip()
             resolved_host = self._resolve_host(connection.host)
 
             if dialect == "postgresql":

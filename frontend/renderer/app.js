@@ -16,6 +16,7 @@ class AICopilotApp {
         this.loadTheme();
         this.initKeyboardShortcuts();
         this.renderHistory();
+        this.checkOnboarding();
     }
 
     // ── Auth Token ──────────────────────────────────────────────────────────
@@ -52,6 +53,456 @@ class AICopilotApp {
         }
 
         return res;
+    }
+
+    // ── Onboarding ──────────────────────────────────────────────────────────
+    getOnboardingKey() {
+        try {
+            const session = JSON.parse(localStorage.getItem('prism_session') || '{}');
+            const uid = session.user?.id || session.id || 'default';
+            return `prism_onboarded_${uid}`;
+        } catch {
+            return 'prism_onboarded_default';
+        }
+    }
+
+    checkOnboarding() {
+        const key = this.getOnboardingKey();
+        if (localStorage.getItem(key)) return;
+        this.showOnboarding(key);
+    }
+
+    showOnboarding(storageKey) {
+        const steps = [
+            {
+                tag: 'Step 1 of 5 · Welcome',
+                icon: '⚡',
+                title: 'Your agency reporting, on autopilot',
+                desc: 'PRISM turns plain English into instant reports — no SQL, no formulas. Connect your database or upload an Excel file and ask anything.',
+                type: 'features',
+                features: [
+                    'Replace your 4-hour Monday reporting with 10 minutes',
+                    'Works with PostgreSQL, MySQL, and any Excel or CSV file',
+                    'Auto-generates charts, KPI dashboards, and client PDFs'
+                ]
+            },
+            {
+                tag: 'Step 2 of 5 · Connect data',
+                icon: '🔌',
+                title: 'Where does your data live?',
+                desc: 'Choose how you want to start. You can always add more sources later.',
+                type: 'choices',
+                choices: [
+                    { icon: '🗄️', label: 'Connect a database', sub: 'PostgreSQL, MySQL, MariaDB' },
+                    { icon: '📊', label: 'Upload Excel / CSV', sub: 'Facebook, Google Ads exports' }
+                ]
+            },
+            {
+                tag: 'Step 3 of 5 · Ask in English',
+                icon: '💬',
+                title: 'Just ask, like texting a colleague',
+                desc: 'No SQL knowledge needed. Type what you want to know — PRISM handles everything else.',
+                type: 'examples',
+                examples: [
+                    '"Show me ROAS by campaign for last month"',
+                    '"Which client had the highest CTR this week?"',
+                    '"Compare Google vs Meta spend in Q2"'
+                ]
+            },
+            {
+                tag: 'Step 4 of 5 · Auto reports',
+                icon: '📈',
+                title: 'Charts, KPIs, and client PDFs — one click',
+                desc: 'Every query auto-generates a chart. Pin to your dashboard. Export white-label PDFs for clients in seconds.',
+                type: 'features',
+                features: [
+                    'Auto-detects ROAS, CTR, CPC, CPA from your file',
+                    'Pin any chart to your agency dashboard',
+                    'One-click PDF — your brand, their data'
+                ]
+            },
+            {
+                tag: 'Step 5 of 5 · Ready',
+                icon: '✅',
+                title: "You're all set",
+                desc: "PRISM won't show this guide again. Head to the query bar and ask your first question.",
+                type: 'done',
+                tips: [
+                    'Connect a database from the sidebar → Connections',
+                    'Or upload an Excel file via the Upload tab',
+                    'Type a question and press Ctrl+Enter to run'
+                ]
+            }
+        ];
+
+        let currentStep = 0;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'onboarding-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(6px);
+            animation: obFadeIn 0.3s ease;
+        `;
+
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+            @keyframes obFadeIn { from { opacity:0; } to { opacity:1; } }
+            @keyframes obCardIn { from { opacity:0; transform:scale(0.96) translateY(-10px); } to { opacity:1; transform:scale(1) translateY(0); } }
+            @keyframes obStepIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+            #ob-card {
+                background: var(--bg-surface, #0c0f1a);
+                border: 1px solid var(--border-strong, #252c45);
+                border-radius: 20px;
+                width: 100%;
+                max-width: 520px;
+                overflow: hidden;
+                box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+                animation: obCardIn 0.4s cubic-bezier(0.22,1,0.36,1);
+            }
+
+            #ob-progress-bar {
+                height: 3px;
+                background: var(--bg-elevated, #141828);
+            }
+
+            #ob-progress-fill {
+                height: 3px;
+                background: var(--accent, #e8455a);
+                transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+            }
+
+            #ob-body {
+                padding: 32px 32px 24px;
+                animation: obStepIn 0.3s ease;
+            }
+
+            .ob-step-tag {
+                font-size: 10px;
+                font-weight: 700;
+                color: var(--accent, #e8455a);
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                margin-bottom: 16px;
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .ob-step-icon {
+                font-size: 36px;
+                margin-bottom: 14px;
+                display: block;
+            }
+
+            .ob-step-title {
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--text-primary, #f0f2fc);
+                margin-bottom: 10px;
+                line-height: 1.3;
+                letter-spacing: -0.3px;
+            }
+
+            .ob-step-desc {
+                font-size: 13px;
+                color: var(--text-secondary, #7f8db0);
+                line-height: 1.65;
+                margin-bottom: 20px;
+            }
+
+            .ob-feature-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+
+            .ob-feature-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 13px;
+                color: var(--text-secondary, #7f8db0);
+            }
+
+            .ob-feature-check {
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: rgba(34,197,94,0.12);
+                border: 1px solid rgba(34,197,94,0.25);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                flex-shrink: 0;
+            }
+
+            .ob-choices {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 4px;
+            }
+
+            .ob-choice {
+                background: var(--bg-elevated, #141828);
+                border: 1px solid var(--border, #1a1f30);
+                border-radius: 12px;
+                padding: 16px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .ob-choice:hover, .ob-choice.selected {
+                border-color: var(--accent, #e8455a);
+                background: var(--accent-dim, rgba(232,69,90,0.08));
+            }
+
+            .ob-choice-icon { font-size: 22px; }
+            .ob-choice-label { font-size: 13px; font-weight: 600; color: var(--text-primary, #f0f2fc); }
+            .ob-choice-sub { font-size: 11px; color: var(--text-secondary, #7f8db0); }
+
+            .ob-examples {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+
+            .ob-example {
+                background: var(--bg-elevated, #141828);
+                border: 1px solid var(--border, #1a1f30);
+                border-left: 3px solid var(--accent, #e8455a);
+                border-radius: 0 8px 8px 0;
+                padding: 10px 14px;
+                font-size: 12px;
+                color: var(--text-secondary, #7f8db0);
+                font-family: 'JetBrains Mono', monospace;
+                font-style: italic;
+            }
+
+            .ob-done-ring {
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background: rgba(34,197,94,0.10);
+                border: 1px solid rgba(34,197,94,0.25);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 28px;
+                margin: 0 auto 20px;
+            }
+
+            .ob-done-center { text-align: center; }
+            .ob-done-center .ob-step-title { text-align: center; }
+            .ob-done-center .ob-step-desc { text-align: center; }
+
+            .ob-tips {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                text-align: left;
+                max-width: 300px;
+                margin: 16px auto 0;
+            }
+
+            .ob-tip {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 12px;
+                color: var(--text-secondary, #7f8db0);
+            }
+
+            .ob-tip-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--accent, #e8455a);
+                flex-shrink: 0;
+            }
+
+            #ob-footer {
+                border-top: 1px solid var(--border, #1a1f30);
+                padding: 16px 32px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .ob-dots {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+            }
+
+            .ob-dot {
+                height: 6px;
+                border-radius: 3px;
+                background: var(--border-strong, #252c45);
+                transition: all 0.3s ease;
+                cursor: default;
+            }
+
+            .ob-dot.active { width: 20px; background: var(--accent, #e8455a); }
+            .ob-dot.done   { width: 6px;  background: rgba(232,69,90,0.35); }
+            .ob-dot.future { width: 6px; }
+
+            .ob-actions {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            #ob-skip-btn {
+                background: none;
+                border: none;
+                color: var(--text-muted, #3d4560);
+                font-size: 12px;
+                font-family: 'Outfit', sans-serif;
+                cursor: pointer;
+                padding: 8px 10px;
+                border-radius: 6px;
+                transition: all 0.2s;
+            }
+
+            #ob-skip-btn:hover { color: var(--text-secondary, #7f8db0); background: var(--bg-elevated, #141828); }
+
+            #ob-next-btn {
+                background: var(--accent, #e8455a);
+                color: #fff;
+                border: none;
+                padding: 10px 22px;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                font-family: 'Outfit', sans-serif;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 12px rgba(232,69,90,0.3);
+            }
+
+            #ob-next-btn:hover {
+                background: var(--accent-hover, #ff4d64);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 20px rgba(232,69,90,0.4);
+            }
+
+            #ob-next-btn:active { transform: translateY(0); }
+        `;
+        document.head.appendChild(styleEl);
+
+        const card = document.createElement('div');
+        card.id = 'ob-card';
+
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+
+        const finish = () => {
+            localStorage.setItem(storageKey, '1');
+            overlay.style.animation = 'obFadeIn 0.25s ease reverse';
+            setTimeout(() => {
+                overlay.remove();
+                styleEl.remove();
+            }, 250);
+        };
+
+        const render = () => {
+            const s = steps[currentStep];
+            const pct = ((currentStep + 1) / steps.length) * 100;
+            const isLast = currentStep === steps.length - 1;
+
+            let bodyHTML = '';
+
+            if (s.type === 'done') {
+                bodyHTML = `
+                    <div class="ob-done-center">
+                        <div class="ob-done-ring">✅</div>
+                        <div class="ob-step-tag">${s.tag}</div>
+                        <div class="ob-step-title">${s.title}</div>
+                        <div class="ob-step-desc">${s.desc}</div>
+                        <div class="ob-tips">
+                            ${s.tips.map(t => `
+                                <div class="ob-tip">
+                                    <div class="ob-tip-dot"></div>
+                                    <span>${t}</span>
+                                </div>`).join('')}
+                        </div>
+                    </div>`;
+            } else {
+                let contentHTML = '';
+
+                if (s.type === 'features') {
+                    contentHTML = `<div class="ob-feature-list">
+                        ${s.features.map(f => `
+                            <div class="ob-feature-item">
+                                <div class="ob-feature-check">✓</div>
+                                <span>${f}</span>
+                            </div>`).join('')}
+                    </div>`;
+                } else if (s.type === 'choices') {
+                    contentHTML = `<div class="ob-choices">
+                        ${s.choices.map(c => `
+                            <div class="ob-choice" onclick="this.closest('.ob-choices').querySelectorAll('.ob-choice').forEach(el=>el.classList.remove('selected'));this.classList.add('selected')">
+                                <div class="ob-choice-icon">${c.icon}</div>
+                                <div class="ob-choice-label">${c.label}</div>
+                                <div class="ob-choice-sub">${c.sub}</div>
+                            </div>`).join('')}
+                    </div>`;
+                } else if (s.type === 'examples') {
+                    contentHTML = `<div class="ob-examples">
+                        ${s.examples.map(e => `<div class="ob-example">${e}</div>`).join('')}
+                    </div>`;
+                }
+
+                bodyHTML = `
+                    <div class="ob-step-tag">${s.tag}</div>
+                    <span class="ob-step-icon">${s.icon}</span>
+                    <div class="ob-step-title">${s.title}</div>
+                    <div class="ob-step-desc">${s.desc}</div>
+                    ${contentHTML}`;
+            }
+
+            const dotsHTML = steps.map((_, i) => {
+                let cls = i < currentStep ? 'done' : i === currentStep ? 'active' : 'future';
+                return `<div class="ob-dot ${cls}"></div>`;
+            }).join('');
+
+            card.innerHTML = `
+                <div id="ob-progress-bar">
+                    <div id="ob-progress-fill" style="width:${pct}%"></div>
+                </div>
+                <div id="ob-body">${bodyHTML}</div>
+                <div id="ob-footer">
+                    <div class="ob-dots">${dotsHTML}</div>
+                    <div class="ob-actions">
+                        ${!isLast ? `<button id="ob-skip-btn">Skip</button>` : ''}
+                        <button id="ob-next-btn">${isLast ? 'Start using PRISM →' : currentStep === 0 ? 'Get started →' : 'Next →'}</button>
+                    </div>
+                </div>`;
+
+            document.getElementById('ob-next-btn').onclick = () => {
+                if (isLast) { finish(); }
+                else { currentStep++; render(); }
+            };
+
+            const skipBtn = document.getElementById('ob-skip-btn');
+            if (skipBtn) skipBtn.onclick = () => finish();
+        };
+
+        render();
     }
 
     // ── Event Bindings ──────────────────────────────────────────────────────
@@ -1162,6 +1613,7 @@ class AICopilotApp {
         `;
         container.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
+
     }
 
     escapeHtml(text) {
@@ -1169,6 +1621,14 @@ class AICopilotApp {
         div.textContent = text;
         return div.innerHTML;
     }
+
+    // ── Reset Onboarding ─────────────────────────────────────────────────────
+    resetOnboarding() {
+        const key = this.getOnboardingKey();
+        localStorage.removeItem(key);
+        this.showOnboarding(key);
+    }
 }
+
 
 const app = new AICopilotApp();

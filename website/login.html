@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — PRISM</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  body { background: var(--bg); }
+
+  .auth-page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Left panel */
+  .auth-left {
+    background: var(--black);
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .auth-left-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 80%, rgba(108,71,255,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 80% 20%, rgba(108,71,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .auth-left-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.6rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .auth-left-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .auth-left-content h2 {
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    color: white;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  .auth-left-content p {
+    color: #888;
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+
+  .auth-proof {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .auth-proof-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.88rem;
+    color: #aaa;
+  }
+
+  .auth-proof-item span:first-child { font-size: 1.1rem; flex-shrink: 0; }
+
+  .auth-left-footer {
+    position: relative;
+    z-index: 1;
+    font-size: 0.78rem;
+    color: #444;
+  }
+
+  /* Right panel */
+  .auth-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3rem;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .auth-tabs {
+    display: flex;
+    background: var(--border);
+    border-radius: 100px;
+    padding: 3px;
+    margin-bottom: 2rem;
+  }
+
+  .auth-tab {
+    flex: 1;
+    text-align: center;
+    padding: 0.55rem;
+    border-radius: 100px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .auth-tab.active {
+    background: var(--white);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .auth-form-title { font-size: 1.5rem; margin-bottom: 0.35rem; }
+  .auth-form-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 1.75rem; }
+
+  .form-group { margin-bottom: 1.1rem; }
+
+  .form-label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  .form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,71,255,0.1);
+  }
+
+  .form-input::placeholder { color: #bbb; }
+
+  .form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    margin-top: -0.25rem;
+  }
+
+  .form-remember {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .form-remember input { cursor: pointer; accent-color: var(--accent); }
+
+  .form-forgot { font-size: 0.82rem; color: var(--accent); }
+  .form-forgot:hover { text-decoration: underline; }
+
+  .btn-auth {
+    width: 100%;
+    padding: 0.8rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    margin-bottom: 1.25rem;
+  }
+
+  .btn-auth:hover { background: var(--accent-dark); transform: translateY(-1px); }
+  .btn-auth:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-ghost-sm {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.5rem 1.25rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .btn-ghost-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+  .auth-switch {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 1rem;
+  }
+
+  .auth-switch a { color: var(--accent); font-weight: 500; cursor: pointer; }
+  .auth-switch a:hover { text-decoration: underline; }
+
+  .auth-note {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .auth-note a { color: var(--accent); }
+
+  /* Panels */
+  .form-panel { display: none; }
+  .form-panel.active { display: block; }
+
+  /* Password strength */
+  .strength-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 0.4rem;
+    overflow: hidden;
+  }
+
+  .strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s, background 0.3s;
+  }
+
+  /* OTP boxes */
+  .otp-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .otp-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .otp-header h2 { font-size: 1.25rem; margin-bottom: 0.35rem; }
+
+  .otp-header p {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .otp-email-highlight {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .otp-boxes {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    margin: 1.75rem 0;
+  }
+
+  .otp-box {
+    width: 40px;
+    height: 50px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Syne', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    caret-color: var(--accent);
+  }
+
+  .otp-box:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,71,255,0.1);
+  }
+
+  .otp-box.filled { border-color: var(--accent); }
+
+  .otp-resend {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 1rem;
+  }
+
+  .otp-resend a {
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .otp-resend a:hover { text-decoration: underline; }
+  .otp-resend a.disabled { color: var(--muted); cursor: default; pointer-events: none; }
+
+  .otp-back {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+    width: fit-content;
+  }
+
+  .otp-back:hover { color: var(--accent); }
+
+  /* Alert banners */
+  .alert {
+    font-size: 0.85rem;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .alert-error { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; }
+  .alert-success { background:#f0fdf4; border:1px solid #bbf7d0; color:#16a34a; }
+
+  @media (max-width: 768px) {
+    .auth-page { grid-template-columns: 1fr; }
+    .auth-left { display: none; }
+    .auth-right {
+      padding: 2rem 1.5rem;
+      max-width: 100%;
+      justify-content: flex-start;
+      padding-top: 5rem;
+    }
+    .otp-box { width: 34px; height: 44px; font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="homepage.html" class="logo">PRISM</a>
+    <div class="nav-links">
+      <a href="homepage.html#features">Features</a>
+      <a href="homepage.html#how">How it Works</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="about.html">About</a>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-page">
+
+  <!-- Left branding -->
+  <div class="auth-left">
+    <div class="auth-left-bg"></div>
+    <div class="auth-left-logo">PRISM</div>
+    <div class="auth-left-content">
+      <h2>Monday reports in<br>10 minutes.</h2>
+      <p>Join agencies using PRISM to replace 4-hour weekly reporting with a single question in plain English.</p>
+      <div class="auth-proof">
+        <div class="auth-proof-item"><span>💬</span><span>Ask in English — get SQL results instantly</span></div>
+        <div class="auth-proof-item"><span>📊</span><span>Auto marketing dashboard from any Excel upload</span></div>
+        <div class="auth-proof-item"><span>📄</span><span>One-click white-label PDF reports for clients</span></div>
+        <div class="auth-proof-item"><span>🔒</span><span>Your data never leaves your machine</span></div>
+      </div>
+    </div>
+    <div class="auth-left-footer">© 2026 PRISM · Made in India 🇮🇳</div>
+  </div>
+
+  <!-- Right form -->
+  <div class="auth-right">
+
+    <div class="auth-tabs" id="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('signin')">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <!-- ── SIGN IN ── -->
+    <div class="form-panel active" id="panel-signin">
+      <h2 class="auth-form-title">Welcome back</h2>
+      <p class="auth-form-sub">Sign in to your PRISM account</p>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="signin-email" type="email" class="form-input" placeholder="you@agency.com" autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="signin-password" type="password" class="form-input" placeholder="Your password" autocomplete="current-password">
+      </div>
+
+      <div class="form-row">
+        <label class="form-remember"><input type="checkbox"> Remember me</label>
+        <a href="#" class="form-forgot" onclick="handleForgotPassword(); return false;">Forgot password?</a>
+      </div>
+
+      <button id="btn-signin" data-label="Sign In" class="btn-auth" onclick="handleSignIn()">Sign In</button>
+
+      <div class="auth-switch">
+        Don't have an account? <a onclick="switchTab('signup')">Create one free →</a>
+      </div>
+    </div>
+
+    <!-- ── SIGN UP — Step 1: Details ── -->
+    <div class="form-panel" id="panel-signup">
+      <h2 class="auth-form-title">Get started free</h2>
+      <p class="auth-form-sub">Create your PRISM account — no credit card needed</p>
+
+      <div class="form-group">
+        <label class="form-label">Full name</label>
+        <input id="signup-name" type="text" class="form-input" placeholder="Your name" autocomplete="name">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Agency name</label>
+        <input id="signup-agency" type="text" class="form-input" placeholder="Your agency or company name">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Work email</label>
+        <input id="signup-email" type="email" class="form-input" placeholder="you@agency.com" autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="signup-password" type="password" class="form-input" placeholder="Min. 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)">
+        <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+      </div>
+
+      <button id="btn-signup" data-label="Create Account" class="btn-auth" onclick="handleSignUp()" style="margin-top:0.5rem;">Create Account</button>
+
+      <div class="auth-switch">
+        Already have an account? <a onclick="switchTab('signin')">Sign in →</a>
+      </div>
+    </div>
+
+    <!-- ── SIGN UP — Step 2: OTP ── -->
+    <div class="form-panel" id="panel-otp">
+      <div class="otp-back" onclick="backToSignup()">← Back</div>
+
+      <div class="otp-header">
+        <div class="otp-icon">📬</div>
+        <h2>Check your email</h2>
+        <p>We sent a 8-digit code to<br><span class="otp-email-highlight" id="otp-email-display"></span></p>
+      </div>
+
+      <div class="otp-boxes" id="otp-boxes">
+        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      </div>
+
+      <button id="btn-otp" data-label="Verify & Create Account" class="btn-auth" onclick="handleOTPVerify()">Verify & Create Account</button>
+
+      <div class="otp-resend">
+        Didn't get it? <a id="resend-link" class="disabled" onclick="handleResend()">Resend in <span id="resend-timer">60</span>s</a>
+      </div>
+    </div>
+
+    <div class="auth-note">
+      By continuing, you agree to our <a href="privacy.html">Privacy Policy</a>.
+      Your data never leaves your machine.
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://ycejbrbkcqutfdlhawik.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljZWpicmJrY3F1dGZkbGhhd2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDg4NjQsImV4cCI6MjA4Nzc4NDg2NH0.wz4ixoaDzU2c7dKUErNxYbBB9Yh-FkjIcVQrW70ptjg';
+  const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let resendInterval = null;
+  let pendingEmail = '';
+  let pendingPassword = '';
+  let pendingName = '';
+  let pendingAgency = '';
+
+  // ─── Tab switching ───────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+      t.classList.toggle('active', (i === 0 && tab === 'signin') || (i === 1 && tab === 'signup'));
+    });
+    showPanel(tab === 'signin' ? 'panel-signin' : 'panel-signup');
+    clearAlert();
+  }
+
+  function showPanel(id) {
+    document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    // Hide tabs on OTP screen
+    document.getElementById('auth-tabs').style.display = id === 'panel-otp' ? 'none' : 'flex';
+  }
+
+  // ─── Alerts ──────────────────────────────────────────────────
+  function showAlert(panelId, msg, type = 'error') {
+    clearAlert();
+    const el = document.createElement('div');
+    el.id = 'auth-alert';
+    el.className = `alert alert-${type}`;
+    el.textContent = msg;
+    document.getElementById(panelId).prepend(el);
+  }
+
+  function clearAlert() {
+    const el = document.getElementById('auth-alert');
+    if (el) el.remove();
+  }
+
+  // ─── Loading state ───────────────────────────────────────────
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.textContent = loading ? 'Please wait...' : btn.dataset.label;
+  }
+
+  // ─── Password strength ───────────────────────────────────────
+  function checkStrength(val) {
+    const fill = document.getElementById('strength-fill');
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    const widths = ['0%', '25%', '50%', '75%', '100%'];
+    const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e'];
+    fill.style.width = widths[score];
+    fill.style.background = colors[score];
+  }
+
+  // ─── OTP boxes behaviour ─────────────────────────────────────
+  function initOTPBoxes() {
+    const boxes = document.querySelectorAll('.otp-box');
+    boxes.forEach((box, i) => {
+      box.value = '';
+      box.classList.remove('filled');
+
+      box.addEventListener('input', () => {
+        box.value = box.value.replace(/[^0-9]/g, '').slice(-1);
+        box.classList.toggle('filled', box.value !== '');
+        if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+        // Auto-verify when all filled
+        const code = getOTPValue();
+        if (code.length === 8) handleOTPVerify();
+      });
+
+      box.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !box.value && i > 0) boxes[i - 1].focus();
+      });
+
+      box.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+        paste.split('').forEach((char, j) => {
+          if (boxes[j]) { boxes[j].value = char; boxes[j].classList.add('filled'); }
+        });
+        if (boxes[Math.min(paste.length, 7)]) boxes[Math.min(paste.length, 7)].focus();
+        if (paste.length === 8) handleOTPVerify();
+      });
+    });
+    boxes[0].focus();
+  }
+
+  function getOTPValue() {
+    return Array.from(document.querySelectorAll('.otp-box')).map(b => b.value).join('');
+  }
+
+  // ─── Resend timer ────────────────────────────────────────────
+  function startResendTimer() {
+    let seconds = 60;
+    const link = document.getElementById('resend-link');
+    const timer = document.getElementById('resend-timer');
+    link.classList.add('disabled');
+    timer.textContent = seconds;
+
+    if (resendInterval) clearInterval(resendInterval);
+    resendInterval = setInterval(() => {
+      seconds--;
+      timer.textContent = seconds;
+      if (seconds <= 0) {
+        clearInterval(resendInterval);
+        link.classList.remove('disabled');
+        link.innerHTML = 'Resend code';
+      }
+    }, 1000);
+  }
+
+  // ─── Sign In ─────────────────────────────────────────────────
+  async function handleSignIn() {
+    const email = document.getElementById('signin-email').value.trim();
+    const password = document.getElementById('signin-password').value;
+    if (!email || !password) return showAlert('panel-signin', 'Please enter your email and password.');
+
+    setLoading('btn-signin', true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading('btn-signin', false);
+
+    if (error) {
+      const msg = error.message.toLowerCase().includes('invalid')
+        ? 'Incorrect email or password. Please try again.'
+        : error.message;
+      return showAlert('panel-signin', msg);
+    }
+
+    showAlert('panel-signin', '✓ Signed in successfully! Open the PRISM desktop app to continue.', 'success');
+  }
+
+  // ─── Sign Up — Step 1 ────────────────────────────────────────
+  async function handleSignUp() {
+    const name   = document.getElementById('signup-name').value.trim();
+    const agency = document.getElementById('signup-agency').value.trim();
+    const email  = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+
+    if (!name || !agency || !email || !password) return showAlert('panel-signup', 'Please fill in all fields.');
+    if (password.length < 8) return showAlert('panel-signup', 'Password must be at least 8 characters.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showAlert('panel-signup', 'Please enter a valid email address.');
+
+    // Save for OTP step
+    pendingEmail    = email;
+    pendingPassword = password;
+    pendingName     = name;
+    pendingAgency   = agency;
+
+    setLoading('btn-signup', true);
+
+    // Sign up with Supabase — this sends the OTP confirmation email
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+          agency_name: agency,
+        }
+      }
+    });
+
+    setLoading('btn-signup', false);
+
+    if (error) {
+      if (error.message.toLowerCase().includes('already registered')) {
+        return showAlert('panel-signup', 'An account with this email already exists. Please sign in.');
+      }
+      return showAlert('panel-signup', error.message);
+    }
+
+    // Move to OTP screen
+    document.getElementById('otp-email-display').textContent = email;
+    showPanel('panel-otp');
+    initOTPBoxes();
+    startResendTimer();
+  }
+
+  // ─── OTP Verify — Step 2 ─────────────────────────────────────
+  async function handleOTPVerify() {
+    const code = getOTPValue();
+    if (code.length < 8) return showAlert('panel-otp', 'Please enter the full 8-digit code.');
+
+    setLoading('btn-otp', true);
+    clearAlert();
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: pendingEmail,
+      token: code,
+      type: 'email',
+    });
+
+    setLoading('btn-otp', false);
+
+    if (error) {
+      // Shake the boxes
+      const boxesEl = document.getElementById('otp-boxes');
+      boxesEl.style.animation = 'none';
+      boxesEl.offsetHeight; // reflow
+      boxesEl.style.animation = 'shake 0.4s ease';
+      return showAlert('panel-otp', 'Incorrect or expired code. Please try again.');
+    }
+
+    // Success
+    clearAlert();
+    showAlert('panel-otp', `✓ Welcome to PRISM, ${pendingName}! Your account is verified. Open the desktop app to get started.`, 'success');
+    document.getElementById('btn-otp').style.display = 'none';
+    document.querySelector('.otp-resend').style.display = 'none';
+    document.querySelector('.otp-back').style.display = 'none';
+  }
+
+  // ─── Resend OTP ──────────────────────────────────────────────
+  async function handleResend() {
+    const link = document.getElementById('resend-link');
+    if (link.classList.contains('disabled')) return;
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: pendingEmail,
+    });
+
+    if (error) return showAlert('panel-otp', 'Could not resend code. Please try again.');
+
+    showAlert('panel-otp', '✓ New code sent — check your inbox.', 'success');
+    startResendTimer();
+  }
+
+  // ─── Back to signup ──────────────────────────────────────────
+  function backToSignup() {
+    if (resendInterval) clearInterval(resendInterval);
+    clearAlert();
+    showPanel('panel-signup');
+  }
+
+  // ─── Forgot password ─────────────────────────────────────────
+  async function handleForgotPassword() {
+    const email = document.getElementById('signin-email').value.trim();
+    if (!email) return showAlert('panel-signin', 'Enter your email address above first.');
+
+    setLoading('btn-signin', true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/login.html'
+    });
+    setLoading('btn-signin', false);
+
+    if (error) return showAlert('panel-signin', error.message);
+    showAlert('panel-signin', '✓ Password reset email sent. Check your inbox.', 'success');
+  }
+
+  // ─── Already logged in ───────────────────────────────────────
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) {
+      showAlert('panel-signin', "✓ You're already signed in. Open the PRISM desktop app to continue.", 'success');
+    }
+  });
+
+  // ─── Shake animation ─────────────────────────────────────────
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-8px); }
+      40%       { transform: translateX(8px); }
+      60%       { transform: translateX(-5px); }
+      80%       { transform: translateX(5px); }
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — PRISM</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  .legal-hero {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 4rem 2rem 2.5rem;
+  }
+  .legal-hero h1 { font-size: 2.4rem; margin-bottom: 0.5rem; }
+  .legal-meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 0; }
+
+  .legal-body {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+  }
+
+  .legal-section { margin-bottom: 2.75rem; }
+
+  .legal-section h2 {
+    font-size: 1.15rem;
+    font-family: 'Syne', sans-serif;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .legal-section p {
+    font-size: 0.92rem;
+    color: var(--muted);
+    margin-bottom: 0.65rem;
+    line-height: 1.75;
+  }
+
+  .legal-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0.75rem;
+  }
+
+  .legal-section ul li {
+    font-size: 0.92rem;
+    color: var(--muted);
+    padding: 0.3rem 0 0.3rem 1.25rem;
+    position: relative;
+  }
+
+  .legal-section ul li::before {
+    content: "·";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .highlight-box {
+    background: var(--accent-light);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .highlight-box p {
+    font-size: 0.92rem;
+    color: var(--accent-dark);
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .contact-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .contact-card p { margin: 0.2rem 0; }
+  .contact-card a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="homepage.html" class="logo">PRISM</a>
+    <div class="nav-links">
+      <a href="homepage.html#features">Features</a>
+      <a href="homepage.html#how">How it Works</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="about.html">About</a>
+    </div>
+    <a href="homepage.html#download" class="btn-nav">Download Free</a>
+  </div>
+</nav>
+
+<div class="legal-hero">
+  <div class="section-tag">Legal</div>
+  <h1>Privacy Policy</h1>
+  <p class="legal-meta">Last updated: June 2026 · Applies to PRISM desktop app and website</p>
+</div>
+
+<div class="legal-body">
+
+  <div class="highlight-box">
+    <p>🔒 The short version: your database data and uploaded files never leave your machine. The only thing that reaches our servers is the plain-English question you type — nothing else.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>1. Who we are</h2>
+    <p>PRISM is a desktop application built by Manash Mandal and Shreya Kolam for Indian digital marketing agencies. We are based in India. You can reach us at the contact details at the bottom of this page.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>2. What data we collect</h2>
+    <p>We collect the minimum required to run the product.</p>
+    <ul>
+      <li><strong>Account information</strong> — your email address and a hashed password, stored securely on Supabase.</li>
+      <li><strong>Natural language queries</strong> — the plain-English questions you type are sent to Groq's API to be converted into SQL or pandas code. Groq's privacy policy applies to this data.</li>
+      <li><strong>Database connection metadata</strong> — host, port, database name, and username are stored (encrypted) in Supabase so your connections survive app restarts. Passwords are encrypted with a private key before storage.</li>
+      <li><strong>Usage data</strong> — query history and saved queries are stored locally on your machine in the app's local storage.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>3. What data we do NOT collect</h2>
+    <p>This is the important part.</p>
+    <ul>
+      <li>The contents of your database — query results stay on your machine.</li>
+      <li>The contents of uploaded Excel or CSV files — file processing happens locally via pandas.</li>
+      <li>Any client data your agency manages.</li>
+      <li>Any payment information — payments are handled entirely by Razorpay.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>4. How we use your data</h2>
+    <ul>
+      <li>To authenticate you and manage your session (Supabase Auth).</li>
+      <li>To convert your natural language questions into SQL or pandas code (Groq API).</li>
+      <li>To restore your saved database connections across sessions.</li>
+      <li>To send alerts you configure (email or Slack) when thresholds are crossed.</li>
+    </ul>
+    <p>We do not sell your data. We do not use your data for advertising. We do not share it with third parties beyond the services named above (Supabase, Groq, Razorpay).</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>5. Third-party services</h2>
+    <ul>
+      <li><strong>Supabase</strong> — authentication and encrypted connection storage. <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase Privacy Policy →</a></li>
+      <li><strong>Groq</strong> — AI inference for NL → SQL conversion. <a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener">Groq Privacy Policy →</a></li>
+      <li><strong>Razorpay</strong> — payment processing (coming Month 2). <a href="https://razorpay.com/privacy/" target="_blank" rel="noopener">Razorpay Privacy Policy →</a></li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>6. Data retention</h2>
+    <p>Your account data is retained as long as your account is active. You can request deletion at any time by emailing us and we will remove your account and associated data within 7 business days.</p>
+    <p>Query history and dashboard pins are stored locally on your machine. Uninstalling the app removes this data.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>7. Security</h2>
+    <p>Database passwords are encrypted before being stored. All communication between the app and our servers uses HTTPS. Supabase Row Level Security (RLS) ensures each user can only access their own data.</p>
+    <p>No security system is perfect. If you discover a vulnerability, please email us directly rather than disclosing it publicly.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>8. Your rights</h2>
+    <p>You have the right to access, correct, or delete any personal data we hold about you. To exercise these rights, contact us at the address below. We will respond within 7 business days.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>9. Changes to this policy</h2>
+    <p>We may update this policy as PRISM grows. If we make significant changes, we will notify you via the app or by email. The "Last updated" date at the top of this page always reflects the current version.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>10. Contact us</h2>
+    <div class="contact-card">
+      <p><strong>PRISM</strong></p>
+      <p>Built by Manash Mandal & Shreya Kolam</p>
+      <p>India 🇮🇳</p>
+      <p style="margin-top: 0.5rem;"><!-- REPLACE WITH REAL EMAIL -->
+        Email: <a href="mailto:hello@prism.app">hello@prism.app</a></p>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-left">
+      <span class="logo">PRISM</span>
+      <p>Built by Manash Mandal & Shreya Kolam<br>for Indian digital marketing agencies.</p>
+    </div>
+    <div class="footer-links">
+      <a href="homepage.html">Home</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="about.html">About</a>
+      <a href="privacy.html">Privacy</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 PRISM. Made in India 🇮🇳</p>
+  </div>
+</footer>
+
+</body>
+</html>

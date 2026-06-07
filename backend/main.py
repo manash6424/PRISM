@@ -76,6 +76,9 @@ app.include_router(auth_router, prefix="/api/v1")
 from backend.upload_api import router as upload_router
 app.include_router(upload_router, prefix="/api/v1")
 
+from backend.services.report_generator_pdf import router as pdf_router
+app.include_router(pdf_router, prefix="/api/v1")
+
 
 @app.get("/")
 async def root():

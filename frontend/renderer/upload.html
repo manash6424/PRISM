@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRISM — Upload Data</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- ✅ NEW: Chart.js for Marketing Dashboard -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <style>
         :root {
@@ -194,56 +193,100 @@
 
         #file-input { display: none; }
 
-        /* ── FILE INFO ── */
-        .file-info {
+        /* ── FILE LIST ── */
+        .file-list { display: flex; flex-direction: column; gap: 6px; }
+
+        .file-list-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             background: var(--bg-elevated);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            padding: 14px 16px;
-            display: none;
-        }
-
-        .file-info.visible { display: block; }
-
-        .file-info-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
-        .file-info-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .file-info-remove {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 18px;
-            cursor: pointer;
-            padding: 0;
+            padding: 10px 12px;
             transition: var(--transition);
         }
 
-        .file-info-remove:hover { color: var(--error); }
+        .file-list-item.uploading { border-color: var(--accent); opacity: 0.7; }
+        .file-list-item.error     { border-color: var(--error); }
 
-        .file-stats { display: flex; gap: 12px; }
+        .file-list-icon { font-size: 20px; flex-shrink: 0; }
 
-        .file-stat {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-family: 'JetBrains Mono', monospace;
-            background: var(--bg-hover);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 2px 10px;
+        .file-list-info { flex: 1; min-width: 0; }
+
+        .file-list-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+
+        .file-list-meta {
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .file-list-remove {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 2px;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .file-list-remove:hover { color: var(--error); }
+
+        .file-list-spinner {
+            width: 14px; height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+
+        /* ── MERGE BADGE ── */
+        .merge-badge {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(59,130,246,0.08);
+            border: 1px solid rgba(59,130,246,0.25);
+            border-radius: var(--radius-md);
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #3b82f6;
+        }
+        .merge-badge.visible { display: flex; }
+
+        /* ── ADD MORE BTN ── */
+        .add-more-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 14px;
+            background: var(--bg-elevated);
+            border: 1px dashed var(--border-strong);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
+        .add-more-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .add-more-btn.visible { display: flex; }
 
         /* ── COLUMNS LIST ── */
         .columns-list { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -394,6 +437,7 @@
             background: var(--bg-surface);
             flex-shrink: 0;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .results-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
@@ -410,7 +454,53 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        .results-actions { display: flex; gap: 8px; }
+        .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* ── PDF BUTTON special style ── */
+        .btn-pdf {
+            background: linear-gradient(135deg, #e8455a, #c73048);
+            color: #fff;
+            border: none;
+            padding: 9px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 10px rgba(232,69,90,0.35);
+        }
+        .btn-pdf:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 18px rgba(232,69,90,0.5);
+        }
+        .btn-pdf:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ── NEW: Excel KPI button style ── */
+        .btn-excel {
+            background: linear-gradient(135deg, #1d6f42, #157a3a);
+            color: #fff;
+            border: none;
+            padding: 9px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 10px rgba(29,111,66,0.35);
+        }
+        .btn-excel:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 18px rgba(29,111,66,0.5);
+        }
+        .btn-excel:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         /* ── AI ANSWER BOX ── */
         .ai-answer {
@@ -428,11 +518,7 @@
 
         .ai-answer.visible { display: flex; }
 
-        .ai-answer-icon {
-            font-size: 20px;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
+        .ai-answer-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
 
         .ai-answer-text {
             font-size: 14px;
@@ -626,7 +712,7 @@
         body.light-mode .drop-zone { background: var(--bg-elevated); }
         body.light-mode .code-content { color: var(--text-primary); }
 
-        /* ── NEW: Marketing Dashboard styles ── */
+        /* ── Marketing Dashboard ── */
         .mkt-dashboard {
             display: none;
             flex: 1;
@@ -760,6 +846,161 @@
             padding: 8px 12px;
             line-height: 1.8;
         }
+
+        /* ── Restored session banner ── */
+        .restored-banner {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(34,197,94,0.08);
+            border: 1px solid rgba(34,197,94,0.25);
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            color: var(--success);
+        }
+        .restored-banner.visible { display: flex; }
+
+        /* ── PDF MODAL ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.visible { display: flex; }
+
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            padding: 28px 28px 24px;
+            width: 460px;
+            max-width: 95vw;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .modal-close:hover { color: var(--error); }
+
+        .modal-field { display: flex; flex-direction: column; gap: 6px; }
+
+        .modal-label {
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .modal-input {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: 'Outfit', sans-serif;
+            padding: 10px 12px;
+            outline: none;
+            transition: var(--transition);
+            width: 100%;
+        }
+        .modal-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .modal-color-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-color-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding-top: 4px;
+        }
+
+        .modal-info {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            line-height: 1.7;
+        }
+
+        .pdf-generating {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-glow);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .pdf-generating.visible { display: flex; }
+
+        /* ── NEW: KPI Excel modal ── */
+        .kpi-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .kpi-modal-overlay.visible { display: flex; }
     </style>
 </head>
 <body>
@@ -774,7 +1015,7 @@
         </div>
     </div>
     <div class="topbar-right">
-        <button class="btn-secondary" onclick="clearAll()" id="clear-btn" style="display:none;">🗑 Clear</button>
+        <button class="btn-secondary" onclick="clearAll()" id="clear-btn" style="display:none;">🗑 Clear All</button>
     </div>
 </div>
 
@@ -785,45 +1026,52 @@
     <div class="left-panel">
 
         <!-- Drop Zone -->
-        <div>
-            <div class="section-label">Upload File</div>
+        <div id="drop-zone-wrapper">
+            <div class="section-label">Upload Files</div>
             <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
                 <span class="drop-icon">📊</span>
-                <div class="drop-title">Drop your file here</div>
-                <div class="drop-sub">or click to browse your computer</div>
+                <div class="drop-title">Drop your files here</div>
+                <div class="drop-sub">or click to browse — select multiple files at once</div>
                 <div class="drop-formats">
                     <span class="format-tag format-csv">CSV</span>
                     <span class="format-tag format-xlsx">XLSX</span>
                     <span class="format-tag format-xls">XLS</span>
                 </div>
             </div>
-            <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(this.files[0])">
+            <input type="file" id="file-input" accept=".csv,.xlsx,.xls" multiple onchange="handleFileSelect(this.files)">
         </div>
 
         <!-- Upload Progress -->
         <div class="upload-progress" id="upload-progress">
             <div class="progress-spinner"></div>
-            <span class="progress-text">Uploading and processing file...</span>
+            <span class="progress-text" id="upload-progress-text">Uploading and processing file...</span>
         </div>
 
-        <!-- File Info -->
-        <div class="file-info" id="file-info">
-            <div class="file-info-header">
-                <div class="file-info-name">
-                    <span id="file-icon">📄</span>
-                    <span id="file-name">file.csv</span>
-                </div>
-                <button class="file-info-remove" onclick="clearAll()">×</button>
+        <!-- Restored Session Banner -->
+        <div class="restored-banner" id="restored-banner">
+            <span>✅</span>
+            <span id="restored-text">Previous session restored</span>
+        </div>
+
+        <!-- Uploaded Files List -->
+        <div id="files-section" style="display:none;">
+            <div class="section-label">Uploaded Files (<span id="file-count">0</span>)</div>
+            <div class="file-list" id="file-list"></div>
+
+            <div class="merge-badge" id="merge-badge" style="margin-top:8px;">
+                <span>🔗</span>
+                <span id="merge-badge-text">Files merged</span>
             </div>
-            <div class="file-stats">
-                <span class="file-stat" id="file-rows">— rows</span>
-                <span class="file-stat" id="file-cols">— cols</span>
-            </div>
+
+            <button class="add-more-btn visible" id="add-more-btn" onclick="document.getElementById('file-input-more').click()" style="margin-top:8px;">
+                ＋ Add more files
+            </button>
+            <input type="file" id="file-input-more" accept=".csv,.xlsx,.xls" multiple style="display:none;" onchange="handleFileSelect(this.files)">
         </div>
 
         <!-- Columns -->
         <div id="columns-section" style="display:none;">
-            <div class="section-label">Detected Columns</div>
+            <div class="section-label">Merged Columns</div>
             <div class="columns-list" id="columns-list"></div>
         </div>
 
@@ -834,7 +1082,7 @@
                 <textarea
                     class="query-textarea"
                     id="query-input"
-                    placeholder="e.g. Show total spend by campaign&#10;Which ad had the highest CTR?&#10;Top 5 keywords by conversions"
+                    placeholder="e.g. Show total spend by campaign&#10;Which ad had the highest CTR?&#10;Compare results across files"
                 ></textarea>
                 <button class="btn-primary" id="run-btn" onclick="runQuery()">
                     ⚡ Run Query
@@ -857,7 +1105,7 @@
         <div class="empty-state" id="empty-state">
             <div class="empty-state-icon">📂</div>
             <div class="empty-state-title">No data loaded yet</div>
-            <div class="empty-state-sub">Upload a CSV or Excel file to start asking questions about your data in plain English.</div>
+            <div class="empty-state-sub">Upload one or more CSV / Excel files to start asking questions. Multiple files are merged automatically.</div>
         </div>
 
         <!-- Results Panel -->
@@ -872,15 +1120,24 @@
                 <div class="results-actions">
                     <button class="btn-secondary" onclick="exportCSV()">⬇ CSV</button>
                     <button class="btn-secondary" onclick="toggleCode()">{ } Code</button>
-                    <!-- ✅ NEW: Marketing Dashboard button — hidden until file is uploaded -->
+                    <!-- ── PDF DOWNLOAD BUTTON ── -->
+                    <button class="btn-pdf" id="pdf-btn" onclick="openPdfModal()" style="display:none;" title="Download white-label PDF report">
+                        📄 PDF Report
+                    </button>
                     <button class="btn-secondary" id="dashboard-btn" onclick="showMarketingDashboard()" style="display:none;">📊 Marketing KPIs</button>
                 </div>
+            </div>
+
+            <!-- PDF Generating indicator -->
+            <div class="pdf-generating" id="pdf-generating">
+                <div class="progress-spinner"></div>
+                <span>Generating PDF report… this may take a few seconds</span>
             </div>
 
             <!-- Error State -->
             <div class="error-state" id="error-state"></div>
 
-            <!-- ✅ AI Natural Language Answer -->
+            <!-- AI Answer -->
             <div class="ai-answer" id="ai-answer">
                 <div class="ai-answer-icon">🤖</div>
                 <div class="ai-answer-text" id="ai-answer-text"></div>
@@ -907,15 +1164,21 @@
 
         </div>
 
-        <!-- ✅ NEW: Marketing Dashboard Panel -->
+        <!-- Marketing Dashboard Panel -->
         <div class="mkt-dashboard" id="mkt-dashboard">
 
-            <button class="mkt-back-btn" onclick="hideMktDashboard()">← Back to Results</button>
+            <!-- ── DASHBOARD TOP ROW: back button + NEW Excel download button ── -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <button class="mkt-back-btn" onclick="hideMktDashboard()">← Back to Results</button>
 
-            <!-- KPI Cards -->
+                <!-- NEW: Download KPI Excel Report button -->
+                <button class="btn-excel" id="kpi-excel-btn" onclick="openKpiModal()">
+                    📥 Download KPI Report (Excel)
+                </button>
+            </div>
+
             <div class="mkt-kpi-grid" id="mkt-kpi-grid"></div>
 
-            <!-- Charts Row -->
             <div class="mkt-chart-row">
                 <div class="mkt-chart-card">
                     <div class="mkt-chart-title">Daily Spend Trend</div>
@@ -931,7 +1194,6 @@
                 </div>
             </div>
 
-            <!-- Campaign Table -->
             <div class="mkt-table-card">
                 <div class="mkt-chart-title">Campaign Breakdown</div>
                 <table class="mkt-table">
@@ -950,7 +1212,6 @@
                 </table>
             </div>
 
-            <!-- Detected Columns Info -->
             <div class="mkt-detected" id="mkt-detected-cols"></div>
 
         </div>
@@ -967,9 +1228,117 @@
 <!-- Toast Container -->
 <div class="toast-container" id="toast-container"></div>
 
+<!-- ══════════════════════════════════════════════════════════
+     PDF REPORT MODAL  (unchanged)
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="pdf-modal" onclick="closePdfModalOnOverlay(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">📄 Generate PDF Report</div>
+            <button class="modal-close" onclick="closePdfModal()">×</button>
+        </div>
+
+        <!-- Preview info box -->
+        <div class="modal-info" id="pdf-preview-info">
+            Loading report preview…
+        </div>
+
+        <div class="modal-row">
+            <div class="modal-field">
+                <label class="modal-label">Agency Name</label>
+                <input class="modal-input" id="pdf-agency" type="text" placeholder="Your Agency" value="PRISM Agency">
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Client Name</label>
+                <input class="modal-input" id="pdf-client" type="text" placeholder="Client Name" value="Client">
+            </div>
+        </div>
+
+        <div class="modal-field">
+            <label class="modal-label">Report Title</label>
+            <input class="modal-input" id="pdf-title" type="text" placeholder="Monthly Performance Report" value="Performance Report">
+        </div>
+
+        <div class="modal-row">
+            <div class="modal-field">
+                <label class="modal-label">Prepared By</label>
+                <input class="modal-input" id="pdf-preparedby" type="text" placeholder="Your Name">
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Accent Colour</label>
+                <div class="modal-color-row">
+                    <input type="color" id="pdf-color-picker" value="#e8455a"
+                           style="width:40px;height:36px;border:none;border-radius:6px;cursor:pointer;background:none;"
+                           oninput="document.getElementById('pdf-color-hex').value=this.value;
+                                    document.getElementById('pdf-color-preview').style.background=this.value;">
+                    <input class="modal-input" id="pdf-color-hex" type="text" value="#e8455a"
+                           style="flex:1;"
+                           oninput="syncColorFromHex(this.value)">
+                    <div class="modal-color-preview" id="pdf-color-preview" style="background:#e8455a;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closePdfModal()">Cancel</button>
+            <button class="btn-pdf" id="pdf-download-btn" onclick="downloadPDF()">
+                ⬇ Download PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     NEW: KPI EXCEL REPORT MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="kpi-modal-overlay" id="kpi-modal" onclick="closeKpiModalOnOverlay(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">📥 Download KPI Excel Report</div>
+            <button class="modal-close" onclick="closeKpiModal()">×</button>
+        </div>
+
+        <div class="modal-info">
+            Generates a 4-sheet Excel workbook: Cover · KPI Summary · Campaign Breakdown · Daily Trend.<br>
+            All data is pulled automatically from your uploaded file.
+        </div>
+
+        <div class="modal-row">
+            <div class="modal-field">
+                <label class="modal-label">Client Name</label>
+                <input class="modal-input" id="kpi-client" type="text" placeholder="e.g. Zomato" value="Client">
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Agency Name</label>
+                <input class="modal-input" id="kpi-agency" type="text" placeholder="e.g. MediaPulse" value="Your Agency">
+            </div>
+        </div>
+
+        <div class="modal-field">
+            <label class="modal-label">Date Range (optional)</label>
+            <input class="modal-input" id="kpi-daterange" type="text" placeholder="e.g. 1 Apr – 30 Apr 2025">
+        </div>
+
+        <!-- Generating indicator -->
+        <div class="pdf-generating" id="kpi-generating" style="display:none;">
+            <div class="progress-spinner"></div>
+            <span>Building Excel report… please wait</span>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeKpiModal()">Cancel</button>
+            <button class="btn-excel" id="kpi-download-btn" onclick="downloadKpiExcel()">
+                📥 Download Excel
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     const API = 'http://localhost:8000/api/v1';
-    let sessionId = null;
+
+    let sessionId      = null;
+    let uploadedFiles  = [];
     let currentColumns = [];
     let currentResults = null;
 
@@ -980,88 +1349,278 @@
         e.preventDefault();
         dropZone.classList.add('dragover');
     });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
-    });
-
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropZone.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file) handleFileSelect(file);
+        if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files);
     });
 
-    // ── File Select ────────────────────────────────────────────────────────
-    async function handleFileSelect(file) {
-        if (!file) return;
+    document.querySelector('.left-panel').addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (sessionId) e.dataTransfer.dropEffect = 'copy';
+    });
+    document.querySelector('.left-panel').addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files);
+    });
 
-        const allowed = ['.csv', '.xlsx', '.xls'];
-        const ext = '.' + file.name.split('.').pop().toLowerCase();
-        if (!allowed.includes(ext)) {
+    // ── Handle File Select ─────────────────────────────────────────────────
+    async function handleFileSelect(fileList) {
+        const files = Array.from(fileList).filter(f => {
+            const ext = '.' + f.name.split('.').pop().toLowerCase();
+            return ['.csv', '.xlsx', '.xls'].includes(ext);
+        });
+
+        if (!files.length) {
             showToast('Only CSV and Excel files are supported', 'error');
             return;
         }
 
-        document.getElementById('upload-progress').classList.add('visible');
-        document.getElementById('drop-zone').style.display = 'none';
+        if (!sessionId) {
+            try {
+                const res  = await fetch(`${API}/upload/session/new`, { method: 'POST' });
+                const data = await res.json();
+                sessionId = data.session_id;
+            } catch (e) {
+                showToast('Failed to create upload session', 'error');
+                return;
+            }
+        }
+
+        for (const file of files) {
+            await uploadSingleFile(file);
+        }
+    }
+
+    // ── Upload single file ─────────────────────────────────────────────────
+    async function uploadSingleFile(file) {
+        const tempId = 'temp_' + Date.now() + '_' + Math.random();
+        addFileCard(tempId, file.name, null, null, 'uploading');
+
+        const progressEl   = document.getElementById('upload-progress');
+        const progressText = document.getElementById('upload-progress-text');
+        progressEl.classList.add('visible');
+        progressText.textContent = `Uploading ${file.name}...`;
 
         const formData = new FormData();
         formData.append('file', file);
 
         try {
-            const res = await fetch(`${API}/upload`, {
-                method: 'POST',
-                body: formData
-            });
+            const res    = await fetch(`${API}/upload/session/${sessionId}/add`, { method: 'POST', body: formData });
             const result = await res.json();
 
-            if (!res.ok || !result.success) {
-                throw new Error(result.detail || result.error || 'Upload failed');
-            }
+            if (!res.ok || !result.success) throw new Error(result.detail || result.error || 'Upload failed');
 
-            sessionId = result.session_id;
+            removeFileCard(tempId);
+            addFileCard(result.file_id, result.filename, result.row_count, result.columns, 'done');
+
+            uploadedFiles  = result.files;
             currentColumns = result.columns;
 
-            const icons = { csv: '📊', xlsx: '📗', xls: '📗' };
-            document.getElementById('file-icon').textContent = icons[ext.slice(1)] || '📄';
-            document.getElementById('file-name').textContent = result.filename;
-            document.getElementById('file-rows').textContent = `${result.row_count.toLocaleString()} rows`;
-            document.getElementById('file-cols').textContent = `${result.columns.length} columns`;
-            document.getElementById('file-info').classList.add('visible');
+            localStorage.setItem('upload_session', JSON.stringify({
+                sessionId,
+                files:    result.files,
+                columns:  result.columns,
+                rowCount: result.row_count,
+                preview:  result.preview
+            }));
 
-            document.getElementById('columns-list').innerHTML =
-                result.columns.map(c => `<span class="column-tag">${escapeHtml(c)}</span>`).join('');
-            document.getElementById('columns-section').style.display = 'block';
-            document.getElementById('query-section').style.display = 'block';
-            document.getElementById('examples-section').style.display = 'block';
-            document.getElementById('clear-btn').style.display = 'flex';
+            updateSharedUI({
+                columns:       result.columns,
+                rowCount:      result.row_count,
+                preview:       result.preview,
+                mergeStrategy: result.merge_strategy,
+                filenames:     result.files.map(f => f.filename)
+            });
 
-            generateExamples(result.columns);
-            showPreview(result.preview, result.columns, result.filename, result.row_count);
-            showToast(`✅ ${result.filename} loaded — ${result.row_count} rows`, 'success');
-
-            // ✅ NEW: Show the Marketing KPIs button after file is loaded
-            document.getElementById('dashboard-btn').style.display = 'flex';
+            showToast(`✅ ${result.filename} added — ${result.row_count} total rows`, 'success');
 
         } catch (err) {
-            document.getElementById('drop-zone').style.display = 'block';
-            showToast(err.message, 'error');
+            removeFileCard(tempId);
+            addFileCard('err_' + tempId, file.name, null, null, 'error');
+            showToast(`Failed to upload ${file.name}: ${err.message}`, 'error');
         } finally {
-            document.getElementById('upload-progress').classList.remove('visible');
+            progressEl.classList.remove('visible');
         }
     }
 
-    // ── Generate Examples ──────────────────────────────────────────────────
+    // ── File cards ─────────────────────────────────────────────────────────
+    function addFileCard(fileId, filename, rowCount, columns, status) {
+        const list = document.getElementById('file-list');
+        const ext  = filename.split('.').pop().toLowerCase();
+        const icon = { csv: '📊', xlsx: '📗', xls: '📗' }[ext] || '📄';
+
+        const card = document.createElement('div');
+        card.className = `file-list-item ${status}`;
+        card.id = `file-card-${fileId}`;
+
+        if (status === 'uploading') {
+            card.innerHTML = `
+                <div class="file-list-spinner"></div>
+                <div class="file-list-info">
+                    <div class="file-list-name">${escapeHtml(filename)}</div>
+                    <div class="file-list-meta">uploading…</div>
+                </div>`;
+        } else if (status === 'error') {
+            card.innerHTML = `
+                <div class="file-list-icon">❌</div>
+                <div class="file-list-info">
+                    <div class="file-list-name">${escapeHtml(filename)}</div>
+                    <div class="file-list-meta" style="color:var(--error);">upload failed</div>
+                </div>
+                <button class="file-list-remove" onclick="removeFileCard('${fileId}')">×</button>`;
+        } else {
+            const meta = rowCount
+                ? `${Number(rowCount).toLocaleString()} rows · ${(columns || []).length} cols`
+                : '—';
+            card.innerHTML = `
+                <div class="file-list-icon">${icon}</div>
+                <div class="file-list-info">
+                    <div class="file-list-name" title="${escapeHtml(filename)}">${escapeHtml(filename)}</div>
+                    <div class="file-list-meta">${meta}</div>
+                </div>
+                <button class="file-list-remove" title="Remove file" onclick="removeFile('${fileId}')">×</button>`;
+        }
+
+        list.appendChild(card);
+        document.getElementById('files-section').style.display = 'block';
+        updateFileCount();
+    }
+
+    function removeFileCard(id) {
+        const card = document.getElementById(`file-card-${id}`);
+        if (card) card.remove();
+        updateFileCount();
+    }
+
+    function updateFileCount() {
+        const count = document.querySelectorAll('#file-list .file-list-item:not(.uploading):not(.error)').length;
+        document.getElementById('file-count').textContent = count;
+    }
+
+    // ── Remove file from session ───────────────────────────────────────────
+    async function removeFile(fileId) {
+        if (!sessionId) return;
+        try {
+            const res    = await fetch(`${API}/upload/session/${sessionId}/file/${fileId}`, { method: 'DELETE' });
+            const result = await res.json();
+
+            removeFileCard(fileId);
+            uploadedFiles = result.files || [];
+
+            if (!uploadedFiles.length) { clearAll(true); return; }
+
+            currentColumns = result.columns;
+            localStorage.setItem('upload_session', JSON.stringify({
+                sessionId,
+                files:    result.files,
+                columns:  result.columns,
+                rowCount: result.row_count,
+                preview:  result.preview
+            }));
+
+            updateSharedUI({
+                columns:   result.columns,
+                rowCount:  result.row_count,
+                preview:   result.preview,
+                filenames: result.files.map(f => f.filename)
+            });
+
+            showToast('File removed and data recomputed', 'success');
+        } catch (err) {
+            showToast('Failed to remove file: ' + err.message, 'error');
+        }
+    }
+
+    // ── Update shared UI ───────────────────────────────────────────────────
+    function updateSharedUI({ columns, rowCount, preview, mergeStrategy, filenames }) {
+        document.getElementById('drop-zone-wrapper').style.display = 'none';
+        document.getElementById('clear-btn').style.display         = 'flex';
+        document.getElementById('dashboard-btn').style.display     = 'flex';
+        document.getElementById('pdf-btn').style.display           = 'flex';
+
+        document.getElementById('columns-list').innerHTML =
+            columns.map(c => `<span class="column-tag">${escapeHtml(c)}</span>`).join('');
+        document.getElementById('columns-section').style.display  = 'block';
+        document.getElementById('query-section').style.display    = 'block';
+        document.getElementById('examples-section').style.display = 'block';
+        generateExamples(columns);
+
+        if (mergeStrategy && uploadedFiles.length > 1) {
+            const text = mergeStrategy === 'rows_stacked'
+                ? `Rows stacked — ${Number(rowCount).toLocaleString()} total rows`
+                : `Columns joined — ${Number(rowCount).toLocaleString()} rows`;
+            document.getElementById('merge-badge-text').textContent = text;
+            document.getElementById('merge-badge').classList.add('visible');
+        } else {
+            document.getElementById('merge-badge').classList.remove('visible');
+        }
+
+        const label = filenames && filenames.length > 1
+            ? `${filenames.length} files merged`
+            : (filenames && filenames.length === 1 ? filenames[0] : '—');
+
+        showPreview(preview, columns, label, rowCount);
+    }
+
+    // ── Restore session ────────────────────────────────────────────────────
+    async function restoreSession() {
+        const saved = localStorage.getItem('upload_session');
+        if (!saved) return;
+        try {
+            const s = JSON.parse(saved);
+            const res = await fetch(`${API}/upload/session/${s.sessionId}/query`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ natural_language: 'show first row' })
+            });
+            if (!res.ok) { localStorage.removeItem('upload_session'); return; }
+
+            sessionId      = s.sessionId;
+            uploadedFiles  = s.files || [];
+            currentColumns = s.columns || [];
+
+            for (const f of uploadedFiles) {
+                addFileCard(f.file_id, f.filename, f.row_count, f.columns, 'done');
+            }
+
+            updateSharedUI({
+                columns:   s.columns,
+                rowCount:  s.rowCount,
+                preview:   s.preview,
+                filenames: uploadedFiles.map(f => f.filename)
+            });
+
+            document.getElementById('restored-text').textContent =
+                `${uploadedFiles.length} file(s) restored — session still active`;
+            document.getElementById('restored-banner').classList.add('visible');
+            setTimeout(() => document.getElementById('restored-banner').classList.remove('visible'), 4000);
+        } catch (e) {
+            localStorage.removeItem('upload_session');
+        }
+    }
+
+    // ── Generate examples ──────────────────────────────────────────────────
     function generateExamples(columns) {
-        const numCol = columns.find(c => ['spend','revenue','cost','clicks','impressions','conversions','ctr','roas','sales','amount','value','marks'].some(k => c.toLowerCase().includes(k))) || columns[1] || columns[0];
-        const catCol = columns.find(c => ['campaign','ad','keyword','channel','source','medium','name','type','category','student'].some(k => c.toLowerCase().includes(k))) || columns[0];
+        const numCol = columns.find(c =>
+            ['spend','revenue','cost','clicks','impressions','conversions','ctr','roas','sales','amount','value','marks']
+            .some(k => c.toLowerCase().includes(k))
+        ) || columns[1] || columns[0];
+
+        const catCol = columns.find(c =>
+            ['campaign','ad','keyword','channel','source','medium','name','type','category','student']
+            .some(k => c.toLowerCase().includes(k))
+        ) || columns[0];
+
+        const hasSource = columns.includes('_source_file');
 
         const examples = [
             `Show total ${numCol} by ${catCol}`,
             `Top 10 rows by ${numCol}`,
             `Show rows where ${numCol} is greater than average`,
             `Count rows by ${catCol}`,
+            ...(hasSource ? [`Compare ${numCol} across files`] : []),
             `Show summary statistics`,
         ];
 
@@ -1078,14 +1637,14 @@
         document.getElementById('query-input').focus();
     }
 
-    // ── Show Preview ───────────────────────────────────────────────────────
-    function showPreview(rows, columns, filename, rowCount) {
-        document.getElementById('empty-state').style.display = 'none';
-        document.getElementById('results-panel').style.display = 'flex';
-        document.getElementById('results-panel').style.flexDirection = 'column';
-        document.getElementById('results-title').textContent = '👀 Preview (first 5 rows)';
-        document.getElementById('result-rows').textContent = `${rowCount.toLocaleString()} total rows`;
-        document.getElementById('result-file').textContent = filename;
+    // ── Show preview ───────────────────────────────────────────────────────
+    function showPreview(rows, columns, label, rowCount) {
+        document.getElementById('empty-state').style.display          = 'none';
+        document.getElementById('results-panel').style.display        = 'flex';
+        document.getElementById('results-panel').style.flexDirection  = 'column';
+        document.getElementById('results-title').textContent          = '👀 Preview (first 5 rows)';
+        document.getElementById('result-rows').textContent            = `${Number(rowCount).toLocaleString()} total rows`;
+        document.getElementById('result-file').textContent            = label;
         document.getElementById('error-state').classList.remove('visible');
         document.getElementById('code-block').classList.remove('visible');
         document.getElementById('ai-answer').classList.remove('visible');
@@ -1096,25 +1655,25 @@
     async function runQuery() {
         if (!sessionId) { showToast('Please upload a file first', 'warning'); return; }
         const query = document.getElementById('query-input').value.trim();
-        if (!query) { showToast('Please enter a question', 'warning'); return; }
+        if (!query)   { showToast('Please enter a question', 'warning'); return; }
 
         const btn = document.getElementById('run-btn');
         btn.innerHTML = '⏳ Running...';
-        btn.disabled = true;
+        btn.disabled  = true;
 
         document.getElementById('error-state').classList.remove('visible');
         document.getElementById('ai-answer').classList.remove('visible');
 
         try {
-            const res = await fetch(`${API}/upload/${sessionId}/query`, {
-                method: 'POST',
+            const res    = await fetch(`${API}/upload/session/${sessionId}/query`, {
+                method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ natural_language: query })
+                body:    JSON.stringify({ natural_language: query })
             });
             const result = await res.json();
 
-            document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('results-panel').style.display = 'flex';
+            document.getElementById('empty-state').style.display         = 'none';
+            document.getElementById('results-panel').style.display       = 'flex';
             document.getElementById('results-panel').style.flexDirection = 'column';
 
             if (!result.success) {
@@ -1124,17 +1683,20 @@
                     document.getElementById('code-content').textContent = result.generated_code;
                     document.getElementById('code-block').classList.add('visible');
                 }
-                showStatusBar(`Query failed — check the error above`, true);
-                showToast('Query failed — check the error above', 'error');
+                showStatusBar('Query failed — check the error above', true);
+                showToast('Query failed', 'error');
                 return;
             }
 
             currentResults = result;
-            document.getElementById('results-title').textContent = `Results: ${escapeHtml(query.slice(0, 60))}`;
-            document.getElementById('result-rows').textContent = `${result.row_count} rows`;
-            document.getElementById('result-file').textContent = result.filename;
+            const fileLabel = result.filenames && result.filenames.length > 1
+                ? `${result.filenames.length} files`
+                : (result.filenames && result.filenames[0]) || '—';
 
-            // ✅ Show AI natural language answer
+            document.getElementById('results-title').textContent = `Results: ${escapeHtml(query.slice(0, 60))}`;
+            document.getElementById('result-rows').textContent   = `${result.row_count} rows`;
+            document.getElementById('result-file').textContent   = fileLabel;
+
             if (result.answer) {
                 document.getElementById('ai-answer-text').textContent = result.answer;
                 document.getElementById('ai-answer').classList.add('visible');
@@ -1150,15 +1712,14 @@
             showToast('Failed to run query', 'error');
         } finally {
             btn.innerHTML = '⚡ Run Query';
-            btn.disabled = false;
+            btn.disabled  = false;
         }
     }
 
-    // ── Render Table ───────────────────────────────────────────────────────
+    // ── Render table ───────────────────────────────────────────────────────
     function renderTable(columns, rows) {
         document.getElementById('results-head').innerHTML =
             columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
-
         document.getElementById('results-body').innerHTML =
             rows.slice(0, 1000).map(row =>
                 '<tr>' + columns.map(c =>
@@ -1173,58 +1734,61 @@
         const { columns, results } = currentResults;
         const csv = [
             columns.join(','),
-            ...results.map(row => columns.map(c => `"${String(row[c] ?? '').replace(/"/g, '""')}"`).join(','))
+            ...results.map(row =>
+                columns.map(c => `"${String(row[c] ?? '').replace(/"/g, '""')}"`).join(',')
+            )
         ].join('\n');
-
         const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `prism_export_${Date.now()}.csv`;
-        a.click();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = `prism_export_${Date.now()}.csv`; a.click();
         URL.revokeObjectURL(url);
         showToast('CSV downloaded!', 'success');
     }
 
-    // ── Toggle Code ────────────────────────────────────────────────────────
-    function toggleCode() {
-        document.getElementById('code-block').classList.toggle('visible');
-    }
-
+    function toggleCode() { document.getElementById('code-block').classList.toggle('visible'); }
     function copyCode() {
-        const code = document.getElementById('code-content').textContent;
-        navigator.clipboard.writeText(code).then(() => showToast('Code copied!', 'success'));
+        navigator.clipboard.writeText(document.getElementById('code-content').textContent)
+            .then(() => showToast('Code copied!', 'success'));
     }
 
     // ── Clear All ──────────────────────────────────────────────────────────
-    async function clearAll() {
-        if (sessionId) {
-            try { await fetch(`${API}/upload/${sessionId}`, { method: 'DELETE' }); } catch (e) {}
-            sessionId = null;
+    async function clearAll(skipApi = false) {
+        if (sessionId && !skipApi) {
+            try { await fetch(`${API}/upload/session/${sessionId}`, { method: 'DELETE' }); } catch (e) {}
         }
 
+        sessionId      = null;
+        uploadedFiles  = [];
         currentResults = null;
         currentColumns = [];
 
-        document.getElementById('drop-zone').style.display = 'block';
-        document.getElementById('file-info').classList.remove('visible');
+        localStorage.removeItem('upload_session');
+
+        document.getElementById('file-list').innerHTML                = '';
+        document.getElementById('files-section').style.display        = 'none';
+        document.getElementById('drop-zone-wrapper').style.display    = 'block';
+        document.getElementById('clear-btn').style.display            = 'none';
         document.getElementById('upload-progress').classList.remove('visible');
-        document.getElementById('columns-section').style.display = 'none';
-        document.getElementById('query-section').style.display = 'none';
-        document.getElementById('examples-section').style.display = 'none';
-        document.getElementById('clear-btn').style.display = 'none';
-        document.getElementById('query-input').value = '';
-        document.getElementById('file-input').value = '';
-        document.getElementById('empty-state').style.display = 'flex';
-        document.getElementById('results-panel').style.display = 'none';
+        document.getElementById('restored-banner').classList.remove('visible');
+        document.getElementById('columns-section').style.display      = 'none';
+        document.getElementById('query-section').style.display        = 'none';
+        document.getElementById('examples-section').style.display     = 'none';
+        document.getElementById('query-input').value                  = '';
+        document.getElementById('file-input').value                   = '';
+        document.getElementById('file-input-more').value              = '';
+        document.getElementById('empty-state').style.display          = 'flex';
+        document.getElementById('results-panel').style.display        = 'none';
         document.getElementById('error-state').classList.remove('visible');
         document.getElementById('code-block').classList.remove('visible');
         document.getElementById('ai-answer').classList.remove('visible');
         document.getElementById('status-bar').classList.remove('visible');
-
-        // ✅ NEW: Reset dashboard state on clear
-        document.getElementById('dashboard-btn').style.display = 'none';
+        document.getElementById('dashboard-btn').style.display        = 'none';
+        document.getElementById('pdf-btn').style.display              = 'none';
         document.getElementById('mkt-dashboard').classList.remove('visible');
+        document.getElementById('merge-badge').classList.remove('visible');
+        document.getElementById('file-count').textContent             = '0';
+
         if (mktSpendChart) { mktSpendChart.destroy(); mktSpendChart = null; }
         if (mktRoasChart)  { mktRoasChart.destroy();  mktRoasChart  = null; }
     }
@@ -1232,26 +1796,19 @@
     // ── Status Bar ─────────────────────────────────────────────────────────
     function showStatusBar(message, isError = false) {
         const bar = document.getElementById('status-bar');
-        const dot = document.getElementById('status-dot');
         document.getElementById('status-text').textContent = message;
-        dot.className = 'status-dot' + (isError ? ' error' : '');
+        document.getElementById('status-dot').className = 'status-dot' + (isError ? ' error' : '');
         bar.classList.add('visible');
         setTimeout(() => bar.classList.remove('visible'), 5000);
     }
 
-    // ── Navigation ─────────────────────────────────────────────────────────
-    function goBack() {
-        window.location.href = 'index.html';
-    }
+    function goBack() { window.location.href = 'index.html'; }
 
-    // ── Enter to run ───────────────────────────────────────────────────────
     document.getElementById('query-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.ctrlKey) runQuery();
     });
 
-    // ── Theme sync ─────────────────────────────────────────────────────────
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') document.body.classList.add('light-mode');
+    if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
 
     // ── Toast ──────────────────────────────────────────────────────────────
     function showToast(message, type = 'info') {
@@ -1269,10 +1826,108 @@
         return div.innerHTML;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // ✅ NEW: Marketing Dashboard logic — all new, nothing above touched
-    // ─────────────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════
+    //  PDF MODAL  (unchanged)
+    // ══════════════════════════════════════════════════════════════════════
 
+    async function openPdfModal() {
+        if (!sessionId) { showToast('Please upload a file first', 'warning'); return; }
+
+        document.getElementById('pdf-modal').classList.add('visible');
+        document.getElementById('pdf-preview-info').textContent = 'Loading report preview…';
+
+        try {
+            const res  = await fetch(`${API}/report/pdf/${sessionId}/preview`);
+            const data = await res.json();
+
+            if (data.success) {
+                const sections = data.sections.join('  ·  ');
+                document.getElementById('pdf-preview-info').innerHTML =
+                    `<strong>${data.file_count} file(s)</strong> · ${data.total_rows.toLocaleString()} rows · 
+                     ${data.column_count} columns<br>
+                     <span style="color:var(--success);">✓</span> Sections: <em>${sections}</em>` +
+                    (data.is_marketing
+                        ? `<br><span style="color:var(--success);">✓</span> Marketing KPIs detected · ${data.campaign_count} campaigns`
+                        : '');
+            } else {
+                document.getElementById('pdf-preview-info').textContent = 'Could not load preview.';
+            }
+        } catch (e) {
+            document.getElementById('pdf-preview-info').textContent = 'Preview unavailable — report will still generate.';
+        }
+    }
+
+    function closePdfModal() {
+        document.getElementById('pdf-modal').classList.remove('visible');
+    }
+
+    function closePdfModalOnOverlay(e) {
+        if (e.target === document.getElementById('pdf-modal')) closePdfModal();
+    }
+
+    function syncColorFromHex(hex) {
+        if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+            document.getElementById('pdf-color-picker').value = hex;
+            document.getElementById('pdf-color-preview').style.background = hex;
+        }
+    }
+
+    async function downloadPDF() {
+        if (!sessionId) return;
+
+        const btn = document.getElementById('pdf-download-btn');
+        btn.disabled     = true;
+        btn.innerHTML    = '⏳ Generating…';
+
+        document.getElementById('pdf-generating').classList.add('visible');
+
+        const payload = {
+            agency_name:    document.getElementById('pdf-agency').value.trim()      || 'PRISM Agency',
+            client_name:    document.getElementById('pdf-client').value.trim()      || 'Client',
+            report_title:   document.getElementById('pdf-title').value.trim()       || 'Performance Report',
+            prepared_by:    document.getElementById('pdf-preparedby').value.trim(),
+            accent_color:   document.getElementById('pdf-color-hex').value.trim()   || '#e8455a',
+            include_charts: true,
+            max_rows:       80,
+        };
+
+        try {
+            const res = await fetch(`${API}/report/pdf/${sessionId}`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || 'PDF generation failed');
+            }
+
+            const blob     = await res.blob();
+            const url      = URL.createObjectURL(blob);
+            const a        = document.createElement('a');
+            const safe     = payload.client_name.replace(/\s+/g, '_');
+            a.href         = url;
+            a.download     = `PRISM_${safe}_${new Date().toISOString().slice(0,10)}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            closePdfModal();
+            showToast('✅ PDF downloaded!', 'success');
+            showStatusBar('PDF report downloaded', false);
+
+        } catch (err) {
+            showToast('PDF failed: ' + err.message, 'error');
+        } finally {
+            btn.disabled  = false;
+            btn.innerHTML = '⬇ Download PDF';
+            document.getElementById('pdf-generating').classList.remove('visible');
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  Marketing Dashboard  (unchanged)
+    // ══════════════════════════════════════════════════════════════════════
     let mktSpendChart = null;
     let mktRoasChart  = null;
 
@@ -1284,25 +1939,19 @@
 
     async function showMarketingDashboard() {
         if (!sessionId) return;
-
         showToast('Loading KPIs...', 'info');
 
         try {
-            const res = await fetch(`${API}/upload/${sessionId}/marketing-kpis`);
+            const res  = await fetch(`${API}/upload/session/${sessionId}/marketing-kpis`);
             const data = await res.json();
 
-            if (!data.success) {
-                showToast('Could not compute KPIs from this file', 'error');
-                return;
-            }
+            if (!data.success) { showToast('Could not compute KPIs from this file', 'error'); return; }
 
-            // Hide results panel, show marketing dashboard
             document.getElementById('results-panel').style.display = 'none';
             document.getElementById('mkt-dashboard').classList.add('visible');
 
             const { kpis, campaigns, daily_spend, detected_columns } = data;
 
-            // ── KPI Cards ──
             const cards = [
                 { label: 'Total Spend',   value: '₹' + fmtNum(kpis.total_spend),       color: '#e8455a' },
                 { label: 'ROAS',          value: kpis.roas + 'x',                       color: kpis.roas >= 3 ? '#22c55e' : '#f59e0b' },
@@ -1321,27 +1970,17 @@
                 </div>
             `).join('');
 
-            // ── Daily Spend Chart ──
             if (mktSpendChart) mktSpendChart.destroy();
             if (daily_spend.length > 0) {
                 mktSpendChart = new Chart(document.getElementById('mkt-spend-chart'), {
                     type: 'line',
                     data: {
                         labels: daily_spend.map(d => d.date),
-                        datasets: [{
-                            label: 'Spend',
-                            data: daily_spend.map(d => d.spend),
-                            borderColor: '#e8455a',
-                            backgroundColor: 'rgba(232,69,90,0.08)',
-                            borderWidth: 2,
-                            tension: 0.4,
-                            fill: true,
-                            pointRadius: 2
-                        }]
+                        datasets: [{ label: 'Spend', data: daily_spend.map(d => d.spend),
+                            borderColor: '#e8455a', backgroundColor: 'rgba(232,69,90,0.08)',
+                            borderWidth: 2, tension: 0.4, fill: true, pointRadius: 2 }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                    options: { responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
                             x: { ticks: { font: { size: 10 }, color: '#7f8db0', maxRotation: 0, autoSkip: true } },
@@ -1354,7 +1993,6 @@
                     '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">No date column detected</div>';
             }
 
-            // ── ROAS by Campaign Chart ──
             if (mktRoasChart) mktRoasChart.destroy();
             if (campaigns.length > 0) {
                 const top = campaigns.slice(0, 6);
@@ -1362,17 +2000,11 @@
                     type: 'bar',
                     data: {
                         labels: top.map(c => c.name.length > 20 ? c.name.slice(0, 20) + '…' : c.name),
-                        datasets: [{
-                            label: 'ROAS',
-                            data: top.map(c => c.roas),
+                        datasets: [{ label: 'ROAS', data: top.map(c => c.roas),
                             backgroundColor: top.map(c => c.roas >= 3 ? 'rgba(34,197,94,0.7)' : 'rgba(245,158,11,0.7)'),
-                            borderRadius: 4
-                        }]
+                            borderRadius: 4 }]
                     },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
                             x: { ticks: { callback: v => v + 'x', font: { size: 10 }, color: '#7f8db0' } },
@@ -1385,7 +2017,6 @@
                     '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">No campaign column detected</div>';
             }
 
-            // ── Campaign Table ──
             document.getElementById('mkt-camp-tbody').innerHTML = campaigns.map(c => `
                 <tr>
                     <td title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</td>
@@ -1398,7 +2029,6 @@
                 </tr>
             `).join('') || '<tr><td colspan="7" style="color:var(--text-muted);text-align:center;padding:20px;">No campaign data found</td></tr>';
 
-            // ── Detected columns info ──
             const dc = detected_columns;
             document.getElementById('mkt-detected-cols').innerHTML =
                 '🔍 Detected — ' +
@@ -1413,9 +2043,77 @@
 
     function hideMktDashboard() {
         document.getElementById('mkt-dashboard').classList.remove('visible');
-        document.getElementById('results-panel').style.display = 'flex';
+        document.getElementById('results-panel').style.display       = 'flex';
         document.getElementById('results-panel').style.flexDirection = 'column';
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  NEW: KPI Excel Modal + Download
+    // ══════════════════════════════════════════════════════════════════════
+
+    function openKpiModal() {
+        if (!sessionId) { showToast('Please upload a file first', 'warning'); return; }
+        document.getElementById('kpi-modal').classList.add('visible');
+    }
+
+    function closeKpiModal() {
+        document.getElementById('kpi-modal').classList.remove('visible');
+    }
+
+    function closeKpiModalOnOverlay(e) {
+        if (e.target === document.getElementById('kpi-modal')) closeKpiModal();
+    }
+
+    async function downloadKpiExcel() {
+        if (!sessionId) return;
+
+        const btn = document.getElementById('kpi-download-btn');
+        btn.disabled  = true;
+        btn.innerHTML = '⏳ Building…';
+        document.getElementById('kpi-generating').style.display = 'flex';
+
+        const payload = {
+            client_name: document.getElementById('kpi-client').value.trim()    || 'Client',
+            agency_name: document.getElementById('kpi-agency').value.trim()    || 'Your Agency',
+            date_range:  document.getElementById('kpi-daterange').value.trim() || '',
+        };
+
+        try {
+            const res = await fetch(`${API}/upload/kpi-report/${sessionId}`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || 'Excel generation failed');
+            }
+
+            const blob     = await res.blob();
+            const url      = URL.createObjectURL(blob);
+            const a        = document.createElement('a');
+            const safe     = payload.client_name.replace(/\s+/g, '_');
+            a.href         = url;
+            a.download     = `KPI_Report_${safe}_${new Date().toISOString().slice(0,10)}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            closeKpiModal();
+            showToast('✅ KPI Excel report downloaded!', 'success');
+            showStatusBar('KPI Excel report downloaded', false);
+
+        } catch (err) {
+            showToast('Excel failed: ' + err.message, 'error');
+        } finally {
+            btn.disabled  = false;
+            btn.innerHTML = '📥 Download Excel';
+            document.getElementById('kpi-generating').style.display = 'none';
+        }
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    restoreSession();
 </script>
 </body>
 </html>

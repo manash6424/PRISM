@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Changelog — PRISM</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  .changelog-hero {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 4rem 2rem 3rem;
+  }
+  .changelog-hero h1 { font-size: 2.6rem; margin-bottom: 0.5rem; }
+  .changelog-hero p { font-size: 1rem; color: var(--muted); }
+
+  .changelog-body {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+  }
+
+  .changelog-entry {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 2rem;
+    padding: 2.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .changelog-entry:last-child { border-bottom: none; }
+
+  .entry-meta { padding-top: 0.15rem; }
+
+  .entry-version {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-light);
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 100px;
+    margin-bottom: 0.4rem;
+  }
+
+  .entry-date {
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: block;
+  }
+
+  .entry-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 100px;
+    display: inline-block;
+    margin-top: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .badge-latest { background: #dcfce7; color: #166534; }
+  .badge-beta { background: #fef3c7; color: #92400e; }
+
+  .entry-content h3 {
+    font-size: 1.15rem;
+    margin-bottom: 0.4rem;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .entry-content .entry-summary {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .change-group { margin-bottom: 1rem; }
+
+  .change-group-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .change-list { list-style: none; padding: 0; margin: 0; }
+
+  .change-list li {
+    font-size: 0.88rem;
+    color: var(--text);
+    padding: 0.2rem 0 0.2rem 1.2rem;
+    position: relative;
+  }
+
+  .change-list li::before {
+    position: absolute;
+    left: 0;
+    font-size: 0.75rem;
+  }
+
+  .change-list.new li::before { content: "✦"; color: var(--accent); }
+  .change-list.fix li::before { content: "✓"; color: var(--green); }
+  .change-list.improve li::before { content: "↑"; color: var(--yellow); }
+
+  .upcoming-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-top: 2.5rem;
+  }
+
+  .upcoming-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .upcoming-list { list-style: none; padding: 0; }
+  .upcoming-list li {
+    font-size: 0.88rem;
+    color: var(--muted);
+    padding: 0.25rem 0 0.25rem 1.2rem;
+    position: relative;
+  }
+  .upcoming-list li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--border);
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="homepage.html" class="logo">PRISM</a>
+    <div class="nav-links">
+      <a href="homepage.html#features">Features</a>
+      <a href="homepage.html#how">How it Works</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="about.html">About</a>
+    </div>
+    <a href="homepage.html#download" class="btn-nav">Download Free</a>
+  </div>
+</nav>
+
+<div class="changelog-hero">
+  <div class="section-tag">Changelog</div>
+  <h1>What's new in PRISM</h1>
+  <p>Every update, in plain English. No marketing fluff.</p>
+</div>
+
+<div class="changelog-body">
+
+  <!-- v0.9 -->
+  <div class="changelog-entry">
+    <div class="entry-meta">
+      <div class="entry-version">v0.9</div>
+      <span class="entry-date">June 2026</span>
+      <span class="entry-badge badge-latest">Latest</span>
+    </div>
+    <div class="entry-content">
+      <h3>Multi-file Upload & Marketing Dashboard</h3>
+      <p class="entry-summary">The biggest drop yet — combine multiple data sources and get your marketing KPIs automatically.</p>
+
+      <div class="change-group">
+        <div class="change-group-label">New</div>
+        <ul class="change-list new">
+          <li>Multi-file Upload — combine Facebook, Google, Instagram exports in one query session</li>
+          <li>Auto Marketing Dashboard — 8 KPI cards (ROAS, CTR, CPC, CPA, Spend, Impressions, Clicks, Conversions) auto-detected on upload</li>
+          <li>Daily Spend trend chart and ROAS by Campaign bar chart, auto-rendered</li>
+          <li>PDF Report Generator — one-click white-label client report</li>
+          <li>KPI Excel Report export</li>
+          <li>AI query suggestions — autocomplete as you type</li>
+          <li>Smart Alerts — threshold rules with email + Slack notifications, alert history</li>
+          <li>Pinned Dashboard — pin charts from any query, persists across sessions</li>
+        </ul>
+      </div>
+
+      <div class="change-group">
+        <div class="change-group-label">Improved</div>
+        <ul class="change-list improve">
+          <li>DB connection persistence — connections now survive backend restarts (saved to Supabase)</li>
+          <li>Password encryption — database passwords encrypted with private key before storage</li>
+          <li>Full design system — all inline styles replaced with CSS classes, empty states, hover effects</li>
+          <li>Dark / Light mode toggle with keyboard shortcut (Ctrl+/)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- v0.8 -->
+  <div class="changelog-entry">
+    <div class="entry-meta">
+      <div class="entry-version">v0.8</div>
+      <span class="entry-date">May 2026</span>
+      <span class="entry-badge badge-beta">Beta</span>
+    </div>
+    <div class="entry-content">
+      <h3>Query History, Saved Queries & Schema Explorer</h3>
+      <p class="entry-summary">Everything you need to work faster on repeat reporting tasks.</p>
+
+      <div class="change-group">
+        <div class="change-group-label">New</div>
+        <ul class="change-list new">
+          <li>Query History — last 50 queries, re-run with one click</li>
+          <li>Saved Queries — star and tag frequently used queries</li>
+          <li>Query Templates — pre-built shortcuts for common marketing reports</li>
+          <li>Schema Explorer — browse tables, columns, types, and primary keys visually</li>
+          <li>Export to CSV, Excel, and PDF from any query result</li>
+          <li>Auto Charts — bar, line, pie, doughnut with X/Y axis selector</li>
+        </ul>
+      </div>
+
+      <div class="change-group">
+        <div class="change-group-label">Improved</div>
+        <ul class="change-list improve">
+          <li>Login page — animated grid, glow orbs, password strength meter, shake animation on error</li>
+          <li>Keyboard shortcuts — Ctrl+Enter (run query), Ctrl+K (focus query bar)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- v0.7 -->
+  <div class="changelog-entry">
+    <div class="entry-meta">
+      <div class="entry-version">v0.7</div>
+      <span class="entry-date">April 2026</span>
+      <span class="entry-badge badge-beta">Beta</span>
+    </div>
+    <div class="entry-content">
+      <h3>Excel & CSV Upload + Multi-DB Support</h3>
+      <p class="entry-summary">No database? No problem. Drag and drop any spreadsheet and start asking questions.</p>
+
+      <div class="change-group">
+        <div class="change-group-label">New</div>
+        <ul class="change-list new">
+          <li>Excel and CSV file upload with drag and drop</li>
+          <li>NL queries on uploaded files — Groq converts to pandas code</li>
+          <li>Column auto-detection and example question suggestions</li>
+          <li>Multi-database support — PostgreSQL, MySQL, MariaDB</li>
+          <li>Per-user isolated connections with RLS policy on Supabase</li>
+        </ul>
+      </div>
+
+      <div class="change-group">
+        <div class="change-group-label">Fixed</div>
+        <ul class="change-list fix">
+          <li>Database connections no longer drop on backend restart</li>
+          <li>Query results now correctly handle NULL values</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- v0.5 -->
+  <div class="changelog-entry">
+    <div class="entry-meta">
+      <div class="entry-version">v0.5</div>
+      <span class="entry-date">March 2026</span>
+      <span class="entry-badge badge-beta">Beta</span>
+    </div>
+    <div class="entry-content">
+      <h3>First working build — NL → SQL engine</h3>
+      <p class="entry-summary">The core is alive. Ask a question, get a table.</p>
+
+      <div class="change-group">
+        <div class="change-group-label">New</div>
+        <ul class="change-list new">
+          <li>Natural language to SQL conversion via Groq (llama-3.3-70b)</li>
+          <li>Supabase authentication — login, signup, remember me</li>
+          <li>Database connection management (add, test, delete)</li>
+          <li>Query results rendered as table</li>
+          <li>Electron desktop shell (Windows)</li>
+          <li>FastAPI backend with CORS and JWT auth</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upcoming -->
+  <div class="upcoming-card">
+    <h3>🔜 Coming next</h3>
+    <ul class="upcoming-list">
+      <li>Onboarding flow — first-time user guide, only on first login</li>
+      <li>Multi-client workspace — tab switching for agencies managing 10+ clients</li>
+      <li>Settings page — profile, API keys, preferences</li>
+      <li>Subscription — Razorpay ₹999/month integration</li>
+      <li>Hindi language support</li>
+      <li>WhatsApp report delivery</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-left">
+      <span class="logo">PRISM</span>
+      <p>Built by Manash Mandal & Shreya Kolam<br>for Indian digital marketing agencies.</p>
+    </div>
+    <div class="footer-links">
+      <a href="homepage.html">Home</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="about.html">About</a>
+      <a href="privacy.html">Privacy</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 PRISM. Made in India 🇮🇳</p>
+  </div>
+</footer>
+
+</body>
+</html>
