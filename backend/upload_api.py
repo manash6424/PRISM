@@ -270,14 +270,21 @@ def build_schema_context(store: dict) -> str:
 
 
 @router.post("/upload/session/new")
-async def create_session():
+async def create_session(request: Request):
     """Create a new empty multi-file session"""
+    try:
+        body = await request.json()
+        client_id = body.get("client_id", None)
+    except Exception:
+        client_id = None
+
     session_id = str(uuid.uuid4())
     _upload_store[session_id] = {
         "files": [],
         "merged_df": None,
+        "client_id": client_id,
     }
-    return {"success": True, "session_id": session_id}
+    return {"success": True, "session_id": session_id, "client_id": client_id}
 
 
 @router.post("/upload/session/{session_id}/add")
@@ -288,7 +295,7 @@ async def add_file_to_session(session_id: str, file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Only CSV and Excel files are supported")
 
     if session_id not in _upload_store:
-        _upload_store[session_id] = {"files": [], "merged_df": None}
+        _upload_store[session_id] = {"files": [], "merged_df": None, "client_id": None}
 
     try:
         contents = await file.read()
@@ -376,6 +383,7 @@ async def add_file_to_session(session_id: str, file: UploadFile = File(...)):
             "row_count":      len(merged_df),
             "preview":        preview,
             "merge_strategy": merge_strategy,
+            "client_id":      store.get("client_id"),
         }
 
     except Exception as e:
@@ -769,7 +777,7 @@ async def delete_session(session_id: str):
 @router.post("/upload")
 async def upload_file_legacy(file: UploadFile = File(...)):
     session_id = str(uuid.uuid4())
-    _upload_store[session_id] = {"files": [], "merged_df": None}
+    _upload_store[session_id] = {"files": [], "merged_df": None, "client_id": None}
 
     if not file.filename.endswith(('.csv', '.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="Only CSV and Excel files are supported")

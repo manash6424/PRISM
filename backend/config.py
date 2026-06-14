@@ -8,68 +8,69 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class DatabaseConfig(BaseModel):
-    """Database connection configuration."""
-    host: str = Field(default="localhost", description="Database host")
-    port: int = Field(default=5432, ge=1, le=65535, description="Database port")
-    username: str = Field(default="postgres", description="Database username")
-    password: str = Field(default="", description="Database password")
-    name: str = Field(default="postgres", min_length=1, description="Database name")
-    dialect: str = Field(default="postgresql", description="Database dialect")
-    ssl_mode: Optional[str] = Field(default=None, description="SSL mode")
+    host: str = Field(default="localhost")
+    port: int = Field(default=5432, ge=1, le=65535)
+    username: str = Field(default="postgres")
+    password: str = Field(default="")
+    name: str = Field(default="postgres", min_length=1)
+    dialect: str = Field(default="postgresql")
+    ssl_mode: Optional[str] = Field(default=None)
 
     @property
     def connection_string(self) -> str:
-        """Generate SQLAlchemy connection string."""
         if self.ssl_mode and self.ssl_mode.lower() != "disable":
             return f"{self.dialect}://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}?sslmode={self.ssl_mode}"
         return f"{self.dialect}://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
 
 class AIConfig(BaseModel):
-    """AI/LLM configuration for natural language processing."""
-    provider: str = Field(default="openai", description="AI provider (openai, anthropic)")
-    api_key: str = Field(default="", description="API key for AI service")
-    model: str = Field(default="gpt-4", description="Model to use")
-    temperature: float = Field(default=0.1, ge=0.0, le=1.0, description="Temperature for generation")
-    max_tokens: int = Field(default=2000, ge=1, description="Max tokens in response")
-    base_url: Optional[str] = Field(default=None, description="Custom base URL for API")
+    provider: str = Field(default="openai")
+    api_key: str = Field(default="")
+    model: str = Field(default="gpt-4")
+    temperature: float = Field(default=0.1, ge=0.0, le=1.0)
+    max_tokens: int = Field(default=2000, ge=1)
+    base_url: Optional[str] = Field(default=None)
 
 class AlertConfig(BaseModel):
-    """Alert configuration for notifications."""
-    email_enabled: bool = Field(default=False, description="Enable email alerts")
-    smtp_host: Optional[str] = Field(default=None, description="SMTP host")
-    smtp_port: int = Field(default=587, ge=1, le=65535, description="SMTP port")
-    smtp_user: Optional[str] = Field(default=None, description="SMTP username")
-    smtp_password: Optional[str] = Field(default=None, description="SMTP password")
-    slack_enabled: bool = Field(default=False, description="Enable Slack alerts")
-    slack_webhook_url: Optional[str] = Field(default=None, description="Slack webhook URL")
-    slack_channel: Optional[str] = Field(default=None, description="Default Slack channel")
+    email_enabled: bool = Field(default=False)
+    smtp_host: Optional[str] = Field(default=None)
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_user: Optional[str] = Field(default=None)
+    smtp_password: Optional[str] = Field(default=None)
+    slack_enabled: bool = Field(default=False)
+    slack_webhook_url: Optional[str] = Field(default=None)
+    slack_channel: Optional[str] = Field(default=None)
 
 class ExportConfig(BaseModel):
-    """Export configuration for reports and data."""
-    export_dir: str = Field(default="./exports", description="Directory for export files")
-    pdf_engine: str = Field(default="weasyprint", description="PDF generation engine")
-    max_rows_export: int = Field(default=100000, description="Max rows for export")
+    export_dir: str = Field(default="./exports")
+    pdf_engine: str = Field(default="weasyprint")
+    max_rows_export: int = Field(default=100000)
 
 class Settings(BaseModel):
-    """Main application settings."""
     app_name: str = Field(default="AI Desktop Copilot")
     app_version: str = Field(default="1.0.0")
-    debug: bool = Field(default=False, description="Debug mode")
-    secret_key: str = Field(default="your-secret-key-change-in-production-32c", min_length=32, description="Secret key for encryption")
-    allowed_hosts: list[str] = Field(default=["*"], description="Allowed CORS hosts")
+    debug: bool = Field(default=False)
+    secret_key: str = Field(default="your-secret-key-change-in-production-32c", min_length=32)
+    allowed_hosts: list[str] = Field(default=["*"])
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     ai: AIConfig = Field(default_factory=AIConfig)
     alerts: AlertConfig = Field(default_factory=AlertConfig)
     export: ExportConfig = Field(default_factory=ExportConfig)
 
+    # Razorpay
+    razorpay_key_id: str = Field(default="")
+    razorpay_key_secret: str = Field(default="")
+    razorpay_webhook_secret: str = Field(default="")
+
+    # Supabase                        ← NEW
+    supabase_url: str = Field(default="")
+    supabase_service_key: str = Field(default="")
+
+
 def load_settings() -> Settings:
-    """Load settings from environment variables."""
-    # Handle ssl_mode — "disable" means no SSL, convert to None
     ssl_mode = os.getenv("DB_SSL_MODE")
     if ssl_mode and ssl_mode.lower() == "disable":
         ssl_mode = None
 
-    # Handle empty base_url
     base_url = os.getenv("AI_BASE_URL")
     if not base_url:
         base_url = None
@@ -112,8 +113,19 @@ def load_settings() -> Settings:
             pdf_engine=os.getenv("PDF_ENGINE", "weasyprint"),
             max_rows_export=int(os.getenv("MAX_ROWS_EXPORT", "100000")),
         ),
+        # Razorpay
+        razorpay_key_id=os.getenv("RAZORPAY_KEY_ID", ""),
+        razorpay_key_secret=os.getenv("RAZORPAY_KEY_SECRET", ""),
+        razorpay_webhook_secret=os.getenv("RAZORPAY_WEBHOOK_SECRET", ""),
+        # Supabase                        ← NEW
+        supabase_url=os.getenv("SUPABASE_URL", ""),
+        supabase_service_key=os.getenv("SUPABASE_SERVICE_KEY", ""),
     )
 
+
 def get_settings() -> Settings:
-    """Get cached settings instance."""
     return load_settings()
+
+
+# Singleton for direct import: `from backend.config import settings`   ← NEW
+settings = load_settings()

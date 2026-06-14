@@ -7,20 +7,101 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ── Client Workspace Styles ── */
+        .color-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+        .color-swatch:hover { transform: scale(1.15); }
+        .color-swatch.selected { border-color: white; transform: scale(1.15); }
+
+        .client-tab {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .client-tab:hover { border-color: var(--accent); color: var(--text-primary); }
+        .client-tab.active { color: white; border-color: transparent; }
+
+        .client-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .client-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .client-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .client-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .client-color-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+        .client-card-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .client-card-industry {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        #client-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 24px;
+        }
+    </style>
 </head>
 <body>
 
 <!-- Login Screen -->
 <div id="login-screen" class="login-screen">
 
-    <!-- Animated orbs -->
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
 
     <div class="login-left">
         <div class="login-branding">
-
             <div class="login-logo-large">
                 <div class="logo-badge">
                     <span class="logo-icon">🤖</span>
@@ -81,14 +162,12 @@
                     <span class="login-stat-label">Supported</span>
                 </div>
             </div>
-
         </div>
     </div>
 
     <div class="login-right">
         <div class="login-card">
 
-            <!-- Skeleton loader -->
             <div class="skeleton-loader" id="skeleton-loader">
                 <div class="skel skel-title"></div>
                 <div class="skel skel-sub"></div>
@@ -98,7 +177,6 @@
                 <div class="skel skel-btn"></div>
             </div>
 
-            <!-- Actual form (hidden until loaded) -->
             <div class="login-form-wrapper" id="login-form-wrapper" style="display:none;">
 
                 <div class="login-card-header">
@@ -237,6 +315,9 @@
             <button class="nav-item active" data-view="query">
                 <span class="nav-icon">📝</span><span class="nav-text">Query</span>
             </button>
+            <button class="nav-item" data-view="clients">
+                <span class="nav-icon">🏢</span><span class="nav-text">Clients</span>
+            </button>
             <button class="nav-item" data-view="connections">
                 <span class="nav-icon">🗄️</span><span class="nav-text">Connections</span>
             </button>
@@ -258,7 +339,7 @@
             <button class="nav-item" data-view="alerts">
                 <span class="nav-icon">🔔</span><span class="nav-text">Alerts</span>
             </button>
-          <button class="nav-item" onclick="window.location.href='upload.html'">
+            <button class="nav-item" onclick="window.location.href='upload.html'">
                 <span class="nav-icon">📂</span><span class="nav-text">Upload</span>
             </button>
             <button class="nav-item" onclick="app.resetOnboarding()">
@@ -278,7 +359,18 @@
         </div>
     </aside>
 
-    <main class="main-content">
+    <main class="main-content" style="display:flex;flex-direction:column;overflow:hidden;">
+
+        <!-- Client Context Bar (hidden until clients exist) -->
+        <div id="client-bar" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text-muted);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;">Client:</span>
+            <div id="client-tabs" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+            <button onclick="app.showAddClientModal()" style="background:none;border:1px dashed var(--border-color);color:var(--text-muted);border-radius:20px;padding:3px 10px;font-size:11px;cursor:pointer;white-space:nowrap;">+ Add</button>
+        </div>
+
+        <!-- Scrollable views wrapper -->
+        <div style="flex:1;overflow-y:auto;">
+
         <!-- Query View -->
         <div id="query-view" class="view active">
             <div class="view-header">
@@ -377,6 +469,20 @@
             </div>
         </div>
 
+        <!-- Clients View -->
+        <div id="clients-view" class="view">
+            <div class="view-header">
+                <h1>Client Workspace</h1>
+                <p>Manage your agency clients — each client has their own connections and dashboard</p>
+            </div>
+            <div style="padding:0 20px 20px;">
+                <button class="btn-primary" onclick="app.showAddClientModal()" style="margin-bottom:20px;">
+                    <span class="btn-icon">+</span> Add New Client
+                </button>
+                <div id="clients-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;"></div>
+            </div>
+        </div>
+
         <!-- Connections View -->
         <div id="connections-view" class="view">
             <div class="view-header">
@@ -412,7 +518,7 @@
         <div id="dashboard-view" class="view">
             <div class="view-header">
                 <h1>Dashboard</h1>
-                <p>Your pinned charts and queries</p>
+                <p id="dashboard-subtitle">Your pinned charts and queries</p>
             </div>
             <div id="dashboard-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(500px,1fr));gap:20px;padding:20px;">
                 <div style="color:var(--text-muted);text-align:center;padding:40px;grid-column:1/-1;">
@@ -556,10 +662,12 @@
                 </div>
             </div>
         </div>
+
+        </div><!-- end scrollable wrapper -->
     </main>
 </div>
 
-<!-- Modal -->
+<!-- Connection Modal -->
 <div id="modal-overlay" class="modal-overlay hidden">
     <div class="modal" id="connection-modal">
         <div class="modal-header">
@@ -604,11 +712,54 @@
                         <input type="password" id="conn-password" placeholder="Optional">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Assign to Client <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+                    <select id="conn-client-id" style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px 12px;width:100%;font-size:14px;">
+                        <option value="">No client (shared)</option>
+                    </select>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="test-connection-btn">Test Connection</button>
                     <button type="submit" class="btn-primary">Save Connection</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Client Modal -->
+<div id="client-modal-overlay" class="modal-overlay hidden" onclick="if(event.target.id==='client-modal-overlay')app.closeClientModal()">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Add New Client</h2>
+            <button class="modal-close" onclick="app.closeClientModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Client / Brand Name</label>
+                <input type="text" id="client-name-input" placeholder="e.g. Zomato, Swiggy, Local Brand">
+            </div>
+            <div class="form-group">
+                <label>Industry <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+                <input type="text" id="client-industry-input" placeholder="e.g. F&B, E-commerce, Real Estate">
+            </div>
+            <div class="form-group">
+                <label>Brand Color</label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;" id="color-picker">
+                    <div class="color-swatch selected" data-color="#e8455a" style="background:#e8455a;" onclick="app.selectColor(this,'#e8455a')"></div>
+                    <div class="color-swatch" data-color="#6366f1" style="background:#6366f1;" onclick="app.selectColor(this,'#6366f1')"></div>
+                    <div class="color-swatch" data-color="#22c55e" style="background:#22c55e;" onclick="app.selectColor(this,'#22c55e')"></div>
+                    <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b;" onclick="app.selectColor(this,'#f59e0b')"></div>
+                    <div class="color-swatch" data-color="#06b6d4" style="background:#06b6d4;" onclick="app.selectColor(this,'#06b6d4')"></div>
+                    <div class="color-swatch" data-color="#ec4899" style="background:#ec4899;" onclick="app.selectColor(this,'#ec4899')"></div>
+                    <div class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;" onclick="app.selectColor(this,'#8b5cf6')"></div>
+                    <div class="color-swatch" data-color="#14b8a6" style="background:#14b8a6;" onclick="app.selectColor(this,'#14b8a6')"></div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="app.closeClientModal()">Cancel</button>
+                <button type="button" class="btn-primary" onclick="app.saveClient()">Save Client</button>
+            </div>
         </div>
     </div>
 </div>
@@ -627,7 +778,6 @@
     <button class="profile-item">🏢 Company</button>
     <button class="profile-item" onclick="window.location.href='subscription.html'">💳 Subscription</button>
     <hr class="profile-divider">
-    <button class="profile-item" onclick="window.location.href='about.html'">📋 Privacy & Terms</button>
     <button class="profile-item logout-item" id="logout-btn">🚪 Logout</button>
 </div>
 
@@ -651,7 +801,6 @@ window.addEventListener('load', () => {
     }, 800);
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function showError(msg) {
     const el = document.getElementById('auth-error');
     el.textContent = msg;
@@ -699,8 +848,8 @@ function showApp(user) {
 function showLogin() {
     sessionStorage.clear();
     localStorage.removeItem('prism_session');
-    localStorage.removeItem('access_token');  // ✅ clear token
-    localStorage.removeItem('user_id');        // ✅ clear user id
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_id');
     document.getElementById('app-container').style.display = 'none';
     document.getElementById('app-container').classList.add('hidden');
     document.getElementById('login-screen').style.display = 'flex';
@@ -753,19 +902,14 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             body: JSON.stringify({ email, password })
         });
         const result = await res.json();
-        // ✅ Replace with
-if (res.ok && result.success) {
-    localStorage.setItem('access_token', result.access_token);
-    localStorage.setItem('user_id', result.user?.id);
-    
-    // Send token to main process
-    if (window.api && window.api.setToken) {
-        window.api.setToken(result.access_token);
-    }
-    
-    showApp(result.user);
-}
-        else {
+        if (res.ok && result.success) {
+            localStorage.setItem('access_token', result.access_token);
+            localStorage.setItem('user_id', result.user?.id);
+            if (window.api && window.api.setToken) {
+                window.api.setToken(result.access_token);
+            }
+            showApp(result.user);
+        } else {
             showError(result.detail || 'Invalid email or password.');
         }
     } catch (err) {
@@ -839,11 +983,14 @@ document.getElementById('forgot-btn').addEventListener('click', async () => {
     btn.textContent = 'Sending...';
     btn.disabled = true;
     try {
-        const { error } = await window.supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: 'prism://reset-password'
+        const res = await fetch('http://localhost:8000/api/v1/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
         });
-        if (error) showError(error.message);
-        else showSuccess('Reset link sent! Check your email inbox.');
+        const result = await res.json();
+        if (result.success) showSuccess('Reset link sent! Check your email inbox.');
+        else showError('Something went wrong. Try again.');
     } catch (err) {
         showError('Something went wrong. Try again.');
     } finally {
@@ -917,7 +1064,6 @@ document.addEventListener('click', () => {
 });
 
 // ── Logout ────────────────────────────────────────────────────────────────────
-// ✅ Replace with
 document.getElementById('logout-btn').addEventListener('click', () => {
     if (confirm('Are you sure you want to logout?')) {
         if (window.api && window.api.logout) {

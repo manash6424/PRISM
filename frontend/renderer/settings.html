@@ -16,13 +16,11 @@
   --gold: #f5c842;
   --text: #e8eaf0;
   --text2: #9aa3b8;
-  --border: rgba(44, 7, 7, 0.07);
+  --border: rgba(255,255,255,0.07);
   --danger: #ef4444;
 }
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-
 body {
   background: var(--bg);
   color: var(--text);
@@ -34,107 +32,53 @@ body {
 
 /* TOPBAR */
 .topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
   padding: 1rem 2.5rem;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  position: sticky; top: 0; z-index: 100;
 }
-
 .topbar-left { display: flex; align-items: center; gap: 1rem; }
-
 .back-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--text2);
-  font-size: 0.875rem;
-  font-weight: 500;
+  display: flex; align-items: center; gap: 0.4rem;
+  color: var(--text2); font-size: 0.875rem; font-weight: 500;
   padding: 0.4rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  transition: all 0.2s;
-  cursor: pointer;
-  background: none;
-  text-decoration: none;
+  border: 1px solid var(--border); border-radius: 8px;
+  transition: all 0.2s; cursor: pointer; background: none; text-decoration: none;
 }
 .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
-
 .logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
 .logo-mark {
-  width: 28px; height: 28px;
-  background: var(--accent);
-  border-radius: 7px;
+  width: 28px; height: 28px; background: var(--accent); border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem; color: white;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1rem; color: white;
 }
-.logo-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.3rem; letter-spacing: 0.1em; color: var(--text);
-}
-
+.logo-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.1em; color: var(--text); }
 .user-pill {
   display: flex; align-items: center; gap: 0.5rem;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem; color: var(--text2);
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.8rem; color: var(--text2);
 }
 .user-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; }
 
 /* LAYOUT */
 .page-layout {
-  display: flex;
-  flex: 1;
-  max-width: 1100px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 2.5rem 2rem;
-  gap: 2.5rem;
+  display: flex; flex: 1; max-width: 1100px;
+  margin: 0 auto; width: 100%; padding: 2.5rem 2rem; gap: 2.5rem;
 }
 
-/* SIDEBAR NAV */
-.settings-nav {
-  width: 220px;
-  flex-shrink: 0;
-  position: sticky;
-  top: 80px;
-  align-self: flex-start;
-}
-
+/* SIDEBAR */
+.settings-nav { width: 220px; flex-shrink: 0; position: sticky; top: 80px; align-self: flex-start; }
 .settings-nav h3 {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text2);
-  margin-bottom: 0.8rem;
-  padding: 0 0.5rem;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text2); margin-bottom: 0.8rem; padding: 0 0.5rem;
 }
-
 .nav-group { margin-bottom: 1.5rem; }
-
 .nav-link {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  color: var(--text2);
-  text-decoration: none;
-  transition: all 0.15s;
-  cursor: pointer;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0.7rem; border-radius: 8px; font-size: 0.875rem;
+  color: var(--text2); text-decoration: none; transition: all 0.15s;
+  cursor: pointer; border: none; background: none; width: 100%; text-align: left;
 }
 .nav-link:hover { color: var(--text); background: var(--bg2); }
 .nav-link.active { color: var(--text); background: var(--bg2); font-weight: 600; }
@@ -143,406 +87,228 @@ body {
 
 /* CONTENT */
 .settings-content { flex: 1; min-width: 0; }
-
-.settings-section {
-  display: none;
-  animation: fadeUp 0.3s ease;
-}
+.settings-section { display: none; animation: fadeUp 0.3s ease; }
 .settings-section.active { display: block; }
-
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.section-header {
-  margin-bottom: 2rem;
-  padding-bottom: 1.2rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.section-header h2 {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin-bottom: 0.3rem;
-}
-
+/* SECTION HEADER */
+.section-header { margin-bottom: 2rem; padding-bottom: 1.2rem; border-bottom: 1px solid var(--border); }
+.section-header h2 { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; margin-bottom: 0.3rem; }
 .section-header p { font-size: 0.875rem; color: var(--text2); }
 
 /* CARDS */
 .settings-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 1.8rem;
-  margin-bottom: 1.2rem;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.8rem; margin-bottom: 1.2rem;
 }
+.settings-card h4 { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; margin-bottom: 0.3rem; }
+.settings-card .card-desc { font-size: 0.8rem; color: var(--text2); margin-bottom: 1.5rem; }
 
-.settings-card h4 {
-  font-family: 'Syne', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  margin-bottom: 0.3rem;
-}
-
-.settings-card .card-desc {
-  font-size: 0.8rem;
-  color: var(--text2);
-  margin-bottom: 1.5rem;
-}
-
-/* FORM */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
+/* FORMS */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
 .form-group { margin-bottom: 1rem; }
 .form-group:last-child { margin-bottom: 0; }
-
 .form-group label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text2);
-  margin-bottom: 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  display: block; font-size: 0.8rem; font-weight: 600; color: var(--text2);
+  margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;
 }
-
 .form-input {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.65rem 0.9rem;
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.875rem;
-  outline: none;
-  transition: border-color 0.2s;
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0.65rem 0.9rem; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 0.875rem; outline: none; transition: border-color 0.2s;
 }
 .form-input:focus { border-color: var(--accent); }
 .form-input::placeholder { color: var(--text2); }
-
-.form-input-group {
-  display: flex;
-  gap: 0.5rem;
-}
+.form-input-group { display: flex; gap: 0.5rem; }
 .form-input-group .form-input { flex: 1; }
 
-.avatar-row {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-  margin-bottom: 1.5rem;
-}
-
+/* AVATAR */
+.avatar-row { display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1.5rem; }
 .avatar-big {
-  width: 64px; height: 64px;
-  border-radius: 50%;
+  width: 64px; height: 64px; border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), #ff8c5a);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif;
-  font-size: 1.5rem; font-weight: 800; color: white;
-  flex-shrink: 0;
+  font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: white; flex-shrink: 0;
 }
-
 .avatar-info p { font-size: 0.8rem; color: var(--text2); margin-top: 0.2rem; }
+
+/* PROFILE EMAIL (read-only badge) */
+.email-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 0.55rem 0.9rem; border-radius: 8px;
+  font-size: 0.875rem; color: var(--text2); width: 100%;
+}
+.email-badge span { font-size: 0.7rem; background: rgba(255,255,255,0.06); padding: 0.1rem 0.4rem; border-radius: 4px; }
 
 /* BUTTONS */
 .btn-save {
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 0.65rem 1.5rem;
-  border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 700;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
+  background: var(--accent); color: white; border: none;
+  padding: 0.65rem 1.5rem; border-radius: 8px;
+  font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.875rem;
+  cursor: pointer; transition: all 0.2s;
 }
 .btn-save:hover { background: var(--accent2); transform: translateY(-1px); }
-
+.btn-save:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .btn-secondary-sm {
-  background: var(--bg3);
-  color: var(--text);
-  border: 1px solid var(--border);
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+  padding: 0.6rem 1.2rem; border-radius: 8px;
+  font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.875rem;
+  cursor: pointer; transition: all 0.2s;
 }
 .btn-secondary-sm:hover { border-color: rgba(255,255,255,0.15); }
-
 .btn-danger-sm {
-  background: rgba(239,68,68,0.1);
-  color: var(--danger);
-  border: 1px solid rgba(239,68,68,0.25);
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
+  background: rgba(239,68,68,0.1); color: var(--danger);
+  border: 1px solid rgba(239,68,68,0.25); padding: 0.6rem 1.2rem;
+  border-radius: 8px; font-family: 'DM Sans', sans-serif;
+  font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s;
 }
 .btn-danger-sm:hover { background: rgba(239,68,68,0.2); }
-
 .form-actions {
-  display: flex;
-  gap: 0.8rem;
-  margin-top: 1.5rem;
-  padding-top: 1.2rem;
-  border-top: 1px solid var(--border);
+  display: flex; gap: 0.8rem; margin-top: 1.5rem;
+  padding-top: 1.2rem; border-top: 1px solid var(--border);
 }
 
-/* API KEY */
+/* API KEYS */
 .api-key-row {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.9rem 1rem;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  margin-bottom: 0.8rem;
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.9rem 1rem; background: var(--bg3);
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.8rem;
 }
-
 .api-key-icon { font-size: 1.2rem; }
-
 .api-key-info { flex: 1; }
 .api-key-name { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.15rem; }
-.api-key-value {
-  font-family: 'Courier New', monospace;
-  font-size: 0.8rem;
-  color: var(--text2);
-  letter-spacing: 0.05em;
-}
-
+.api-key-value { font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--text2); letter-spacing: 0.05em; }
 .api-key-actions { display: flex; gap: 0.5rem; }
-
 .icon-btn {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--text2);
-  width: 30px; height: 30px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
+  width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
 }
 .icon-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
 .icon-btn.danger:hover { color: var(--danger); border-color: rgba(239,68,68,0.3); }
-
 .add-key-form {
-  background: var(--bg3);
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  padding: 1.2rem;
-  margin-top: 0.8rem;
-  display: none;
+  background: var(--bg3); border: 1px dashed var(--border);
+  border-radius: 10px; padding: 1.2rem; margin-top: 0.8rem; display: none;
 }
 .add-key-form.open { display: block; }
 
-/* TOGGLE SWITCH */
+/* TOGGLE */
 .toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 0; border-bottom: 1px solid var(--border);
 }
 .toggle-row:last-child { border-bottom: none; }
-
-.toggle-info h5 {
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 0.2rem;
-}
+.toggle-info h5 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.2rem; }
 .toggle-info p { font-size: 0.78rem; color: var(--text2); }
-
-.toggle {
-  position: relative;
-  width: 42px; height: 24px;
-}
+.toggle { position: relative; width: 42px; height: 24px; }
 .toggle input { display: none; }
 .toggle-slider {
-  position: absolute;
-  inset: 0;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
+  position: absolute; inset: 0; background: var(--bg3);
+  border: 1px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.2s;
 }
 .toggle-slider::after {
-  content: '';
-  position: absolute;
-  width: 16px; height: 16px;
-  background: var(--text2);
-  border-radius: 50%;
-  top: 3px; left: 3px;
-  transition: all 0.2s;
+  content: ''; position: absolute; width: 16px; height: 16px;
+  background: var(--text2); border-radius: 50%; top: 3px; left: 3px; transition: all 0.2s;
 }
 .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
 .toggle input:checked + .toggle-slider::after { transform: translateX(18px); background: white; }
 
-/* THEME SELECTOR */
-.theme-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.8rem;
-  margin-bottom: 1rem;
-}
-
+/* THEME */
+.theme-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 1rem; }
 .theme-option {
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  padding: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
+  border: 2px solid var(--border); border-radius: 10px; padding: 0.8rem;
+  cursor: pointer; transition: all 0.2s; text-align: center;
 }
 .theme-option:hover { border-color: rgba(255,255,255,0.15); }
 .theme-option.selected { border-color: var(--accent); }
-
-.theme-preview {
-  width: 100%;
-  height: 40px;
-  border-radius: 6px;
-  margin-bottom: 0.5rem;
-}
-
+.theme-preview { width: 100%; height: 40px; border-radius: 6px; margin-bottom: 0.5rem; }
 .theme-label { font-size: 0.78rem; font-weight: 600; }
 
 /* FONT SIZE */
-.font-size-options {
-  display: flex;
-  gap: 0.5rem;
-}
-
+.font-size-options { display: flex; gap: 0.5rem; }
 .size-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: none;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'DM Sans', sans-serif;
+  padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 8px;
+  background: none; color: var(--text2); cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
 }
 .size-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
 .size-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(232,69,90,0.08); }
 
-/* SESSION TABLE */
+/* SESSIONS */
 .session-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 0;
+  display: flex; align-items: center; gap: 1rem; padding: 0.9rem 0;
   border-bottom: 1px solid var(--border);
 }
 .session-row:last-child { border-bottom: none; }
-
 .session-icon { font-size: 1.5rem; }
 .session-info { flex: 1; }
 .session-info h5 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.1rem; }
 .session-info p { font-size: 0.78rem; color: var(--text2); }
-
 .current-badge {
-  background: rgba(34,197,94,0.1);
-  color: var(--green);
-  border: 1px solid rgba(34,197,94,0.2);
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  background: rgba(34,197,94,0.1); color: var(--green);
+  border: 1px solid rgba(34,197,94,0.2); padding: 0.2rem 0.6rem;
+  border-radius: 20px; font-size: 0.7rem; font-weight: 700;
 }
 
-/* DANGER ZONE */
+/* DANGER */
 .danger-card {
-  background: rgba(239,68,68,0.04);
-  border: 1px solid rgba(239,68,68,0.15);
-  border-radius: 14px;
-  padding: 1.8rem;
-  margin-bottom: 1rem;
+  background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.15);
+  border-radius: 14px; padding: 1.8rem; margin-bottom: 1rem;
 }
-
 .danger-card h4 { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--danger); margin-bottom: 0.3rem; }
 .danger-card p { font-size: 0.82rem; color: var(--text2); margin-bottom: 1.2rem; }
 
+/* LOADING SKELETON */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-line { height: 14px; margin-bottom: 10px; }
+
 /* TOAST */
 .toast-container {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
+  display: flex; flex-direction: column; gap: 0.5rem;
 }
-
 .toast {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.8rem 1.2rem;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  animation: slideIn 0.3s ease;
-  min-width: 260px;
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.8rem 1.2rem; border-radius: 10px; font-size: 0.875rem; font-weight: 500;
+  animation: slideIn 0.3s ease; min-width: 260px;
 }
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 .toast.success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: var(--green); }
 .toast.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
 .toast.info { background: var(--bg2); border: 1px solid var(--border); color: var(--text); }
 
-/* CONFIRM MODAL */
+/* MODAL */
 .modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  z-index: 1000; align-items: center; justify-content: center;
 }
 .modal-overlay.open { display: flex; }
-
 .modal {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 2rem;
-  max-width: 400px;
-  width: 90%;
-  animation: popIn 0.25s ease;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+  padding: 2rem; max-width: 400px; width: 90%; animation: popIn 0.25s ease;
 }
-
-@keyframes popIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
+@keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 .modal h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; }
 .modal p { font-size: 0.875rem; color: var(--text2); margin-bottom: 1.5rem; line-height: 1.6; }
 .modal-actions { display: flex; gap: 0.8rem; justify-content: flex-end; }
+
+/* SAVING SPINNER */
+.spinner {
+  width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.6s linear infinite; display: inline-block; margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -550,7 +316,7 @@ body {
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <button class="back-btn" onclick="window.location.href='index.html?skip=true'">← Back to App</button>
+    <button class="back-btn" onclick="goBack()">← Back to App</button>
     <a href="#" class="logo">
       <div class="logo-mark">P</div>
       <span class="logo-name">PRISM</span>
@@ -558,7 +324,7 @@ body {
   </div>
   <div class="user-pill">
     <div class="user-dot"></div>
-    <span id="topbar-email">admin@prism.com</span>
+    <span id="topbar-email">Loading…</span>
   </div>
 </div>
 
@@ -596,45 +362,43 @@ body {
     <div class="settings-section active" id="section-profile">
       <div class="section-header">
         <h2>Profile</h2>
-        <p>Manage your personal information and public profile</p>
+        <p>Manage your personal information</p>
       </div>
-
       <div class="settings-card">
         <h4>Profile Photo</h4>
         <p class="card-desc">Your avatar shown across the app</p>
         <div class="avatar-row">
-          <div class="avatar-big" id="avatar-display">A</div>
+          <div class="avatar-big" id="avatar-display">?</div>
           <div class="avatar-info">
-            <strong id="display-name">Admin</strong>
-            <p>Click to change your avatar photo</p>
+            <strong id="display-name">Loading…</strong>
+            <p id="display-role">—</p>
           </div>
         </div>
       </div>
-
       <div class="settings-card">
         <h4>Personal Information</h4>
-        <p class="card-desc">Update your name and email address</p>
+        <p class="card-desc">Your name and role are shown in reports</p>
         <div class="form-row">
           <div class="form-group">
             <label>Full Name</label>
-            <input type="text" class="form-input" id="profile-name" placeholder="Your full name" value="Admin">
+            <input type="text" class="form-input" id="profile-name" placeholder="Your full name">
           </div>
           <div class="form-group">
             <label>Company Name</label>
-            <input type="text" class="form-input" id="profile-company" placeholder="Your company" value="PRISM Inc.">
+            <input type="text" class="form-input" id="profile-company" placeholder="Your company">
           </div>
         </div>
         <div class="form-group">
           <label>Email Address</label>
-          <input type="email" class="form-input" id="profile-email" placeholder="your@email.com" value="admin@prism.com">
+          <div class="email-badge"><span>🔒 via Supabase</span><span id="profile-email-display">—</span></div>
+          <p style="font-size:0.75rem;color:var(--text2);margin-top:0.4rem;">Email is managed through your Supabase account</p>
         </div>
         <div class="form-group">
           <label>Role / Title</label>
-          <input type="text" class="form-input" id="profile-role" placeholder="e.g. Marketing Manager" value="Administrator">
+          <input type="text" class="form-input" id="profile-role" placeholder="e.g. Marketing Manager">
         </div>
         <div class="form-actions">
-          <button class="btn-save" onclick="saveProfile()">Save Changes</button>
-          <button class="btn-secondary-sm" onclick="resetProfile()">Cancel</button>
+          <button class="btn-save" id="save-profile-btn" onclick="saveProfile()">Save Changes</button>
         </div>
       </div>
     </div>
@@ -643,43 +407,33 @@ body {
     <div class="settings-section" id="section-security">
       <div class="section-header">
         <h2>Security</h2>
-        <p>Manage your password and account security settings</p>
+        <p>Manage your password and two-factor authentication</p>
       </div>
-
       <div class="settings-card">
         <h4>Change Password</h4>
         <p class="card-desc">Use a strong password of at least 8 characters</p>
         <div class="form-group">
-          <label>Current Password</label>
-          <input type="password" class="form-input" id="current-password" placeholder="Enter current password">
+          <label>New Password</label>
+          <input type="password" class="form-input" id="new-password" placeholder="New password (min 8 chars)">
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>New Password</label>
-            <input type="password" class="form-input" id="new-password" placeholder="New password">
-          </div>
-          <div class="form-group">
-            <label>Confirm Password</label>
-            <input type="password" class="form-input" id="confirm-password" placeholder="Confirm new password">
-          </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" class="form-input" id="confirm-password" placeholder="Confirm new password">
         </div>
+        <p style="font-size:0.78rem;color:var(--text2);margin-bottom:0.5rem;">Note: Password changes go through Supabase. You'll be asked to confirm the change via email.</p>
         <div class="form-actions">
-          <button class="btn-save" onclick="changePassword()">Update Password</button>
+          <button class="btn-save" id="save-password-btn" onclick="changePassword()">Update Password</button>
         </div>
       </div>
-
       <div class="settings-card">
         <h4>Two-Factor Authentication</h4>
-        <p class="card-desc">Add an extra layer of security to your account</p>
+        <p class="card-desc">Add an extra layer of security</p>
         <div class="toggle-row">
           <div class="toggle-info">
             <h5>Enable 2FA</h5>
-            <p>Require a verification code when logging in</p>
+            <p>Managed via your Supabase project settings</p>
           </div>
-          <label class="toggle">
-            <input type="checkbox" id="2fa-toggle">
-            <span class="toggle-slider"></span>
-          </label>
+          <a href="https://supabase.com/dashboard" target="_blank" class="btn-secondary-sm" style="text-decoration:none;font-size:0.8rem;">Configure →</a>
         </div>
       </div>
     </div>
@@ -688,31 +442,20 @@ body {
     <div class="settings-section" id="section-sessions">
       <div class="section-header">
         <h2>Active Sessions</h2>
-        <p>Manage devices and locations where you're logged in</p>
+        <p>Manage where you're logged in</p>
       </div>
-
       <div class="settings-card">
-        <h4>Logged-in Devices</h4>
-        <p class="card-desc">These devices are currently signed into your account</p>
-
+        <h4>Current Session</h4>
+        <p class="card-desc">You are signed in on this device</p>
         <div class="session-row">
           <div class="session-icon">💻</div>
           <div class="session-info">
-            <h5>Windows PC — Chrome <span class="current-badge">Current</span></h5>
-            <p>Mumbai, India · Last active just now</p>
+            <h5>PRISM Desktop <span class="current-badge">Current</span></h5>
+            <p id="session-info-text">Signed in via Supabase JWT</p>
           </div>
         </div>
-        <div class="session-row">
-          <div class="session-icon">📱</div>
-          <div class="session-info">
-            <h5>iPhone — Safari</h5>
-            <p>Mumbai, India · Last active 2 hours ago</p>
-          </div>
-          <button class="btn-danger-sm" onclick="revokeSession(this)">Revoke</button>
-        </div>
-
         <div class="form-actions" style="margin-top:1.2rem;">
-          <button class="btn-danger-sm" onclick="confirmAction('Sign out all other devices?', 'This will log out all devices except your current session.', revokeAllSessions)">Sign Out All Others</button>
+          <button class="btn-danger-sm" onclick="confirmAction('Sign out?', 'You will be logged out and returned to the login screen.', signOut)">Sign Out</button>
         </div>
       </div>
     </div>
@@ -721,46 +464,46 @@ body {
     <div class="settings-section" id="section-appearance">
       <div class="section-header">
         <h2>Appearance</h2>
-        <p>Customize how PRISM looks for you</p>
+        <p>Customize how PRISM looks</p>
       </div>
-
       <div class="settings-card">
         <h4>Theme</h4>
         <p class="card-desc">Choose your preferred color theme</p>
         <div class="theme-options">
-          <div class="theme-option selected" onclick="selectTheme(this, 'dark')">
+          <div class="theme-option" id="theme-dark" onclick="selectTheme(this, 'dark')">
             <div class="theme-preview" style="background:linear-gradient(135deg,#0f1117,#1e2535)"></div>
             <div class="theme-label">Dark</div>
           </div>
-          <div class="theme-option" onclick="selectTheme(this, 'light')">
+          <div class="theme-option" id="theme-light" onclick="selectTheme(this, 'light')">
             <div class="theme-preview" style="background:linear-gradient(135deg,#f8fafc,#e2e8f0)"></div>
             <div class="theme-label">Light</div>
           </div>
-          <div class="theme-option" onclick="selectTheme(this, 'system')">
+          <div class="theme-option" id="theme-system" onclick="selectTheme(this, 'system')">
             <div class="theme-preview" style="background:linear-gradient(135deg,#0f1117 50%,#f8fafc 50%)"></div>
             <div class="theme-label">System</div>
           </div>
         </div>
       </div>
-
       <div class="settings-card">
         <h4>Font Size</h4>
-        <p class="card-desc">Adjust the text size across the app</p>
+        <p class="card-desc">Adjust text size across the app</p>
         <div class="font-size-options">
-          <button class="size-btn" onclick="selectFontSize(this, 'small')" style="font-size:0.78rem;">Small</button>
-          <button class="size-btn active" onclick="selectFontSize(this, 'medium')" style="font-size:0.875rem;">Medium</button>
-          <button class="size-btn" onclick="selectFontSize(this, 'large')" style="font-size:1rem;">Large</button>
+          <button class="size-btn" id="font-small" onclick="selectFontSize(this, 'small')" style="font-size:0.78rem;">Small</button>
+          <button class="size-btn" id="font-medium" onclick="selectFontSize(this, 'medium')" style="font-size:0.875rem;">Medium</button>
+          <button class="size-btn" id="font-large" onclick="selectFontSize(this, 'large')" style="font-size:1rem;">Large</button>
         </div>
       </div>
-
       <div class="settings-card">
         <h4>Interface Density</h4>
         <p class="card-desc">Control spacing and compactness</p>
         <div class="font-size-options">
-          <button class="size-btn" onclick="selectDensity(this, 'compact')">Compact</button>
-          <button class="size-btn active" onclick="selectDensity(this, 'comfortable')">Comfortable</button>
-          <button class="size-btn" onclick="selectDensity(this, 'spacious')">Spacious</button>
+          <button class="size-btn" id="density-compact" onclick="selectDensity(this, 'compact')">Compact</button>
+          <button class="size-btn" id="density-comfortable" onclick="selectDensity(this, 'comfortable')">Comfortable</button>
+          <button class="size-btn" id="density-spacious" onclick="selectDensity(this, 'spacious')">Spacious</button>
         </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" id="save-appearance-btn" onclick="saveAppearance()">Save Appearance</button>
       </div>
     </div>
 
@@ -768,53 +511,53 @@ body {
     <div class="settings-section" id="section-apikeys">
       <div class="section-header">
         <h2>API Keys</h2>
-        <p>Manage external API keys used by PRISM to power AI features</p>
+        <p>Manage external service keys — stored encrypted, never shared</p>
       </div>
 
+      <!-- OpenAI -->
       <div class="settings-card">
-        <h4>OpenAI API Key</h4>
-        <p class="card-desc">Required for natural language to SQL conversion. Your key is stored encrypted and never shared.</p>
-
+        <h4>Groq / OpenAI API Key</h4>
+        <p class="card-desc">Powers the NL → SQL engine. Stored with AES-256 encryption.</p>
         <div class="api-key-row" id="openai-key-row">
           <div class="api-key-icon">🤖</div>
           <div class="api-key-info">
-            <div class="api-key-name">OpenAI</div>
-            <div class="api-key-value" id="openai-display">sk-••••••••••••••••••••••••••••••3a8f</div>
+            <div class="api-key-name">Groq / OpenAI</div>
+            <div class="api-key-value" id="openai-display">Not configured</div>
           </div>
           <div class="api-key-actions">
-            <button class="icon-btn" onclick="toggleKeyVisibility('openai')" title="Show/Hide">👁</button>
+            <button class="icon-btn" id="openai-eye-btn" onclick="toggleRevealKey('openai')" title="Show/Hide">👁</button>
             <button class="icon-btn" onclick="toggleAddKeyForm('openai')" title="Edit">✏️</button>
-            <button class="icon-btn danger" onclick="confirmAction('Delete OpenAI Key?', 'AI query features will stop working without this key.', deleteOpenAIKey)" title="Delete">🗑</button>
+            <button class="icon-btn danger" onclick="confirmAction('Delete Groq key?', 'AI query features will stop working.', () => deleteAPIKey('openai'))" title="Delete">🗑</button>
           </div>
         </div>
-
         <div class="add-key-form" id="openai-form">
           <div class="form-group">
-            <label>OpenAI API Key</label>
+            <label>API Key</label>
             <div class="form-input-group">
-              <input type="password" class="form-input" id="openai-key-input" placeholder="sk-...">
+              <input type="password" class="form-input" id="openai-key-input" placeholder="gsk_... or sk-...">
               <button class="btn-save" onclick="saveAPIKey('openai')">Save Key</button>
             </div>
           </div>
-          <p style="font-size:0.75rem;color:var(--text2);margin-top:0.5rem;">🔒 Encrypted with AES-256. Never stored in plain text.</p>
+          <p style="font-size:0.75rem;color:var(--text2);margin-top:0.5rem;">🔒 Encrypted with AES-256 before saving to database.</p>
         </div>
       </div>
 
+      <!-- SendGrid -->
       <div class="settings-card">
-        <h4>Other Integrations</h4>
-        <p class="card-desc">Connect additional services</p>
-
+        <h4>SendGrid (Email Alerts)</h4>
+        <p class="card-desc">Required for email alert notifications</p>
         <div class="api-key-row">
           <div class="api-key-icon">📧</div>
           <div class="api-key-info">
-            <div class="api-key-name">SendGrid (Email Alerts)</div>
-            <div class="api-key-value" style="color:var(--text2);font-style:italic;font-family:'DM Sans',sans-serif;">Not configured</div>
+            <div class="api-key-name">SendGrid</div>
+            <div class="api-key-value" id="sendgrid-display">Not configured</div>
           </div>
           <div class="api-key-actions">
-            <button class="icon-btn" onclick="toggleAddKeyForm('sendgrid')" title="Add">＋</button>
+            <button class="icon-btn" id="sendgrid-eye-btn" onclick="toggleRevealKey('sendgrid')" title="Show/Hide">👁</button>
+            <button class="icon-btn" onclick="toggleAddKeyForm('sendgrid')" title="Edit">✏️</button>
+            <button class="icon-btn danger" onclick="confirmAction('Delete SendGrid key?', 'Email alerts will stop working.', () => deleteAPIKey('sendgrid'))" title="Delete">🗑</button>
           </div>
         </div>
-
         <div class="add-key-form" id="sendgrid-form">
           <div class="form-group">
             <label>SendGrid API Key</label>
@@ -824,18 +567,24 @@ body {
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="api-key-row" style="margin-top:0.8rem;">
+      <!-- Slack -->
+      <div class="settings-card">
+        <h4>Slack Webhook (Alerts)</h4>
+        <p class="card-desc">Required for Slack alert notifications</p>
+        <div class="api-key-row">
           <div class="api-key-icon">💬</div>
           <div class="api-key-info">
-            <div class="api-key-name">Slack Webhook (Alerts)</div>
-            <div class="api-key-value" style="color:var(--text2);font-style:italic;font-family:'DM Sans',sans-serif;">Not configured</div>
+            <div class="api-key-name">Slack</div>
+            <div class="api-key-value" id="slack-display">Not configured</div>
           </div>
           <div class="api-key-actions">
-            <button class="icon-btn" onclick="toggleAddKeyForm('slack')" title="Add">＋</button>
+            <button class="icon-btn" id="slack-eye-btn" onclick="toggleRevealKey('slack')" title="Show/Hide">👁</button>
+            <button class="icon-btn" onclick="toggleAddKeyForm('slack')" title="Edit">✏️</button>
+            <button class="icon-btn danger" onclick="confirmAction('Delete Slack webhook?', 'Slack alerts will stop working.', () => deleteAPIKey('slack'))" title="Delete">🗑</button>
           </div>
         </div>
-
         <div class="add-key-form" id="slack-form">
           <div class="form-group">
             <label>Slack Webhook URL</label>
@@ -852,41 +601,42 @@ body {
     <div class="settings-section" id="section-notifications">
       <div class="section-header">
         <h2>Notifications</h2>
-        <p>Control when and how PRISM sends you alerts</p>
+        <p>Control when and how PRISM alerts you</p>
       </div>
-
       <div class="settings-card">
         <h4>Email Notifications</h4>
         <p class="card-desc">Alerts sent to your registered email</p>
         <div class="toggle-row">
           <div class="toggle-info"><h5>Query Alerts</h5><p>Notify when a query fails or takes too long</p></div>
-          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="notif_query_alerts"><span class="toggle-slider"></span></label>
         </div>
         <div class="toggle-row">
           <div class="toggle-info"><h5>Weekly Summary</h5><p>Weekly usage report every Monday</p></div>
-          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="notif_weekly_summary"><span class="toggle-slider"></span></label>
         </div>
         <div class="toggle-row">
           <div class="toggle-info"><h5>Billing Alerts</h5><p>Notify before plan renewal and payment issues</p></div>
-          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="notif_billing_alerts"><span class="toggle-slider"></span></label>
         </div>
         <div class="toggle-row">
-          <div class="toggle-info"><h5>Product Updates</h5><p>New features and announcements from PRISM</p></div>
-          <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+          <div class="toggle-info"><h5>Product Updates</h5><p>New features and announcements</p></div>
+          <label class="toggle"><input type="checkbox" id="notif_product_updates"><span class="toggle-slider"></span></label>
         </div>
       </div>
-
       <div class="settings-card">
         <h4>In-App Notifications</h4>
         <p class="card-desc">Alerts shown inside the app</p>
         <div class="toggle-row">
           <div class="toggle-info"><h5>Query Success</h5><p>Show toast when query completes</p></div>
-          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="notif_query_success"><span class="toggle-slider"></span></label>
         </div>
         <div class="toggle-row">
           <div class="toggle-info"><h5>Connection Status</h5><p>Alert when a database connection drops</p></div>
-          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="notif_connection_status"><span class="toggle-slider"></span></label>
         </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" id="save-notifications-btn" onclick="saveNotifications()">Save Notifications</button>
       </div>
     </div>
 
@@ -896,46 +646,44 @@ body {
         <h2>Preferences</h2>
         <p>Customize your query and export defaults</p>
       </div>
-
       <div class="settings-card">
         <h4>Query Defaults</h4>
         <p class="card-desc">Set default behavior for all queries</p>
         <div class="form-group">
           <label>Default Row Limit</label>
-          <select class="form-input">
-            <option>100 rows</option>
-            <option selected>500 rows</option>
-            <option>1000 rows</option>
-            <option>All rows</option>
+          <select class="form-input" id="pref_row_limit">
+            <option value="100">100 rows</option>
+            <option value="500">500 rows</option>
+            <option value="1000">1000 rows</option>
+            <option value="9999">All rows</option>
           </select>
         </div>
         <div class="toggle-row">
           <div class="toggle-info"><h5>Show SQL by Default</h5><p>Always show generated SQL in results</p></div>
-          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="pref_show_sql"><span class="toggle-slider"></span></label>
         </div>
         <div class="toggle-row">
           <div class="toggle-info"><h5>Show Explanation by Default</h5><p>Always show AI explanation of query</p></div>
-          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="pref_show_explanation"><span class="toggle-slider"></span></label>
         </div>
       </div>
-
       <div class="settings-card">
         <h4>Export Defaults</h4>
         <p class="card-desc">Set your preferred export format</p>
         <div class="form-group">
           <label>Default Export Format</label>
-          <select class="form-input">
-            <option>CSV</option>
-            <option selected>Excel (.xlsx)</option>
-            <option>PDF</option>
+          <select class="form-input" id="pref_export_format">
+            <option value="csv">CSV</option>
+            <option value="xlsx">Excel (.xlsx)</option>
+            <option value="pdf">PDF</option>
           </select>
         </div>
         <div class="form-group">
           <label>Default Filename Prefix</label>
-          <input type="text" class="form-input" placeholder="e.g. prism_export" value="prism_export">
+          <input type="text" class="form-input" id="pref_filename_prefix" placeholder="e.g. prism_export">
         </div>
         <div class="form-actions">
-          <button class="btn-save" onclick="showToast('Preferences saved!', 'success')">Save Preferences</button>
+          <button class="btn-save" id="save-preferences-btn" onclick="savePreferences()">Save Preferences</button>
         </div>
       </div>
     </div>
@@ -946,28 +694,20 @@ body {
         <h2>Danger Zone</h2>
         <p>Irreversible actions — please be careful</p>
       </div>
-
       <div class="danger-card">
-        <h4>Clear Query History</h4>
-        <p>Permanently delete all your past queries and results. This cannot be undone.</p>
-        <button class="btn-danger-sm" onclick="confirmAction('Clear all query history?', 'This will permanently delete all your past queries. This cannot be undone.', clearHistory)">Clear Query History</button>
+        <h4>Sign Out</h4>
+        <p>Sign out of this PRISM session.</p>
+        <button class="btn-danger-sm" onclick="confirmAction('Sign out?', 'You will be returned to the login screen.', signOut)">Sign Out</button>
       </div>
-
-      <div class="danger-card">
-        <h4>Reset All Settings</h4>
-        <p>Reset all app preferences, API keys, and notification settings to default values.</p>
-        <button class="btn-danger-sm" onclick="confirmAction('Reset all settings?', 'All your preferences and API keys will be cleared. This cannot be undone.', resetSettings)">Reset All Settings</button>
-      </div>
-
       <div class="danger-card">
         <h4>Delete Account</h4>
-        <p>Permanently delete your PRISM account and all associated data. This action is irreversible and all your data will be lost.</p>
-        <button class="btn-danger-sm" onclick="confirmAction('Delete your account?', 'This will permanently delete your account and all data. There is no going back.', deleteAccount)">Delete My Account</button>
+        <p>Permanently delete your PRISM account, all saved queries, connections, and settings. This cannot be undone.</p>
+        <button class="btn-danger-sm" onclick="confirmAction('Delete your account?', 'This will permanently delete your account and ALL data. There is absolutely no going back.', deleteAccount)">Delete My Account</button>
       </div>
     </div>
 
-  </div>
-</div>
+  </div><!-- /settings-content -->
+</div><!-- /page-layout -->
 
 <!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="confirmModal">
@@ -985,7 +725,385 @@ body {
 <div class="toast-container" id="toast-container"></div>
 
 <script>
-// Section switching
+// ─────────────────────────────────────────────────────────
+// CONFIG — matches your existing app.js setup
+// ─────────────────────────────────────────────────────────
+const API_BASE = 'http://localhost:8000';  // same as your other pages
+
+function getToken() {
+  // Try same sources your existing app.js uses
+  return localStorage.getItem('access_token') ||
+         sessionStorage.getItem('access_token') ||
+         localStorage.getItem('prism_token') || '';
+}
+
+async function prismApi(method, path, body = null) {
+  const token = getToken();
+  if (!token) { redirectToLogin(); return null; }
+
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, opts);
+    if (res.status === 401) { redirectToLogin(); return null; }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Request failed');
+    return data;
+  } catch (err) {
+    showToast(err.message, 'error');
+    return null;
+  }
+}
+
+function redirectToLogin() {
+  localStorage.removeItem('access_token');
+  sessionStorage.removeItem('access_token');
+  window.location.href = 'index.html';
+}
+
+function goBack() {
+  // Electron: try IPC, fallback to history
+  if (window.electronAPI && window.electronAPI.goBack) window.electronAPI.goBack();
+  else window.location.href = 'index.html?skip=true';
+}
+
+// ─────────────────────────────────────────────────────────
+// APP STATE
+// ─────────────────────────────────────────────────────────
+let currentSettings = {};
+let currentAPIKeys = {};
+let revealedKeys = {};           // service -> full key string
+let activeTheme = 'dark';
+let activeFontSize = 'medium';
+let activeDensity = 'comfortable';
+
+// ─────────────────────────────────────────────────────────
+// LOAD ALL SETTINGS ON PAGE START
+// ─────────────────────────────────────────────────────────
+async function loadSettings() {
+  const data = await prismApi('GET', '/api/settings');
+  if (!data) return;
+
+  const s = data.settings || {};
+  const keys = data.api_keys || {};
+  currentSettings = s;
+  currentAPIKeys = keys;
+
+  // Topbar email
+  const email = data.email || '';
+  document.getElementById('topbar-email').textContent = email;
+  document.getElementById('profile-email-display').textContent = email;
+
+  // Profile
+  document.getElementById('profile-name').value = s.full_name || '';
+  document.getElementById('profile-company').value = s.company_name || '';
+  document.getElementById('profile-role').value = s.role_title || '';
+  updateAvatarDisplay(s.full_name || email);
+
+  // Appearance
+  activeTheme = s.theme || 'dark';
+  activeFontSize = s.font_size || 'medium';
+  activeDensity = s.density || 'comfortable';
+  highlightTheme(activeTheme);
+  highlightFontSize(activeFontSize);
+  highlightDensity(activeDensity);
+
+  // Notifications
+  setToggle('notif_query_alerts',      s.notif_query_alerts      ?? true);
+  setToggle('notif_weekly_summary',    s.notif_weekly_summary     ?? true);
+  setToggle('notif_billing_alerts',    s.notif_billing_alerts     ?? true);
+  setToggle('notif_product_updates',   s.notif_product_updates    ?? false);
+  setToggle('notif_query_success',     s.notif_query_success      ?? true);
+  setToggle('notif_connection_status', s.notif_connection_status  ?? true);
+
+  // Preferences
+  setSelect('pref_row_limit',      String(s.pref_row_limit || 500));
+  setSelect('pref_export_format',  s.pref_export_format || 'xlsx');
+  setToggle('pref_show_sql',         s.pref_show_sql         ?? true);
+  setToggle('pref_show_explanation', s.pref_show_explanation ?? true);
+  document.getElementById('pref_filename_prefix').value = s.pref_filename_prefix || 'prism_export';
+
+  // API Keys — show preview or "Not configured"
+  renderAPIKeyDisplay('openai',   keys.openai);
+  renderAPIKeyDisplay('sendgrid', keys.sendgrid);
+  renderAPIKeyDisplay('slack',    keys.slack);
+
+  // Session info
+  document.getElementById('session-info-text').textContent =
+    `Signed in as ${email} · JWT session active`;
+}
+
+// ─────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────
+function setToggle(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.checked = val;
+}
+
+function setSelect(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  for (let opt of el.options) { if (opt.value === val) { opt.selected = true; break; } }
+}
+
+function updateAvatarDisplay(name) {
+  const initial = name ? name.charAt(0).toUpperCase() : '?';
+  document.getElementById('avatar-display').textContent = initial;
+  document.getElementById('display-name').textContent = name || '—';
+  document.getElementById('display-role').textContent =
+    document.getElementById('profile-role').value || '—';
+}
+
+function renderAPIKeyDisplay(service, preview) {
+  const el = document.getElementById(`${service}-display`);
+  if (!el) return;
+  if (preview) {
+    el.textContent = `••••••••••••••••${preview}`;
+    el.style.fontFamily = "'Courier New', monospace";
+  } else {
+    el.textContent = 'Not configured';
+    el.style.fontFamily = 'inherit';
+    el.style.fontStyle = 'italic';
+  }
+}
+
+function setSavingState(btnId, saving) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (saving) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Saving…';
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = 'Save Changes';
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// PROFILE SAVE
+// ─────────────────────────────────────────────────────────
+async function saveProfile() {
+  const btn = document.getElementById('save-profile-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  const body = {
+    full_name: document.getElementById('profile-name').value.trim(),
+    company_name: document.getElementById('profile-company').value.trim(),
+    role_title: document.getElementById('profile-role').value.trim()
+  };
+
+  const res = await prismApi('PUT', '/api/settings/profile', body);
+  btn.disabled = false;
+  btn.textContent = 'Save Changes';
+
+  if (res) {
+    updateAvatarDisplay(body.full_name);
+    showToast('Profile updated!', 'success');
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// PASSWORD CHANGE
+// ─────────────────────────────────────────────────────────
+async function changePassword() {
+  const newPass = document.getElementById('new-password').value;
+  const confirm = document.getElementById('confirm-password').value;
+
+  if (!newPass || !confirm) { showToast('Please fill both fields', 'error'); return; }
+  if (newPass !== confirm) { showToast('Passwords do not match', 'error'); return; }
+  if (newPass.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+
+  const btn = document.getElementById('save-password-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Updating…';
+
+  const res = await prismApi('POST', '/api/settings/password', {
+    current_password: '',   // Supabase admin API doesn't need current pass
+    new_password: newPass
+  });
+
+  btn.disabled = false; btn.textContent = 'Update Password';
+  if (res) {
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    showToast('Password updated successfully!', 'success');
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// APPEARANCE
+// ─────────────────────────────────────────────────────────
+function highlightTheme(val) {
+  document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('selected'));
+  const el = document.getElementById(`theme-${val}`);
+  if (el) el.classList.add('selected');
+}
+function highlightFontSize(val) {
+  document.querySelectorAll('.font-size-options .size-btn').forEach(b => {
+    b.classList.toggle('active', b.id === `font-${val}`);
+  });
+}
+function highlightDensity(val) {
+  // Only toggle buttons inside the density card (last font-size-options group)
+  const btns = document.querySelectorAll('#section-appearance .settings-card:last-of-type .size-btn');
+  btns.forEach(b => b.classList.toggle('active', b.id === `density-${val}`));
+}
+
+function selectTheme(el, val) {
+  activeTheme = val;
+  highlightTheme(val);
+}
+function selectFontSize(el, val) {
+  activeFontSize = val;
+  highlightFontSize(val);
+}
+function selectDensity(el, val) {
+  activeDensity = val;
+  highlightDensity(val);
+}
+
+async function saveAppearance() {
+  const btn = document.getElementById('save-appearance-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  const res = await prismApi('PUT', '/api/settings/appearance', {
+    theme: activeTheme,
+    font_size: activeFontSize,
+    density: activeDensity
+  });
+
+  btn.disabled = false; btn.textContent = 'Save Appearance';
+  if (res) showToast('Appearance saved!', 'success');
+}
+
+// ─────────────────────────────────────────────────────────
+// API KEYS
+// ─────────────────────────────────────────────────────────
+function toggleAddKeyForm(service) {
+  document.getElementById(`${service}-form`).classList.toggle('open');
+}
+
+async function saveAPIKey(service) {
+  const input = document.getElementById(`${service}-key-input`);
+  const val = input ? input.value.trim() : '';
+  if (!val) { showToast('Please enter a key value', 'error'); return; }
+
+  const res = await prismApi('PUT', '/api/settings/api-keys', { service, key_value: val });
+  if (res) {
+    currentAPIKeys[service] = res.preview;
+    renderAPIKeyDisplay(service, res.preview);
+    revealedKeys[service] = null; // clear any revealed state
+    document.getElementById(`${service}-form`).classList.remove('open');
+    input.value = '';
+    showToast(`${service} key saved securely!`, 'success');
+  }
+}
+
+async function deleteAPIKey(service) {
+  const res = await prismApi('DELETE', `/api/settings/api-keys/${service}`);
+  if (res) {
+    delete currentAPIKeys[service];
+    revealedKeys[service] = null;
+    renderAPIKeyDisplay(service, null);
+    showToast(`${service} key deleted`, 'success');
+  }
+}
+
+async function toggleRevealKey(service) {
+  const display = document.getElementById(`${service}-display`);
+  const btn = document.getElementById(`${service}-eye-btn`);
+  if (!currentAPIKeys[service]) return;  // not configured
+
+  if (revealedKeys[service]) {
+    // Hide it
+    revealedKeys[service] = null;
+    renderAPIKeyDisplay(service, currentAPIKeys[service]);
+    btn.textContent = '👁';
+  } else {
+    // Fetch from backend
+    btn.textContent = '⏳';
+    const res = await prismApi('GET', `/api/settings/api-keys/${service}/reveal`);
+    if (res) {
+      revealedKeys[service] = res.key;
+      display.textContent = res.key;
+      display.style.fontFamily = "'Courier New', monospace";
+      btn.textContent = '🙈';
+    } else {
+      btn.textContent = '👁';
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────
+async function saveNotifications() {
+  const btn = document.getElementById('save-notifications-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  const res = await prismApi('PUT', '/api/settings/notifications', {
+    notif_query_alerts:      document.getElementById('notif_query_alerts').checked,
+    notif_weekly_summary:    document.getElementById('notif_weekly_summary').checked,
+    notif_billing_alerts:    document.getElementById('notif_billing_alerts').checked,
+    notif_product_updates:   document.getElementById('notif_product_updates').checked,
+    notif_query_success:     document.getElementById('notif_query_success').checked,
+    notif_connection_status: document.getElementById('notif_connection_status').checked
+  });
+
+  btn.disabled = false; btn.textContent = 'Save Notifications';
+  if (res) showToast('Notification preferences saved!', 'success');
+}
+
+// ─────────────────────────────────────────────────────────
+// PREFERENCES
+// ─────────────────────────────────────────────────────────
+async function savePreferences() {
+  const btn = document.getElementById('save-preferences-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  const rowLimitVal = document.getElementById('pref_row_limit').value;
+  const res = await prismApi('PUT', '/api/settings/preferences', {
+    pref_row_limit:        parseInt(rowLimitVal) || 500,
+    pref_show_sql:         document.getElementById('pref_show_sql').checked,
+    pref_show_explanation: document.getElementById('pref_show_explanation').checked,
+    pref_export_format:    document.getElementById('pref_export_format').value,
+    pref_filename_prefix:  document.getElementById('pref_filename_prefix').value.trim() || 'prism_export'
+  });
+
+  btn.disabled = false; btn.textContent = 'Save Preferences';
+  if (res) showToast('Preferences saved!', 'success');
+}
+
+// ─────────────────────────────────────────────────────────
+// SIGN OUT / DELETE ACCOUNT
+// ─────────────────────────────────────────────────────────
+function signOut() {
+  localStorage.removeItem('access_token');
+  sessionStorage.removeItem('access_token');
+  localStorage.removeItem('prism_token');
+  showToast('Signing out…', 'info');
+  setTimeout(() => window.location.href = 'index.html', 800);
+}
+
+async function deleteAccount() {
+  const res = await prismApi('DELETE', '/api/settings/account');
+  if (res) {
+    showToast('Account deleted. Goodbye.', 'info');
+    setTimeout(signOut, 1500);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// SECTION SWITCHING
+// ─────────────────────────────────────────────────────────
 function showSection(name, el) {
   document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -993,100 +1111,9 @@ function showSection(name, el) {
   el.classList.add('active');
 }
 
-// Profile
-function saveProfile() {
-  const name = document.getElementById('profile-name').value;
-  document.getElementById('display-name').textContent = name;
-  document.getElementById('avatar-display').textContent = name.charAt(0).toUpperCase();
-  document.getElementById('topbar-email').textContent = document.getElementById('profile-email').value;
-  showToast('Profile updated successfully!', 'success');
-}
-
-function resetProfile() {
-  document.getElementById('profile-name').value = 'Admin';
-  document.getElementById('profile-email').value = 'admin@prism.com';
-}
-
-// Password
-function changePassword() {
-  const current = document.getElementById('current-password').value;
-  const newPass = document.getElementById('new-password').value;
-  const confirm = document.getElementById('confirm-password').value;
-  if (!current || !newPass || !confirm) { showToast('Please fill all fields', 'error'); return; }
-  if (newPass !== confirm) { showToast('Passwords do not match', 'error'); return; }
-  if (newPass.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
-  showToast('Password updated successfully!', 'success');
-  document.getElementById('current-password').value = '';
-  document.getElementById('new-password').value = '';
-  document.getElementById('confirm-password').value = '';
-}
-
-// API Keys
-let openaiKeyVisible = false;
-const maskedKey = 'sk-••••••••••••••••••••••••••••••3a8f';
-const realKey = 'sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxx3a8f';
-
-function toggleKeyVisibility(service) {
-  if (service === 'openai') {
-    openaiKeyVisible = !openaiKeyVisible;
-    document.getElementById('openai-display').textContent = openaiKeyVisible ? realKey : maskedKey;
-  }
-}
-
-function toggleAddKeyForm(service) {
-  const form = document.getElementById(service + '-form');
-  form.classList.toggle('open');
-}
-
-function saveAPIKey(service) {
-  const input = document.getElementById(service + '-key-input');
-  if (!input.value) { showToast('Please enter a key', 'error'); return; }
-  showToast(`${service.charAt(0).toUpperCase() + service.slice(1)} key saved securely!`, 'success');
-  document.getElementById(service + '-form').classList.remove('open');
-  input.value = '';
-}
-
-function deleteOpenAIKey() {
-  document.getElementById('openai-display').textContent = 'Not configured';
-  showToast('OpenAI key deleted', 'success');
-}
-
-// Theme
-function selectTheme(el, theme) {
-  document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  showToast(`Theme set to ${theme}`, 'success');
-}
-
-// Font size
-function selectFontSize(el, size) {
-  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  showToast(`Font size set to ${size}`, 'success');
-}
-
-function selectDensity(el, density) {
-  el.parentElement.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  showToast(`Density set to ${density}`, 'success');
-}
-
-// Sessions
-function revokeSession(btn) {
-  btn.closest('.session-row').remove();
-  showToast('Session revoked', 'success');
-}
-
-function revokeAllSessions() {
-  showToast('All other sessions signed out', 'success');
-}
-
-// Danger zone
-function clearHistory() { showToast('Query history cleared', 'success'); }
-function resetSettings() { showToast('Settings reset to defaults', 'success'); }
-function deleteAccount() { showToast('Account deletion requested', 'error'); }
-
-// Confirm modal
+// ─────────────────────────────────────────────────────────
+// CONFIRM MODAL
+// ─────────────────────────────────────────────────────────
 let pendingAction = null;
 
 function confirmAction(title, desc, action) {
@@ -1109,7 +1136,9 @@ document.getElementById('confirmModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-// Toast
+// ─────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -1119,6 +1148,14 @@ function showToast(message, type = 'info') {
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3500);
 }
+
+// ─────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (!getToken()) { redirectToLogin(); return; }
+  loadSettings();
+});
 </script>
 
 </body>

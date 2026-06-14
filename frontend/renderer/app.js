@@ -5,6 +5,9 @@ class AICopilotApp {
         this.connections = [];
         this.currentConnection = null;
         this.currentQuery = null;
+        this.activeClientId = null;       // NEW: multi-client
+        this.clients = [];                 // NEW: multi-client
+        this.selectedClientColor = '#e8455a'; // NEW: multi-client
         this.init();
     }
 
@@ -17,6 +20,7 @@ class AICopilotApp {
         this.initKeyboardShortcuts();
         this.renderHistory();
         this.checkOnboarding();
+        this.loadClients(); // NEW: multi-client
     }
 
     // ── Auth Token ──────────────────────────────────────────────────────────
@@ -568,6 +572,7 @@ class AICopilotApp {
         else if (viewName === 'reports') this.populateReportConnectionSelect();
         else if (viewName === 'exports') this.loadQueryHistory();
         else if (viewName === 'dashboard') this.renderDashboard();
+        else if (viewName === 'clients') this.renderClientsGrid(); // NEW
         else if (viewName === 'alerts') {
             this.renderAlertRules();
             this.renderAlertHistory();
@@ -576,9 +581,10 @@ class AICopilotApp {
     }
 
     // ── Connections ─────────────────────────────────────────────────────────
-    async loadConnections() {
+   async loadConnections() {
         try {
-            const res = await this.authFetch(`${API}/connections`);
+            const clientParam = this.activeClientId ? `?client_id=${this.activeClientId}` : '';
+            const res = await this.authFetch(`${API}/connections${clientParam}`);
             if (!res) return;
             const result = await res.json();
             this.connections = Array.isArray(result) ? result : [];
@@ -657,6 +663,15 @@ class AICopilotApp {
             if (e.target.value === 'postgresql') port.value = '5432';
             else if (['mysql', 'mariadb'].includes(e.target.value)) port.value = '3306';
         };
+
+        // Pre-select active client in the modal dropdown if clients exist
+        const clientSelect = document.getElementById('conn-client-id');
+        if (clientSelect) {
+            clientSelect.innerHTML = '<option value="">No client (shared)</option>' +
+                this.clients.map(c =>
+                    `<option value="${c.id}" ${this.activeClientId === c.id ? 'selected' : ''}>${this.escapeHtml(c.name)}</option>`
+                ).join('');
+        }
     }
 
     closeConnectionModal() {
@@ -665,14 +680,16 @@ class AICopilotApp {
 
     async saveConnection(e) {
         e.preventDefault();
+      const clientSelectEl = document.getElementById('conn-client-id');
         const connection = {
-            name:     document.getElementById('conn-name').value,
-            dialect:  document.getElementById('conn-dialect').value,
-            host:     document.getElementById('conn-host').value,
-            port:     parseInt(document.getElementById('conn-port').value),
-            database: document.getElementById('conn-database').value,
-            username: document.getElementById('conn-username').value,
-            password: document.getElementById('conn-password').value,
+            name:      document.getElementById('conn-name').value,
+            dialect:   document.getElementById('conn-dialect').value,
+            host:      document.getElementById('conn-host').value,
+            port:      parseInt(document.getElementById('conn-port').value),
+            database:  document.getElementById('conn-database').value,
+            username:  document.getElementById('conn-username').value,
+            password:  document.getElementById('conn-password').value,
+            client_id: clientSelectEl ? (clientSelectEl.value || null) : (this.activeClientId || null),
         };
         try {
             const res = await this.authFetch(`${API}/connections`, {
@@ -767,12 +784,13 @@ class AICopilotApp {
         btn.disabled = true;
 
         try {
-            const res = await this.authFetch(`${API}/query`, {
+           const res = await this.authFetch(`${API}/query`, {
                 method: 'POST',
                 body: JSON.stringify({
                     connection_id: connectionId,
                     natural_language: naturalQuery,
-                    include_explanation: includeExpl
+                    include_explanation: includeExpl,
+                    client_id: this.activeClientId || null
                 })
             });
             if (!res) return;
@@ -1054,7 +1072,8 @@ class AICopilotApp {
             chartType, xCol, yCol,
             columns: this.currentQuery.columns,
             results: this.currentQuery.results,
-            pinnedAt: new Date().toISOString()
+            pinnedAt: new Date().toISOString(),
+            clientId: this.activeClientId, // NEW: tag chart to active client
         };
 
         if (pinned.some(p => p.title === pin.title)) {
@@ -1068,16 +1087,19 @@ class AICopilotApp {
     }
 
     renderDashboard() {
-        const pinned = JSON.parse(localStorage.getItem('pinnedCharts') || '[]');
+        const allPinned = JSON.parse(localStorage.getItem('pinnedCharts') || '[]');
+        // NEW: filter by active client if one selected
+        const pinned = this.activeClientId
+            ? allPinned.filter(p => p.clientId === this.activeClientId)
+            : allPinned;
+
         const container = document.getElementById('dashboard-content');
         if (!container) return;
 
         if (pinned.length === 0) {
             container.innerHTML = `
-                <div class="empty-state" style="grid-column:1/-1;">
-                    <div class="empty-state-icon">📌</div>
-                    <div class="empty-state-text">No pinned charts yet</div>
-                    <div class="empty-state-sub">Run a query and click "Pin to Dashboard"</div>
+                <div style="color:var(--text-muted);text-align:center;padding:40px;grid-column:1/-1;">
+                    No pinned charts yet. Run a query and click "Pin to Dashboard"!
                 </div>`;
             return;
         }
@@ -1086,7 +1108,7 @@ class AICopilotApp {
             <div class="dashboard-card">
                 <div class="dashboard-card-header">
                     <div class="dashboard-card-title">📌 ${this.escapeHtml(pin.title)}</div>
-                    <button class="dashboard-card-unpin" onclick="app.unpinChart(${i})">×</button>
+                    <button class="dashboard-card-unpin" onclick="app.unpinChart(${allPinned.indexOf(pin)})">×</button>
                 </div>
                 <canvas id="dashboard-chart-${pin.id}" height="200"></canvas>
             </div>
@@ -1250,7 +1272,8 @@ class AICopilotApp {
     // ── Query History (Exports view) ─────────────────────────────────────────
     async loadQueryHistory() {
         try {
-            const res = await this.authFetch(`${API}/query/history?limit=50`);
+           const clientParam = this.activeClientId ? `&client_id=${this.activeClientId}` : '';
+            const res = await this.authFetch(`${API}/query/history?limit=50${clientParam}`);
             if (!res) return;
             const result = await res.json();
             this.renderQueryHistory(result.history || []);
@@ -1627,6 +1650,176 @@ class AICopilotApp {
         const key = this.getOnboardingKey();
         localStorage.removeItem(key);
         this.showOnboarding(key);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // ── NEW: Multi-Client Workspace ──────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+
+    async loadClients() {
+        try {
+            const res = await this.authFetch(`${API}/clients`);
+            if (!res || !res.ok) return;
+            this.clients = await res.json();
+            this.renderClientTabs();
+            this.renderClientsGrid();
+        } catch (e) {
+            // silently fail — additive feature
+        }
+    }
+
+    renderClientTabs() {
+        const bar = document.getElementById('client-bar');
+        const tabs = document.getElementById('client-tabs');
+        if (!bar || !tabs) return;
+
+        if (this.clients.length === 0) {
+            bar.style.display = 'none';
+            return;
+        }
+
+        bar.style.display = 'flex';
+
+        const allTab = `<button class="client-tab ${this.activeClientId === null ? 'active' : ''}"
+            style="${this.activeClientId === null ? 'background:var(--accent);border-color:var(--accent);color:white;' : ''}"
+            onclick="app.setActiveClient(null)">All Clients</button>`;
+
+        const clientTabs = this.clients.map(c => `
+            <button class="client-tab ${this.activeClientId === c.id ? 'active' : ''}"
+                style="${this.activeClientId === c.id ? `background:${c.color};border-color:${c.color};color:white;` : ''}"
+                onclick="app.setActiveClient('${c.id}')">
+                <span class="client-dot" style="background:${c.color}"></span>
+                ${this.escapeHtml(c.name)}
+            </button>
+        `).join('');
+
+        tabs.innerHTML = allTab + clientTabs;
+    }
+
+   setActiveClient(clientId) {
+        this.activeClientId = clientId;
+        if (clientId) {
+            localStorage.setItem('active_client_id', clientId);
+        } else {
+            localStorage.removeItem('active_client_id');
+        }
+        this.renderClientTabs();
+        const client = this.clients.find(c => c.id === clientId);
+        const label = client ? client.name : 'All Clients';
+        this.showToast(`Switched to: ${label}`, 'info');
+        this.loadConnections();
+    }
+
+    renderClientsGrid() {
+        const grid = document.getElementById('clients-grid');
+        if (!grid) return;
+
+        if (this.clients.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state" style="grid-column:1/-1;">
+                    <div class="empty-state-icon">🏢</div>
+                    <div class="empty-state-text">No clients yet</div>
+                    <div class="empty-state-sub">Add your first client to organise your agency work</div>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = this.clients.map(c => `
+            <div class="client-card">
+                <div class="client-card-header">
+                    <div class="client-color-badge" style="background:${c.color}">
+                        ${c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="client-card-name">${this.escapeHtml(c.name)}</div>
+                        <div class="client-card-industry">${this.escapeHtml(c.industry || 'No industry set')}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:4px;">
+                    <button class="btn-secondary" style="flex:1;font-size:12px;padding:6px 8px;" onclick="app.setActiveClient('${c.id}');app.switchView('query')">
+                         📝 Query
+                    </button>
+                    <button class="btn-secondary" style="flex:1;font-size:12px;padding:6px 8px;" onclick="app.setActiveClient('${c.id}');app.openUploadForClient('${c.id}')">
+                         📂 Upload
+                    </button>
+                    <button class="btn-secondary" style="flex:1;font-size:12px;padding:6px 8px;" onclick="app.setActiveClient('${c.id}');app.switchView('dashboard')">
+                        📌 Dashboard
+                    </button>
+                    <button class="btn-danger" style="font-size:12px;padding:6px 10px;" onclick="app.deleteClient('${c.id}')">🗑</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    showAddClientModal() {
+        this.selectedClientColor = '#e8455a';
+        document.getElementById('client-name-input').value = '';
+        document.getElementById('client-industry-input').value = '';
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        const firstSwatch = document.querySelector('.color-swatch[data-color="#e8455a"]');
+        if (firstSwatch) firstSwatch.classList.add('selected');
+        document.getElementById('client-modal-overlay').classList.remove('hidden');
+        setTimeout(() => document.getElementById('client-name-input').focus(), 100);
+    }
+
+    closeClientModal() {
+        document.getElementById('client-modal-overlay').classList.add('hidden');
+    }
+
+    selectColor(el, color) {
+        this.selectedClientColor = color;
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+
+    async saveClient() {
+        const name = document.getElementById('client-name-input').value.trim();
+        const industry = document.getElementById('client-industry-input').value.trim();
+        if (!name) { this.showToast('Please enter a client name', 'warning'); return; }
+
+        try {
+            const res = await this.authFetch(`${API}/clients`, {
+                method: 'POST',
+                body: JSON.stringify({ name, industry, color: this.selectedClientColor })
+            });
+            if (!res || !res.ok) {
+                const err = await res?.json().catch(() => ({}));
+                this.showToast(err.detail || 'Failed to save client', 'error');
+                return;
+            }
+            const client = await res.json();
+            this.clients.push(client);
+            this.closeClientModal();
+            this.renderClientTabs();
+            this.renderClientsGrid();
+            this.showToast(`Client "${name}" added!`, 'success');
+        } catch (e) {
+            this.showToast('Failed to save client', 'error');
+        }
+    }
+    openUploadForClient(clientId) {
+        localStorage.setItem('active_client_id', clientId);
+        if (window.api && window.api.openUpload) {
+            window.api.openUpload();
+        } else {
+            window.open('upload.html', '_blank');
+        }
+    }
+
+    async deleteClient(clientId) {
+        const client = this.clients.find(c => c.id === clientId);
+        if (!confirm(`Delete client "${client?.name}"? This won't delete their connections.`)) return;
+        try {
+            const res = await this.authFetch(`${API}/clients/${clientId}`, { method: 'DELETE' });
+            if (!res || !res.ok) { this.showToast('Failed to delete client', 'error'); return; }
+            this.clients = this.clients.filter(c => c.id !== clientId);
+            if (this.activeClientId === clientId) this.activeClientId = null;
+            this.renderClientTabs();
+            this.renderClientsGrid();
+            this.showToast('Client deleted', 'success');
+        } catch (e) {
+            this.showToast('Failed to delete client', 'error');
+        }
     }
 }
 

@@ -1378,14 +1378,22 @@
         }
 
         if (!sessionId) {
-            try {
-                const res  = await fetch(`${API}/upload/session/new`, { method: 'POST' });
-                const data = await res.json();
-                sessionId = data.session_id;
-            } catch (e) {
-                showToast('Failed to create upload session', 'error');
-                return;
-            }
+           try {
+            const activeClientId = window.opener
+                ? null
+                : (localStorage.getItem('active_client_id') || null);
+
+            const res  = await fetch(`${API}/upload/session/new`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client_id: activeClientId })
+            });
+            const data = await res.json();
+            sessionId = data.session_id;
+        } catch (e) {
+            showToast('Failed to create upload session', 'error');
+            return;
+        }
         }
 
         for (const file of files) {
@@ -1420,12 +1428,13 @@
 
             localStorage.setItem('upload_session', JSON.stringify({
                 sessionId,
-                files:    result.files,
-                columns:  result.columns,
-                rowCount: result.row_count,
-                preview:  result.preview
+                files:     result.files,
+                columns:   result.columns,
+                rowCount:  result.row_count,
+                preview:   result.preview,
+                client_id: result.client_id || null
             }));
-
+            
             updateSharedUI({
                 columns:       result.columns,
                 rowCount:      result.row_count,
@@ -1565,9 +1574,12 @@
     }
 
     // ── Restore session ────────────────────────────────────────────────────
-    async function restoreSession() {
-        const saved = localStorage.getItem('upload_session');
-        if (!saved) return;
+   async function restoreSession() {
+    const saved = localStorage.getItem('upload_session');
+    if (!saved) return;
+    const activeClientId = localStorage.getItem('active_client_id') || null;
+    const s = JSON.parse(saved);
+    if (s.client_id !== activeClientId) return; // don't restore wrong client's session
         try {
             const s = JSON.parse(saved);
             const res = await fetch(`${API}/upload/session/${s.sessionId}/query`, {

@@ -104,6 +104,7 @@ class DatabaseConnection(BaseModel):
 class QueryRequest(BaseModel):
     connection_id: str = Field(...)
     natural_language: str = Field(..., min_length=1, max_length=5000)
+    client_id: Optional[str] = Field(None, description="Active client context for this query")
     dialect: Optional[DatabaseDialect] = Field(None)
     include_explanation: bool = Field(default=True)
     max_results: int = Field(default=1000, ge=1, le=100000)

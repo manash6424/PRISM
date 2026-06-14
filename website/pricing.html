@@ -1,163 +1,536 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pricing — PRISM</title>
-<link rel="stylesheet" href="style.css">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PRISM – Pricing</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:      #0d0f1a;
+      --surface: #131625;
+      --border:  #252a45;
+      --accent:  #6c63ff;
+      --accent2: #a78bfa;
+      --text:    #e8eaf6;
+      --muted:   #6b7280;
+      --success: #22c55e;
+      --gold:    #f59e0b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 60px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent);
+      color: #fff !important;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 600 !important;
+    }
+    .nav-cta:hover { background: #574fd6; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 80px 20px 60px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.4);
+      color: var(--accent2);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── Toggle (monthly — no annual for now) ── */
+    .billing-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.83rem;
+      margin-bottom: 48px;
+    }
+    .billing-note strong { color: var(--success); }
+
+    /* ── Plans ── */
+    .plans-section {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+    .plans-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) { .plans-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; } }
+
+    .plan-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      position: relative;
+      transition: border-color 0.2s, transform 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .plan-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+    .plan-card.featured {
+      border-color: var(--accent);
+      background: linear-gradient(160deg, #131625, #1a1535);
+    }
+
+    .featured-badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+    }
+
+    .plan-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .plan-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+    .plan-price {
+      font-size: 2.6rem;
+      font-weight: 800;
+      line-height: 1;
+      margin: 16px 0 4px;
+    }
+    .plan-price.free-price { color: var(--success); }
+    .plan-price.pro-price  { color: var(--accent); }
+    .plan-price.team-price { color: var(--gold); }
+    .plan-price sub {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--muted);
+      vertical-align: baseline;
+    }
+    .plan-desc { font-size: 0.82rem; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+
+    .feature-list { list-style: none; flex: 1; margin-bottom: 28px; }
+    .feature-list li {
+      font-size: 0.85rem;
+      color: var(--muted);
+      padding: 6px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .feature-list li:last-child { border-bottom: none; }
+    .feature-list .check { color: var(--success); flex-shrink: 0; margin-top: 1px; }
+    .feature-list .na    { color: #3f4460; flex-shrink: 0; }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      text-align: center;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-primary  { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #574fd6; }
+    .btn-outline  { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-gold     { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; }
+    .btn-gold:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Comparison table ── */
+    .compare-section { max-width: 860px; margin: 0 auto 80px; padding: 0 20px; }
+    .compare-section h2 { text-align: center; font-size: 1.5rem; font-weight: 700; margin-bottom: 32px; }
+    .compare-table { width: 100%; border-collapse: collapse; }
+    .compare-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table td {
+      padding: 13px 16px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table td:first-child { color: var(--muted); }
+    .compare-table td:not(:first-child) { text-align: center; font-weight: 600; }
+    .yes { color: var(--success); }
+    .no  { color: #3f4460; }
+
+    /* ── FAQ ── */
+    .faq-section { max-width: 680px; margin: 0 auto 80px; padding: 0 20px; }
+    .faq-section h2 { text-align: center; font-size: 1.5rem; font-weight: 700; margin-bottom: 32px; }
+    details.faq-item {
+      border-top: 1px solid var(--border);
+      padding: 16px 0;
+    }
+    details.faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    details.faq-item summary::after { content: '+'; color: var(--accent); font-size: 1.2rem; }
+    details[open].faq-item summary::after { content: '−'; }
+    details.faq-item p {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-top: 10px;
+      line-height: 1.7;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 32px 20px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e2235;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 22px;
+      font-size: 0.9rem;
+      transition: transform 0.3s ease;
+      z-index: 9999;
+    }
+    .toast.show   { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: var(--success); color: var(--success); }
+    .toast.error   { border-color: #ef4444; color: #ef4444; }
+  </style>
 </head>
 <body>
 
-<nav class="nav">
-  <div class="nav-inner">
-    <a href="homepage.html" class="logo">PRISM</a>
-    <div class="nav-links">
-      <a href="homepage.html#features">Features</a>
-      <a href="homepage.html#how">How it Works</a>
-      <a href="pricing.html">Pricing</a>
-      <a href="about.html">About</a>
-    </div>
-    <a href="login.html" class="btn-nav">Download Free</a>
+<nav>
+  <div class="logo">PRISM<span>.</span></div>
+  <div class="nav-links">
+    <a href="homepage.html">Home</a>
+    <a href="#">Features</a>
+    <a href="pricing.html" style="color:var(--text)">Pricing</a>
+    <a href="about.html">About</a>
+    <a href="login.html" class="nav-cta">Get Started</a>
   </div>
 </nav>
 
-<section class="pricing-hero">
-  <div class="section-tag">Pricing</div>
-  <h1>Simple, honest pricing.</h1>
-  <p>One flat price for your entire agency. No per-seat fees. No hidden charges. Cancel any time.</p>
+<section class="hero">
+  <div class="hero-badge">Simple, transparent pricing</div>
+  <h1>Pay only for what you<br/><span>actually use</span></h1>
+  <p>Start free, upgrade when your agency needs more. Cancel anytime — no lock-in.</p>
 </section>
 
-<div class="pricing-body">
-
-  <div class="pricing-cards">
-
-    <!-- Free -->
-    <div class="pricing-card">
-      <div class="plan-name">Free</div>
-      <div class="plan-price">₹0</div>
-      <div class="plan-desc">During beta. Get started with no credit card.</div>
-      <ul class="plan-features">
-        <li>NL → SQL queries (database)</li>
-        <li>Excel / CSV upload + NL queries</li>
-        <li>Auto charts (bar, line, pie)</li>
-        <li>Export CSV</li>
-        <li>1 database connection</li>
-        <li>Query History (last 10)</li>
-        <li>Dark / Light mode</li>
-        <li class="no">PDF report export</li>
-        <li class="no">KPI Excel Report</li>
-        <li class="no">Auto Marketing Dashboard</li>
-        <li class="no">Multi-file Upload</li>
-        <li class="no">Smart Alerts</li>
-        <li class="no">Saved Queries & Templates</li>
-        <li class="no">Pinned Dashboard</li>
-      </ul>
-      <a href="homepage.html#download" class="btn-plan">Download Free</a>
-    </div>
-
-    <!-- Pro (featured) -->
-    <div class="pricing-card featured">
-      <div class="featured-badge">Most Popular</div>
-      <div class="plan-name">Pro</div>
-      <div class="plan-price">₹999 <span>/ month</span></div>
-      <div class="plan-desc">Everything your agency needs. One flat price, unlimited team members.</div>
-      <ul class="plan-features">
-        <li>Everything in Free</li>
-        <li>Unlimited database connections</li>
-        <li>Multi-file Upload (combine sources)</li>
-        <li>Auto Marketing Dashboard — 8 KPIs</li>
-        <li>One-click PDF Reports (white-label)</li>
-        <li>KPI Excel Report export</li>
-        <li>Smart Alerts (email + Slack)</li>
-        <li>Full Query History (last 500)</li>
-        <li>Saved Queries & Templates</li>
-        <li>Pinned Dashboard (charts persist)</li>
-        <li>Schema Explorer</li>
-        <li>AI Query Suggestions</li>
-        <li>Priority support</li>
-      </ul>
-      <a href="#" class="btn-plan primary-plan">Get Pro — ₹999/mo</a>
-    </div>
-
-    <!-- Coming Soon -->
-    <div class="pricing-card">
-      <div class="plan-name">Agency Team</div>
-      <div class="plan-price">Soon</div>
-      <div class="plan-desc">Multi-client workspace, team roles, and approval workflows. Coming Month 1.</div>
-      <ul class="plan-features">
-        <li>Everything in Pro</li>
-        <li>Multi-client workspace</li>
-        <li>Admin + viewer roles</li>
-        <li>Shared DB connections</li>
-        <li>Team task management</li>
-        <li>Client portal access</li>
-        <li>WhatsApp report delivery</li>
-        <li>Hindi language support</li>
-      </ul>
-      <a href="#" class="btn-plan" style="opacity:0.5; pointer-events:none;">Coming Soon</a>
-    </div>
-
-  </div>
-
-  <!-- FAQ -->
-  <div class="pricing-faq">
-    <h2>Common questions</h2>
-
-    <div class="faq-item">
-      <h3>Is PRISM really ₹999 for the whole agency?</h3>
-      <p>Yes. One subscription covers your entire agency — no per-seat pricing, no matter how many people use it. We think per-seat pricing is a bad deal for agencies.</p>
-    </div>
-
-    <div class="faq-item">
-      <h3>Does my data leave my machine?</h3>
-      <p>Your database data and Excel files never leave your machine. The only thing that goes to our AI server is the question you type (to convert it to SQL or pandas). Query results stay local. Database passwords are encrypted with a private key.</p>
-    </div>
-
-    <div class="faq-item">
-      <h3>What databases does PRISM support?</h3>
-      <p>PostgreSQL, MySQL, and MariaDB. More databases (SQLite, MS SQL Server) are on the roadmap. Excel and CSV files work without any database connection at all.</p>
-    </div>
-
-    <div class="faq-item">
-      <h3>What file types can I upload?</h3>
-      <p>Excel (.xlsx, .xls) and CSV files. You can upload multiple files in one session and query across all of them together — perfect for combining Meta, Google, and Instagram exports.</p>
-    </div>
-
-    <div class="faq-item">
-      <h3>What happens when the free beta ends?</h3>
-      <p>We'll give you at least 30 days notice before switching to paid. Early beta users get a discount. We're not going to pull the rug.</p>
-    </div>
-
-    <div class="faq-item">
-      <h3>How do I pay? Is Razorpay supported?</h3>
-      <p>Payments will be processed via Razorpay — UPI, cards, net banking all supported. Payment integration is coming in Month 2 of our roadmap.</p>
-    </div>
-
-    <div class="faq-item">
-      <h3>Can I cancel any time?</h3>
-      <p>Yes. Cancel from your settings page and your subscription ends at the period end. No questions asked, no retention dark patterns.</p>
-    </div>
-  </div>
-
+<div class="billing-note">
+  💳 Payments via UPI, Cards, Net Banking &nbsp;·&nbsp; <strong>No setup fees</strong> &nbsp;·&nbsp; Cancel anytime
 </div>
 
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-left">
-      <span class="logo">PRISM</span>
-      <p>Built by Manash Mandal & Shreya Kolam<br>for Indian digital marketing agencies.</p>
+<!-- Plans -->
+<section class="plans-section">
+  <div class="plans-grid">
+
+    <!-- Free -->
+    <div class="plan-card">
+      <div class="plan-tag">Starter</div>
+      <div class="plan-name">Free</div>
+      <div class="plan-price free-price">₹0</div>
+      <div class="plan-desc">Try PRISM with no commitment. Perfect for solo analysts exploring the tool.</div>
+      <ul class="feature-list">
+        <li><span class="check">✓</span> 20 NL queries / month</li>
+        <li><span class="check">✓</span> 1 database connection</li>
+        <li><span class="check">✓</span> Excel / CSV upload</li>
+        <li><span class="check">✓</span> CSV export</li>
+        <li><span class="na">✕</span> PDF reports</li>
+        <li><span class="na">✕</span> Marketing dashboard</li>
+        <li><span class="na">✕</span> Team seats</li>
+      </ul>
+      <a href="login.html" class="btn btn-outline">Get started free</a>
     </div>
-    <div class="footer-links">
-      <a href="homepage.html">Home</a>
-      <a href="pricing.html">Pricing</a>
-      <a href="about.html">About</a>
+
+    <!-- Pro -->
+    <div class="plan-card featured">
+      <div class="featured-badge">Most Popular</div>
+      <div class="plan-tag">Professional</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price pro-price">₹999 <sub>/ mo</sub></div>
+      <div class="plan-desc">For individual analysts, freelancers, and small agencies.</div>
+      <ul class="feature-list">
+        <li><span class="check">✓</span> Unlimited NL queries</li>
+        <li><span class="check">✓</span> 5 database connections</li>
+        <li><span class="check">✓</span> Excel / CSV upload</li>
+        <li><span class="check">✓</span> PDF report generation</li>
+        <li><span class="check">✓</span> Auto marketing dashboard</li>
+        <li><span class="check">✓</span> All export formats</li>
+        <li><span class="na">✕</span> Team seats</li>
+      </ul>
+      <button class="btn btn-primary" onclick="startCheckout('pro')" id="btn-pro">
+        Subscribe — ₹999/mo
+      </button>
     </div>
+
+    <!-- Agency -->
+    <div class="plan-card">
+      <div class="plan-tag">Agency</div>
+      <div class="plan-name">Team</div>
+      <div class="plan-price team-price">₹2,499 <sub>/ mo</sub></div>
+      <div class="plan-desc">For growing digital marketing agencies managing multiple clients.</div>
+      <ul class="feature-list">
+        <li><span class="check">✓</span> Everything in Pro</li>
+        <li><span class="check">✓</span> 5 team seats</li>
+        <li><span class="check">✓</span> Unlimited DB connections</li>
+        <li><span class="check">✓</span> Multi-client workspaces</li>
+        <li><span class="check">✓</span> Shared dashboards</li>
+        <li><span class="check">✓</span> WhatsApp report delivery</li>
+        <li><span class="check">✓</span> Priority support</li>
+      </ul>
+      <button class="btn btn-gold" onclick="startCheckout('team')" id="btn-team">
+        Subscribe — ₹2,499/mo
+      </button>
+    </div>
+
   </div>
-  <div class="footer-bottom">
-    <p>© 2026 PRISM. Made in India 🇮🇳</p>
-  </div>
+</section>
+
+<!-- Comparison table -->
+<section class="compare-section">
+  <h2>Full feature comparison</h2>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Free</th>
+        <th>Pro</th>
+        <th>Team</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>NL → SQL queries</td><td>20/mo</td><td class="yes">Unlimited</td><td class="yes">Unlimited</td></tr>
+      <tr><td>Database connections</td><td>1</td><td>5</td><td class="yes">Unlimited</td></tr>
+      <tr><td>Excel / CSV upload</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Auto marketing dashboard</td><td class="no">✕</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>PDF report generation</td><td class="no">✕</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Export (CSV/Excel/PDF)</td><td>CSV only</td><td class="yes">All formats</td><td class="yes">All formats</td></tr>
+      <tr><td>Multi-client workspaces</td><td class="no">✕</td><td class="no">✕</td><td class="yes">✓</td></tr>
+      <tr><td>Team seats</td><td class="no">✕</td><td class="no">✕</td><td class="yes">5 seats</td></tr>
+      <tr><td>WhatsApp report delivery</td><td class="no">✕</td><td class="no">✕</td><td class="yes">✓</td></tr>
+      <tr><td>Priority support</td><td class="no">✕</td><td class="no">✕</td><td class="yes">✓</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <h2>Frequently asked questions</h2>
+  <details class="faq-item">
+    <summary>Can I cancel anytime?</summary>
+    <p>Absolutely. Cancel from your settings page at any time. You'll keep Pro access until the end of your current billing month — then drop back to Free. No charges after cancellation.</p>
+  </details>
+  <details class="faq-item">
+    <summary>Which payment methods are supported?</summary>
+    <p>All major UPI apps (GPay, PhonePe, Paytm), debit/credit cards (Visa, Mastercard, RuPay), net banking, and wallets — powered by Razorpay, India's most trusted payment gateway.</p>
+  </details>
+  <details class="faq-item">
+    <summary>Is my data safe?</summary>
+    <p>PRISM never stores your raw data. Database credentials are AES-256 encrypted. Payments are handled entirely by Razorpay — we never see your card details.</p>
+  </details>
+  <details class="faq-item">
+    <summary>Do you offer refunds?</summary>
+    <p>If you're not satisfied within the first 7 days of your first subscription, contact us at support@prism.app for a full refund. After that, refunds are on a case-by-case basis.</p>
+  </details>
+  <details class="faq-item">
+    <summary>Can I switch plans?</summary>
+    <p>Yes — upgrade from Pro to Team at any time. The difference is prorated for your current billing period.</p>
+  </details>
+</section>
+
+<footer>
+  © 2025 PRISM · Made in India 🇮🇳 · <a href="privacy.html" style="color:inherit">Privacy</a> · support@prism.app
 </footer>
 
+<div class="toast" id="toast"></div>
+
+<script>
+  const RAZORPAY_KEY = 'rzp_test_YOUR_KEY_ID_HERE'; // swap to rzp_live_ before launch
+  const API_BASE     = 'https://your-api-domain.com/api/subscription'; // your deployed FastAPI
+
+  function getToken() {
+    const s = JSON.parse(localStorage.getItem('prism_session') || '{}');
+    return s?.access_token || '';
+  }
+  function getUser() {
+    const s = JSON.parse(localStorage.getItem('prism_session') || '{}');
+    return s?.user || {};
+  }
+
+  async function startCheckout(plan) {
+    const token = getToken();
+    if (!token) {
+      // Redirect to login, come back after
+      localStorage.setItem('post_login_redirect', 'pricing.html');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const btnId = plan === 'pro' ? 'btn-pro' : 'btn-team';
+    const btn   = document.getElementById(btnId);
+    const orig  = btn.textContent;
+    btn.disabled    = true;
+    btn.textContent = 'Creating order…';
+
+    try {
+      const res  = await fetch(`${API_BASE}/create-order`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.detail);
+
+      const order = data.order;
+      const user  = getUser();
+
+      const options = {
+        key:         RAZORPAY_KEY,
+        amount:      order.amount,
+        currency:    order.currency,
+        name:        'PRISM',
+        description: order.description,
+        order_id:    order.order_id,
+        prefill:     { email: user.email || '', name: user.user_metadata?.full_name || '' },
+        theme:       { color: '#6c63ff' },
+        handler: async (response) => {
+          await verifyPayment(response);
+        },
+        modal: {
+          ondismiss: () => {
+            btn.disabled = false;
+            btn.textContent = orig;
+          }
+        }
+      };
+
+      new Razorpay(options).open();
+
+    } catch (err) {
+      showToast(err.message || 'Something went wrong.', 'error');
+      btn.disabled    = false;
+      btn.textContent = orig;
+    }
+  }
+
+  async function verifyPayment(response) {
+    try {
+      const res  = await fetch(`${API_BASE}/verify-payment`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          razorpay_order_id:   response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature:  response.razorpay_signature,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('🎉 Subscription activated! Welcome to PRISM Pro.', 'success');
+        setTimeout(() => window.location.href = 'login.html', 2500);
+      } else {
+        showToast('Payment received but verification failed. Contact support.', 'error');
+      }
+    } catch (_) {
+      showToast('Verification error — contact support with your payment ID.', 'error');
+    }
+  }
+
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 5000);
+  }
+</script>
 </body>
 </html>

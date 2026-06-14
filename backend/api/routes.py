@@ -88,6 +88,7 @@ async def create_connection(
 
 @router.get("/connections", response_model=List[dict])
 async def list_connections(
+    client_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
@@ -99,6 +100,8 @@ async def list_connections(
 
     connections = []
     for conn_id, conn in user_connections.items():
+        if client_id and getattr(conn, 'client_id', None) != client_id:
+            continue
         connections.append({
             "id": conn_id,
             "name": conn.name,
@@ -106,6 +109,7 @@ async def list_connections(
             "host": conn.host,
             "database": conn.database,
             "status": conn.status.value,
+            "client_id": getattr(conn, 'client_id', None),
         })
     return connections
 
@@ -261,6 +265,15 @@ async def execute_natural_language_query(
                 detail=f"Query execution failed: {response.error_message}"
             )
 
+        # ── PRIORITY 3: tag the saved query record with client_id ──
+        # query_executor stores a record internally after execute().
+        # We reach back and stamp client_id onto it so history
+        # filtering works without touching query_executor internals.
+        if getattr(request, 'client_id', None):
+            query_record = query_executor.get_query_by_id(response.query_id)
+            if query_record is not None:
+                query_record.client_id = request.client_id
+
         return response
 
     except HTTPException:
@@ -302,12 +315,22 @@ async def execute_raw_sql(
 @router.get("/query/history")
 async def get_query_history(
     limit: int = 50,
+    client_id: Optional[str] = None,   # ── PRIORITY 3: filter by client ──
     current_user: dict = Depends(get_current_user)
 ):
-    return {
-        "history": [
-            q.model_dump() for q in query_executor.get_query_history(limit=limit)
+    history = query_executor.get_query_history(limit=limit)
+
+    # If a client_id is passed, only return queries tagged to that client.
+    # Queries run before this feature existed have no client_id (None),
+    # so they are excluded when filtering — which is the correct behaviour.
+    if client_id:
+        history = [
+            q for q in history
+            if getattr(q, 'client_id', None) == client_id
         ]
+
+    return {
+        "history": [q.model_dump() for q in history]
     }
 
 
@@ -388,7 +411,7 @@ async def forgot_password(request: ForgotPasswordRequest):
     try:
         import os
         from supabase import create_client
-        supabase= create_client(
+        supabase = create_client(
             os.getenv("SUPABASE_URL"),
             os.getenv("SUPABASE_ANON_KEY")
         )
@@ -647,3 +670,118 @@ async def send_report_now(
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error"))
     return result
+
+
+# ==================== Client Endpoints ====================
+
+class ClientCreateRequest(BaseModel):
+    name: str
+    color: str = "#e8455a"
+    industry: str = ""
+
+
+class ClientUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    color: Optional[str] = None
+    industry: Optional[str] = None
+
+
+@router.get("/clients", response_model=List[dict])
+async def list_clients(current_user: dict = Depends(get_current_user)):
+    try:
+        import httpx
+        import os
+        user_id = current_user["id"]
+        user_token = current_user.get("token")
+        url = f"{os.getenv('SUPABASE_URL')}/rest/v1/clients?user_id=eq.{user_id}&order=created_at.asc"
+        headers = {
+            "apikey": os.getenv("SUPABASE_ANON_KEY"),
+            "Authorization": f"Bearer {user_token or os.getenv('SUPABASE_ANON_KEY')}",
+        }
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=headers)
+            return resp.json() if resp.status_code == 200 else []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/clients", response_model=dict)
+async def create_client(
+    request: ClientCreateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        import httpx
+        import os
+        user_id = current_user["id"]
+        user_token = current_user.get("token")
+        url = f"{os.getenv('SUPABASE_URL')}/rest/v1/clients"
+        headers = {
+            "apikey": os.getenv("SUPABASE_ANON_KEY"),
+            "Authorization": f"Bearer {user_token or os.getenv('SUPABASE_ANON_KEY')}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+        payload = {
+            "user_id": user_id,
+            "name": request.name,
+            "color": request.color,
+            "industry": request.industry,
+        }
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.status_code in [200, 201]:
+                data = resp.json()
+                return data[0] if isinstance(data, list) else data
+            raise HTTPException(status_code=400, detail=resp.text)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/clients/{client_id}", response_model=dict)
+async def update_client(
+    client_id: str,
+    request: ClientUpdateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        import httpx
+        import os
+        user_token = current_user.get("token")
+        url = f"{os.getenv('SUPABASE_URL')}/rest/v1/clients?id=eq.{client_id}"
+        headers = {
+            "apikey": os.getenv("SUPABASE_ANON_KEY"),
+            "Authorization": f"Bearer {user_token or os.getenv('SUPABASE_ANON_KEY')}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+        updates = {k: v for k, v in request.dict().items() if v is not None}
+        async with httpx.AsyncClient() as client:
+            resp = await client.patch(url, headers=headers, json=updates)
+            data = resp.json()
+            return data[0] if isinstance(data, list) and data else {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/clients/{client_id}")
+async def delete_client(
+    client_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        import httpx
+        import os
+        user_token = current_user.get("token")
+        url = f"{os.getenv('SUPABASE_URL')}/rest/v1/clients?id=eq.{client_id}"
+        headers = {
+            "apikey": os.getenv("SUPABASE_ANON_KEY"),
+            "Authorization": f"Bearer {user_token or os.getenv('SUPABASE_ANON_KEY')}",
+        }
+        async with httpx.AsyncClient() as client:
+            resp = await client.delete(url, headers=headers)
+            return {"success": resp.status_code in [200, 204]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

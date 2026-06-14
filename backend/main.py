@@ -15,6 +15,7 @@ import uvicorn
 from backend.config import get_settings
 from backend.api.routes import router
 from backend.api.auth import auth_router
+from backend.api.settings import router as settings_router
 from backend.services.database_manager import db_manager
 from backend.services.schema_discovery import schema_discovery
 from backend.services.report_generator import report_generator
@@ -72,6 +73,7 @@ app.add_middleware(
 # Register routers
 app.include_router(router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(settings_router)  # ← ADDED: Settings API (no prefix, uses /api/settings internally)
 
 from backend.upload_api import router as upload_router
 app.include_router(upload_router, prefix="/api/v1")
@@ -79,6 +81,8 @@ app.include_router(upload_router, prefix="/api/v1")
 from backend.services.report_generator_pdf import router as pdf_router
 app.include_router(pdf_router, prefix="/api/v1")
 
+from backend.api.subscription import router as subscription_router
+app.include_router(subscription_router, prefix="/api/subscription")
 
 @app.get("/")
 async def root():
