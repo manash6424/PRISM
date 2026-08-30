@@ -1528,6 +1528,28 @@ body.light-mode .alert-history-item { background: var(--bg-elevated); }
 body.light-mode .connection-card { background: var(--bg-surface); }
 body.light-mode .dashboard-card { background: var(--bg-surface); }
 
+/* ── LIGHT MODE MODAL FIX ─────────────── */
+body.light-mode .modal-overlay { background: rgba(0,0,0,0.35); }
+body.light-mode .modal { background: var(--bg-surface); border-color: var(--border-strong); }
+body.light-mode .modal-header { border-bottom-color: var(--border); }
+body.light-mode .modal-header h2 { color: var(--text-primary); }
+body.light-mode .modal-close { color: var(--text-muted); }
+body.light-mode .modal-close:hover { color: var(--text-primary); }
+body.light-mode .form-group label { color: var(--text-secondary); }
+body.light-mode .form-actions { border-top-color: var(--border); }
+body.light-mode .modal input,
+body.light-mode .modal select,
+body.light-mode .modal textarea {
+    background: var(--bg-elevated);
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+body.light-mode .modal input:focus,
+body.light-mode .modal select:focus {
+    border-color: var(--accent);
+    background: #fff;
+}
+
 @media (max-width:768px) {
     .sidebar { width:56px; }
     .nav-text, .user-name, .logo-text { display:none; }

@@ -21,6 +21,25 @@ class AICopilotApp {
         this.renderHistory();
         this.checkOnboarding();
         this.loadClients(); // NEW: multi-client
+        this.initTooltips();
+        window.addEventListener('focus', () => {
+            if (localStorage.getItem('prism_upload_done') === '1') {
+                this.markChecklistDone('upload');
+                localStorage.removeItem('prism_upload_done');
+            }
+        });
+        const cl = this.getChecklist();
+        if (!cl.connection || !cl.query || !cl.upload) {
+            const waitForApp = setInterval(() => {
+                const appVisible = document.getElementById('app-container') &&
+                    !document.getElementById('app-container').classList.contains('hidden') &&
+                    document.getElementById('app-container').style.display !== 'none';
+                if (appVisible) {
+                    clearInterval(waitForApp);
+                    setTimeout(() => this.showChecklist(), 800);
+                }
+            }, 500);
+        }
     }
 
     // ── Auth Token ──────────────────────────────────────────────────────────
@@ -702,6 +721,7 @@ class AICopilotApp {
             this.closeConnectionModal();
             this.loadConnections();
             this.showToast('Connection saved successfully!', 'success');
+            this.markChecklistDone('connection');
         } catch (err) {
             this.showToast('Failed to save connection', 'error');
         }
@@ -802,6 +822,7 @@ class AICopilotApp {
             this.currentQuery = result;
             this.displayResults(result);
             this.showToast(`Query executed: ${result.row_count} rows`, 'success');
+            this.markChecklistDone('query');
         } catch (error) {
             this.showToast('Failed to execute query', 'error');
         } finally {
@@ -1652,10 +1673,145 @@ class AICopilotApp {
         this.showOnboarding(key);
     }
 
+    // ── Onboarding Checklist ─────────────────────────────────────────────────
+    getChecklistKey() {
+        try {
+            const session = JSON.parse(localStorage.getItem('prism_session') || '{}');
+            const uid = session.user?.id || session.id || 'default';
+            return `prism_checklist_${uid}`;
+        } catch { return 'prism_checklist_default'; }
+    }
+
+    getChecklist() {
+        try { return JSON.parse(localStorage.getItem(this.getChecklistKey()) || '{}'); }
+        catch { return {}; }
+    }
+
+    markChecklistDone(item) {
+        const cl = this.getChecklist();
+        if (cl[item]) return;
+        cl[item] = true;
+        localStorage.setItem(this.getChecklistKey(), JSON.stringify(cl));
+        this.renderChecklist();
+        if (cl.connection && cl.query && cl.upload) {
+            setTimeout(() => this.showCompletionBanner(), 400);
+        }
+    }
+
+    renderChecklist() {
+        const el = document.getElementById('ob-checklist');
+        if (!el) return;
+        const cl = this.getChecklist();
+        const items = [
+            { key: 'connection', icon: '🔌', label: 'Add your first connection', nav: 'connections' },
+            { key: 'query',      icon: '📝', label: 'Run your first query',      nav: 'query' },
+            { key: 'upload',     icon: '📂', label: 'Upload your first file',    nav: null },
+        ];
+        const done = items.filter(i => cl[i.key]).length;
+        el.innerHTML = `
+            <div style="font-size:11px;font-weight:700;color:var(--accent,#e8455a);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;font-family:'JetBrains Mono',monospace;">
+                Getting Started · ${done}/3
+            </div>
+            ${items.map(item => `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:var(--bg-elevated,#141828);border:1px solid ${cl[item.key] ? 'rgba(34,197,94,0.25)' : 'var(--border,#1a1f30)'};">
+                    <div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;
+                        background:${cl[item.key] ? 'rgba(34,197,94,0.15)' : 'var(--bg-surface,#0c0f1a)'};
+                        border:1px solid ${cl[item.key] ? 'rgba(34,197,94,0.4)' : 'var(--border-strong,#252c45)'};">
+                        ${cl[item.key] ? '✓' : ''}
+                    </div>
+                    <span style="flex:1;font-size:12px;color:${cl[item.key] ? 'var(--text-muted,#3d4560)' : 'var(--text-secondary,#7f8db0)'};
+                        text-decoration:${cl[item.key] ? 'line-through' : 'none'};">${item.label}</span>
+                    ${!cl[item.key] ? `<button onclick="${item.nav ? `app.switchView('${item.nav}')` : `app.openUploadForClient(app.activeClientId||'')`}" 
+                        style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border-strong,#252c45);background:none;color:var(--accent,#e8455a);cursor:pointer;font-family:'Outfit',sans-serif;">
+                        Go →</button>` : ''}
+                </div>
+            `).join('')}
+        `;
+    }
+
+    showChecklist() {
+        if (document.getElementById('ob-checklist-panel')) return;
+        const panel = document.createElement('div');
+        panel.id = 'ob-checklist-panel';
+        panel.style.cssText = `
+            position:fixed;bottom:24px;right:24px;z-index:8888;
+            background:var(--bg-surface,#0c0f1a);border:1px solid var(--border-strong,#252c45);
+            border-radius:14px;padding:16px;width:280px;
+            box-shadow:0 8px 32px rgba(0,0,0,0.5);
+            animation:obFadeIn 0.3s ease;
+        `;
+        panel.innerHTML = `<div id="ob-checklist"></div>
+            <button onclick="document.getElementById('ob-checklist-panel').remove()"
+                style="margin-top:10px;width:100%;background:none;border:1px solid var(--border,#1a1f30);
+                color:var(--text-muted,#3d4560);border-radius:6px;padding:5px;font-size:11px;cursor:pointer;
+                font-family:'Outfit',sans-serif;">Dismiss</button>`;
+        document.body.appendChild(panel);
+        this.renderChecklist();
+    }
+
+    showCompletionBanner() {
+        const existing = document.getElementById('ob-completion-banner');
+        if (existing) return;
+        const banner = document.createElement('div');
+        banner.id = 'ob-completion-banner';
+        banner.style.cssText = `
+            position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9990;
+            background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(34,197,94,0.05));
+            border:1px solid rgba(34,197,94,0.35);border-radius:12px;
+            padding:14px 24px;display:flex;align-items:center;gap:12px;
+            box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:obFadeIn 0.4s ease;
+            font-family:'Outfit',sans-serif;
+        `;
+        banner.innerHTML = `
+            <span style="font-size:22px;">🎉</span>
+            <div>
+                <div style="font-size:14px;font-weight:700;color:#4ade80;">You're all set!</div>
+                <div style="font-size:12px;color:var(--text-secondary,#7f8db0);margin-top:2px;">Setup complete — PRISM is ready for your agency.</div>
+            </div>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-muted,#3d4560);font-size:18px;cursor:pointer;padding:0 0 0 8px;">×</button>
+        `;
+        document.body.appendChild(banner);
+        setTimeout(() => banner?.remove(), 6000);
+    }
+
+    initTooltips() {
+        const visited = JSON.parse(localStorage.getItem('prism_tooltips_seen') || '{}');
+        const tips = {
+            connections: { el: '[data-view="connections"]', text: '🔌 Start here — add your first database connection' },
+            query:       { el: '[data-view="query"]',       text: '📝 Ask anything in plain English — no SQL needed' },
+            dashboard:   { el: '[data-view="dashboard"]',   text: '📌 Pin charts here to build your agency dashboard' },
+            uploads:     { el: '[data-view="upload"], .nav-item[onclick*="upload"]', text: '📂 Upload Excel or CSV files from any client' },
+        };
+        Object.entries(tips).forEach(([key, tip]) => {
+            if (visited[key]) return;
+            const target = document.querySelector(tip.el);
+            if (!target) return;
+            target.addEventListener('mouseenter', () => {
+                if (document.getElementById(`tip-${key}`)) return;
+                const rect = target.getBoundingClientRect();
+                const t = document.createElement('div');
+                t.id = `tip-${key}`;
+                t.style.cssText = `
+                    position:fixed;left:${rect.right + 10}px;top:${rect.top + rect.height/2}px;
+                    transform:translateY(-50%);z-index:9000;
+                    background:var(--bg-surface,#0c0f1a);border:1px solid var(--accent,#e8455a);
+                    border-radius:8px;padding:8px 12px;font-size:12px;
+                    color:var(--text-secondary,#7f8db0);white-space:nowrap;
+                    box-shadow:0 4px 16px rgba(232,69,90,0.2);font-family:'Outfit',sans-serif;
+                    animation:obFadeIn 0.2s ease;pointer-events:none;
+                `;
+                t.innerHTML = `<span style="color:var(--accent,#e8455a);margin-right:4px;">▶</span>${tip.text}`;
+                document.body.appendChild(t);
+                visited[key] = true;
+                localStorage.setItem('prism_tooltips_seen', JSON.stringify(visited));
+                setTimeout(() => t?.remove(), 3500);
+            }, { once: true });
+        });
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
     // ── NEW: Multi-Client Workspace ──────────────────────────────────────────
     // ══════════════════════════════════════════════════════════════════════════
-
     async loadClients() {
         try {
             const res = await this.authFetch(`${API}/clients`);

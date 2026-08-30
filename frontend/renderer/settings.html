@@ -341,6 +341,7 @@ body {
     </div>
     <div class="nav-group">
       <h3>App</h3>
+      <button class="nav-link" onclick="showSection('branding', this)">🏷️ Branding</button>
       <button class="nav-link" onclick="showSection('appearance', this)">🎨 Appearance</button>
       <button class="nav-link" onclick="showSection('apikeys', this)">🔑 API Keys</button>
       <button class="nav-link" onclick="showSection('notifications', this)">🔔 Notifications</button>
@@ -460,8 +461,44 @@ body {
       </div>
     </div>
 
-    <!-- APPEARANCE -->
-    <div class="settings-section" id="section-appearance">
+    <!-- BRANDING -->
+    <div class="settings-section" id="section-branding">
+      <div class="section-header">
+        <h2>White-label Branding</h2>
+        <p>Your agency logo appears on every Excel KPI report and PDF. Clients never see "PRISM".</p>
+      </div>
+      <div class="settings-card">
+        <h4>Agency Logo</h4>
+        <p class="card-desc">PNG, JPG, or WEBP · Max 2MB · Recommended: 400×120px transparent PNG</p>
+
+        <!-- Preview -->
+        <div id="logo-preview-wrap" style="display:none;margin-bottom:1.2rem;">
+          <img id="logo-preview-img" src="" alt="Agency logo"
+            style="max-height:80px;max-width:280px;border-radius:8px;
+                   border:1px solid var(--border);padding:0.6rem;background:var(--bg3);">
+          <p style="font-size:0.75rem;color:var(--text2);margin-top:0.4rem;" id="logo-url-hint"></p>
+        </div>
+        <div id="logo-placeholder" style="margin-bottom:1.2rem;padding:1.5rem;
+             border:2px dashed var(--border);border-radius:10px;text-align:center;color:var(--text2);font-size:0.875rem;">
+          No logo uploaded yet
+        </div>
+
+        <!-- Upload -->
+        <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;">
+          <label style="cursor:pointer;">
+            <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/webp"
+              style="display:none;" onchange="handleLogoFile(this)">
+            <span class="btn-save" style="display:inline-block;">📁 Choose Logo</span>
+          </label>
+          <button class="btn-danger-sm" id="logo-delete-btn" style="display:none;"
+            onclick="deleteLogo()">Remove Logo</button>
+        </div>
+
+        <p style="font-size:0.78rem;color:var(--text2);margin-top:1rem;">
+          Once uploaded, every new Excel report cover page will show your logo instead of "PRISM".
+        </p>
+      </div>
+    </div>
       <div class="section-header">
         <h2>Appearance</h2>
         <p>Customize how PRISM looks</p>
@@ -788,10 +825,26 @@ let activeDensity = 'comfortable';
 // LOAD ALL SETTINGS ON PAGE START
 // ─────────────────────────────────────────────────────────
 async function loadSettings() {
-  const data = await prismApi('GET', '/api/settings');
-  if (!data) return;
+  // Get email from JWT token directly
+  const token = getToken();
+  if (!token) return;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const email = payload.email || '';
+    document.getElementById('topbar-email').textContent = email;
+    document.getElementById('profile-email-display').textContent = email;
+    document.getElementById('session-info-text').textContent = `Signed in as ${email} · JWT session active`;
+    updateAvatarDisplay(email);
+  } catch(e) {}
 
-  const s = data.settings || {};
+  // Load saved profile from localStorage
+  const saved = JSON.parse(localStorage.getItem('prism_profile') || '{}');
+  if (saved.full_name) document.getElementById('profile-name').value = saved.full_name;
+  if (saved.company_name) document.getElementById('profile-company').value = saved.company_name;
+  if (saved.role_title) document.getElementById('profile-role').value = saved.role_title;
+  if (saved.full_name) updateAvatarDisplay(saved.full_name);
+
+  const s = {};
   const keys = data.api_keys || {};
   currentSettings = s;
   currentAPIKeys = keys;
@@ -901,14 +954,13 @@ async function saveProfile() {
     role_title: document.getElementById('profile-role').value.trim()
   };
 
-  const res = await prismApi('PUT', '/api/settings/profile', body);
+  // Save to localStorage so it persists across sessions
+  localStorage.setItem('prism_profile', JSON.stringify(body));
+
   btn.disabled = false;
   btn.textContent = 'Save Changes';
-
-  if (res) {
-    updateAvatarDisplay(body.full_name);
-    showToast('Profile updated!', 'success');
-  }
+  updateAvatarDisplay(body.full_name);
+  showToast('Profile saved!', 'success');
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1109,7 +1161,9 @@ function showSection(name, el) {
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
   el.classList.add('active');
+  if (name === 'branding') loadLogo();
 }
+
 
 // ─────────────────────────────────────────────────────────
 // CONFIRM MODAL
@@ -1148,13 +1202,79 @@ function showToast(message, type = 'info') {
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3500);
 }
+// ─────────────────────────────────────────────────────────
+// BRANDING — LOGO UPLOAD
+// ─────────────────────────────────────────────────────────
+async function loadLogo() {
+  // First try localStorage (instant, no network)
+  const cached = localStorage.getItem('prism_logo_url');
+  if (cached) {
+    showLogoPreview(cached);
+    return;
+  }
+  // Fallback to backend
+  const res = await prismApi('GET', '/api/v1/settings/logo');
+  if (res && res.logo_url) {
+    localStorage.setItem('prism_logo_url', res.logo_url);
+    showLogoPreview(res.logo_url);
+  }
+}
 
+function showLogoPreview(url) {
+  document.getElementById('logo-preview-img').src = url;
+  document.getElementById('logo-url-hint').textContent = url;
+  document.getElementById('logo-preview-wrap').style.display = 'block';
+  document.getElementById('logo-placeholder').style.display = 'none';
+  document.getElementById('logo-delete-btn').style.display = 'inline-block';
+}
+
+async function handleLogoFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = getToken();
+  const btn = input.closest('label').querySelector('span');
+  btn.textContent = '⏳ Uploading…';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/settings/logo`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Upload failed');
+    showLogoPreview(data.logo_url);
+    localStorage.setItem('prism_logo_url', data.logo_url);
+    showToast('Logo uploaded! Reports will now use your branding.', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.textContent = '📁 Choose Logo';
+    input.value = '';
+  }
+}
+
+async function deleteLogo() {
+  const res = await prismApi('DELETE', '/api/v1/settings/logo');
+  if (res) {
+    localStorage.removeItem('prism_logo_url');
+    document.getElementById('logo-preview-wrap').style.display = 'none';
+    document.getElementById('logo-placeholder').style.display = 'block';
+    document.getElementById('logo-delete-btn').style.display = 'none';
+    showToast('Logo removed', 'info');
+  }
+}
 // ─────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   if (!getToken()) { redirectToLogin(); return; }
   loadSettings();
+  loadLogo();
 });
 </script>
 

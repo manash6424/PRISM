@@ -1379,13 +1379,14 @@
 
         if (!sessionId) {
            try {
-            const activeClientId = window.opener
-                ? null
-                : (localStorage.getItem('active_client_id') || null);
+           const activeClientId = localStorage.getItem('active_client_id') || null;
 
-            const res  = await fetch(`${API}/upload/session/new`, {
+           const res  = await fetch(`${API}/upload/session/new`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': getUserId()
+                },
                 body: JSON.stringify({ client_id: activeClientId })
             });
             const data = await res.json();
@@ -1415,7 +1416,11 @@
         formData.append('file', file);
 
         try {
-            const res    = await fetch(`${API}/upload/session/${sessionId}/add`, { method: 'POST', body: formData });
+            const res    = await fetch(`${API}/upload/session/${sessionId}/add`, {
+                method: 'POST',
+                headers: { 'X-User-Id': getUserId() },
+                body: formData
+            });
             const result = await res.json();
 
             if (!res.ok || !result.success) throw new Error(result.detail || result.error || 'Upload failed');
@@ -1444,6 +1449,7 @@
             });
 
             showToast(`✅ ${result.filename} added — ${result.row_count} total rows`, 'success');
+            localStorage.setItem('prism_upload_done', '1');
 
         } catch (err) {
             removeFileCard(tempId);
@@ -1574,14 +1580,52 @@
     }
 
     // ── Restore session ────────────────────────────────────────────────────
-   async function restoreSession() {
-    const saved = localStorage.getItem('upload_session');
-    if (!saved) return;
-    const activeClientId = localStorage.getItem('active_client_id') || null;
-    const s = JSON.parse(saved);
-    if (s.client_id !== activeClientId) return; // don't restore wrong client's session
+ function getUserId() {
+    return localStorage.getItem('user_id') || 'anonymous';
+}
+    async function restoreSession() {
+        const activeClientId = localStorage.getItem('active_client_id') || null;
+
+        try {
+            const clientParam = activeClientId ? `?client_id=${activeClientId}` : '';
+            const res = await fetch(`${API}/upload/restore${clientParam}`, {
+                headers: { 'X-User-Id': getUserId() }
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                sessionId      = data.session_id;
+                uploadedFiles  = data.files || [];
+                currentColumns = data.columns || [];
+
+                for (const f of uploadedFiles) {
+                    addFileCard(f.file_id, f.filename, f.row_count, f.columns, 'done');
+                }
+
+                updateSharedUI({
+                    columns:   data.columns,
+                    rowCount:  data.row_count,
+                    preview:   data.preview,
+                    filenames: uploadedFiles.map(f => f.filename)
+                });
+
+                document.getElementById('restored-text').textContent =
+                    `✅ ${uploadedFiles.length} file(s) restored from last session`;
+                document.getElementById('restored-banner').classList.add('visible');
+                setTimeout(() => document.getElementById('restored-banner').classList.remove('visible'), 8000);
+                return;
+            }
+        } catch (e) {
+            console.log('Supabase restore failed, trying localStorage:', e);
+        }
+
+        const saved = localStorage.getItem('upload_session');
+        if (!saved) return;
+
         try {
             const s = JSON.parse(saved);
+            if (s.client_id !== activeClientId) return;
+
             const res = await fetch(`${API}/upload/session/${s.sessionId}/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1901,6 +1945,7 @@
             accent_color:   document.getElementById('pdf-color-hex').value.trim()   || '#e8455a',
             include_charts: true,
             max_rows:       80,
+            logo_url:       localStorage.getItem('prism_logo_url') || '',
         };
 
         try {
@@ -2084,10 +2129,11 @@
         btn.innerHTML = '⏳ Building…';
         document.getElementById('kpi-generating').style.display = 'flex';
 
-        const payload = {
+   const payload = {
             client_name: document.getElementById('kpi-client').value.trim()    || 'Client',
             agency_name: document.getElementById('kpi-agency').value.trim()    || 'Your Agency',
             date_range:  document.getElementById('kpi-daterange').value.trim() || '',
+            logo_url:    localStorage.getItem('prism_logo_url') || '',
         };
 
         try {

@@ -7,7 +7,7 @@ import uuid
 from typing import Optional, List
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -785,3 +785,104 @@ async def delete_client(
             return {"success": resp.status_code in [200, 204]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    # ==================== Logo / Branding Endpoints ====================
+
+import uuid as _uuid
+import os as _os
+import httpx as _httpx
+
+@router.post("/settings/logo")
+async def upload_logo(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    allowed = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
+    if file.content_type not in allowed:
+        raise HTTPException(400, "Only PNG, JPG, WEBP allowed")
+
+    contents = await file.read()
+    if len(contents) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Logo must be under 2MB")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+    filename = f"logos/{current_user['id']}/{_uuid.uuid4()}.{ext}"
+
+    supabase_url = _os.getenv("SUPABASE_URL")
+    service_key  = _os.getenv("SUPABASE_SERVICE_KEY") or _os.getenv("SUPABASE_ANON_KEY")
+    user_token   = current_user.get("token")
+
+    async with _httpx.AsyncClient() as client:
+        # Upload to Supabase Storage bucket "agency-assets"
+        upload_res = await client.post(
+            f"{supabase_url}/storage/v1/object/agency-assets/{filename}",
+            headers={
+                "apikey": service_key,
+                "Authorization": f"Bearer {service_key}",
+                "Content-Type": file.content_type,
+                "x-upsert": "true"
+            },
+            content=contents,
+            timeout=20.0
+        )
+        if upload_res.status_code not in [200, 201]:
+            raise HTTPException(500, f"Storage upload failed: {upload_res.text}")
+
+        public_url = f"{supabase_url}/storage/v1/object/public/agency-assets/{filename}"
+
+        # Save URL to user_settings table
+        await client.post(
+            f"{supabase_url}/rest/v1/user_settings",
+            headers={
+                "apikey": service_key,
+                "Authorization": f"Bearer {user_token or service_key}",
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates"
+            },
+            json={"user_id": current_user["id"], "logo_url": public_url}
+        )
+
+    return {"logo_url": public_url}
+
+
+@router.get("/settings/logo")
+async def get_logo(current_user: dict = Depends(get_current_user)):
+    import os as _os2
+    supabase_url = _os2.getenv("SUPABASE_URL")
+    service_key  = _os2.getenv("SUPABASE_SERVICE_KEY") or _os2.getenv("SUPABASE_ANON_KEY")
+    user_id      = current_user["id"]
+
+    async with _httpx.AsyncClient() as client:
+        res = await client.get(
+            f"{supabase_url}/rest/v1/user_settings",
+            params={"user_id": f"eq.{user_id}", "select": "logo_url"},
+            headers={
+                "apikey": service_key,
+                "Authorization": f"Bearer {service_key}",
+                "Accept": "application/json"
+            }
+        )
+        print(f"[logo] status={res.status_code} body={res.text}")
+        data = res.json()
+        logo_url = data[0]["logo_url"] if isinstance(data, list) and data else None
+    return {"logo_url": logo_url}
+
+
+@router.delete("/settings/logo")
+async def delete_logo(current_user: dict = Depends(get_current_user)):
+    import os as _os3
+    supabase_url = _os3.getenv("SUPABASE_URL")
+    service_key  = _os3.getenv("SUPABASE_SERVICE_KEY") or _os3.getenv("SUPABASE_ANON_KEY")
+    user_token   = current_user.get("token")
+
+    async with _httpx.AsyncClient() as client:
+        await client.patch(
+            f"{supabase_url}/rest/v1/user_settings?user_id=eq.{current_user['id']}",
+            headers={
+                "apikey": service_key,
+                "Authorization": f"Bearer {user_token or service_key}",
+                "Content-Type": "application/json"
+            },
+            json={"logo_url": None}
+        )
+    return {"status": "removed"}

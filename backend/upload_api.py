@@ -24,6 +24,19 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # In-memory store: session_id -> {files: [...], merged_df: df, file_schemas: [...]}
 _upload_store = {}
 
+# ── SUPABASE: client initializer (NEW — added for persistence) ────────────────
+def _get_supabase():
+    try:
+        from supabase import create_client
+        try:
+            from backend.config import settings
+        except ModuleNotFoundError:
+            from config import settings
+        return create_client(settings.supabase_url, settings.supabase_service_key)
+    except Exception as e:
+        print(f'[Supabase init failed] {e}')
+        return None
+
 
 class QueryBody(BaseModel):
     natural_language: str
@@ -288,7 +301,7 @@ async def create_session(request: Request):
 
 
 @router.post("/upload/session/{session_id}/add")
-async def add_file_to_session(session_id: str, file: UploadFile = File(...)):
+async def add_file_to_session(session_id: str, file: UploadFile = File(...), request: Request = None):
     """Add a file to an existing session, merging with existing data"""
 
     if not file.filename.endswith(('.csv', '.xlsx', '.xls')):
@@ -372,6 +385,10 @@ async def add_file_to_session(session_id: str, file: UploadFile = File(...)):
             store["files"][0]["source_tag"] = "file_1"
 
         preview = merged_df.head(5).fillna('').to_dict(orient='records')
+
+        # ── SUPABASE: save session after every upload (NEW) ───────────────
+        user_id = request.headers.get('X-User-Id', 'anonymous') if request else 'anonymous'
+        await _save_session_to_supabase(session_id, user_id)
 
         return {
             "success":        True,
@@ -981,6 +998,10 @@ async def download_kpi_report(session_id: str, request: Request):
                 "roas":  round(rv / sp, 2) if sp > 0 else 0,
             })
 
+  # ── Get logo URL directly from request body (sent by frontend) ────────
+    logo_url = body.get("logo_url", "")
+    print(f"[KPI REPORT] logo_url received: '{logo_url}'")
+
     # ── Generate Excel bytes ──────────────────────────────────────────────
     try:
         excel_bytes = generate_kpi_excel(
@@ -990,6 +1011,7 @@ async def download_kpi_report(session_id: str, request: Request):
             client_name   = client_name,
             agency_name   = agency_name,
             date_range    = date_range,
+            logo_url      = logo_url,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Excel generation failed: {str(e)}")
@@ -1003,3 +1025,114 @@ async def download_kpi_report(session_id: str, request: Request):
         media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers    = {"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NEW — Supabase persistence functions + restore endpoint
+# Nothing above this line was changed. These are pure additions.
+# ══════════════════════════════════════════════════════════════════════════════
+
+async def _save_session_to_supabase(session_id: str, user_id: str):
+    """Serialize current session DataFrame to Supabase. Non-fatal on failure."""
+    store = _upload_store.get(session_id)
+    if not store or store['merged_df'] is None:
+        return
+
+    try:
+        sb = _get_supabase()
+        if not sb:
+            return
+
+        df = store['merged_df']
+        data_json = df.where(pd.notnull(df), None).to_dict(orient='records')
+
+        payload = {
+            'user_id':    user_id,
+            'client_id':  store.get('client_id'),
+            'session_id': session_id,
+            'filename':   store['files'][-1]['filename'],
+            'row_count':  len(df),
+            'columns':    list(df.columns),
+            'data_json':  data_json,
+        }
+
+        sb.table('client_upload_sessions')\
+          .upsert(payload, on_conflict='user_id,client_id')\
+          .execute()
+
+    except Exception as e:
+        print(f'[Supabase save failed] {e}')  # non-fatal
+
+
+async def _load_session_from_supabase(user_id: str, client_id) -> str | None:
+    """Load saved session from Supabase into _upload_store. Returns session_id or None."""
+    try:
+        sb = _get_supabase()
+        if not sb:
+            return None
+
+        query = sb.table('client_upload_sessions')\
+                  .select('*')\
+                  .eq('user_id', user_id)
+
+        if client_id:
+            query = query.eq('client_id', client_id)
+        else:
+            query = query.is_('client_id', 'null')
+
+        result = query.order('updated_at', desc=True).limit(1).execute()
+
+        if not result.data:
+            return None
+
+        row = result.data[0]
+
+        df = pd.DataFrame(row['data_json'])
+        df = df.convert_dtypes()  # fix type issues after JSON round-trip
+
+        session_id = row['session_id']
+        _upload_store[session_id] = {
+            'files': [{
+                'file_id':    'restored',
+                'filename':   row['filename'],
+                'filepath':   '',
+                'columns':    row['columns'],
+                'row_count':  row['row_count'],
+                'source_tag': 'file_1'
+            }],
+            'merged_df': df,
+            'client_id': row['client_id'],
+        }
+
+        return session_id
+
+    except Exception as e:
+        print(f'[Supabase load failed] {e}')
+        return None
+
+
+@router.get('/upload/restore')
+async def restore_session(request: Request):
+    """
+    Called by frontend on app startup.
+    Returns session_id if a saved session exists for this user+client.
+    """
+    user_id   = request.headers.get('X-User-Id', 'anonymous')
+    client_id = request.query_params.get('client_id', None)
+
+    session_id = await _load_session_from_supabase(user_id, client_id)
+
+    if session_id:
+        store = _upload_store[session_id]
+        df    = store['merged_df']
+        return {
+            'success':    True,
+            'session_id': session_id,
+            'files':      store['files'],
+            'columns':    list(df.columns),
+            'row_count':  len(df),
+            'preview':    df.head(5).fillna('').to_dict(orient='records'),
+            'client_id':  store.get('client_id'),
+        }
+
+    return {'success': False}

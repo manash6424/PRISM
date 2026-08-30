@@ -72,6 +72,8 @@ app.add_middleware(
 
 # Register routers
 app.include_router(router, prefix="/api/v1")
+from backend.api.settings import router as settings_router
+app.include_router(settings_router)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(settings_router)  # ← ADDED: Settings API (no prefix, uses /api/settings internally)
 

@@ -2,9 +2,16 @@
 PRISM — KPI Report Generator
 Generates a rich, white-label Excel report from marketing KPI data.
 Drop this file into: backend/services/kpi_report_generator.py
+
+Changes vs previous version:
+  Feature 2 — Logo on Notes & Recommendations sheet (top-right corner)
+  Feature 3 — Auto-detect logo aspect ratio; adjust white card size accordingly
 """
 
 import io
+import urllib.request
+import tempfile
+import os
 from datetime import datetime
 from typing import Any
 
@@ -15,7 +22,7 @@ except ImportError:
 
 
 # ──────────────────────────────────────────────
-# COLOUR PALETTE  (edit brand colours here)
+# COLOUR PALETTE
 # ──────────────────────────────────────────────
 PRIMARY      = "#1a1f3a"
 ACCENT       = "#4f8ef7"
@@ -34,6 +41,70 @@ def _hex(colour: str) -> str:
     return colour.lstrip("#")
 
 
+# ── Feature 4: Fallback initials for agency name ──────────────────────────────
+def _agency_initials(agency_name: str) -> str:
+    """Return up to 2 initials from the agency name."""
+    words = agency_name.strip().split()
+    if not words:
+        return "AG"
+    if len(words) == 1:
+        return words[0][:2].upper()
+    return (words[0][0] + words[-1][0]).upper()
+
+
+# ── Feature 3: Download logo and detect its aspect ratio ─────────────────────
+def _download_logo(logo_url: str) -> tuple[str | None, float]:
+    """
+    Download logo to a temp file.
+    Returns (tmp_path, aspect_ratio) where aspect_ratio = width/height.
+    Returns (None, 1.0) on failure.
+    """
+    if not logo_url:
+        return None, 1.0
+    try:
+        ext = logo_url.split(".")[-1].split("?")[0].lower()
+        if ext not in ("png", "jpg", "jpeg"):
+            ext = "png"
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}")
+        tmp.close()
+        urllib.request.urlretrieve(logo_url, tmp.name)
+
+        # Detect dimensions via Pillow (installed with xlsxwriter env usually)
+        try:
+            from PIL import Image
+            with Image.open(tmp.name) as im:
+                w, h = im.size
+                aspect = w / h if h > 0 else 1.0
+        except Exception:
+            aspect = 2.5  # safe default for wide logos
+
+        print(f"[LOGO] downloaded to {tmp.name}, size={os.path.getsize(tmp.name)}, aspect={aspect:.2f}")
+        return tmp.name, aspect
+
+    except Exception as e:
+        print(f"[LOGO ERROR] {e}")
+        return None, 1.0
+
+
+def _logo_card_dims(aspect: float) -> tuple[int, int, float, float]:
+    """
+    Return (card_col_start, card_row, x_scale, y_scale) tuned to the logo shape.
+
+    Wide logo  (aspect > 1.8): wide card in corner
+    Square logo (0.8–1.8):      square-ish card
+    Tall logo  (< 0.8):         narrow tall card
+    """
+    if aspect > 1.8:
+        # Wide logo — keep current wide card
+        return 8, 2, 0.38, 0.38
+    elif aspect >= 0.8:
+        # Square logo — smaller, squarish card
+        return 9, 2, 0.30, 0.30
+    else:
+        # Tall/portrait logo
+        return 9, 1, 0.28, 0.40
+
+
 def generate_kpi_excel(
     kpi_data: dict[str, Any],
     campaign_rows: list[dict],
@@ -41,9 +112,13 @@ def generate_kpi_excel(
     client_name: str = "Client",
     agency_name: str = "Your Agency",
     date_range: str = "",
+    logo_url: str = "",
 ) -> bytes:
     output = io.BytesIO()
     wb = xlsxwriter.Workbook(output, {"in_memory": True, "strings_to_numbers": True})
+
+    # ── Feature 3: Download logo once, detect aspect ──────────────────────
+    logo_path, logo_aspect = _download_logo(logo_url)
 
     def fmt(**kw):
         return wb.add_format(kw)
@@ -150,6 +225,41 @@ def generate_kpi_excel(
         font_name="Calibri", border=1, border_color=_hex(MID_GREY),
     )
 
+    # ── Helper: insert logo (or fallback initials badge) on any sheet ─────
+    def _insert_logo_on_sheet(ws, img_row, img_col, x_scale, y_scale,
+                               fallback_row=None, fallback_col=None):
+        """
+        Feature 2 & 3 & 4:
+        If a logo exists → insert it with aspect-aware scaling.
+        If no logo → write the agency initials in a coloured badge cell
+        (fallback_row/col default to img_row/col if not provided).
+        """
+        if logo_path:
+            ws.insert_image(img_row, img_col, logo_path, {
+                "x_scale": x_scale,
+                "y_scale": y_scale,
+                "x_offset": 6,
+                "y_offset": 6,
+                "object_position": 1,
+            })
+        else:
+            # Feature 4: Initials badge
+            r = fallback_row if fallback_row is not None else img_row
+            c = fallback_col if fallback_col is not None else img_col
+            initials = _agency_initials(agency_name)
+            badge_fmt = wb.add_format({
+                "bold": True,
+                "font_size": 14,
+                "font_color": _hex(WHITE),
+                "bg_color": _hex(ACCENT),
+                "align": "center",
+                "valign": "vcenter",
+                "font_name": "Calibri",
+                "border": 2,
+                "border_color": _hex(PRIMARY),
+            })
+            ws.write(r, c, initials, badge_fmt)
+
     # ── SHEET 1: COVER ────────────────────────────────────────────────────
     cover = wb.add_worksheet("Cover")
     cover.hide_gridlines(2)
@@ -165,7 +275,13 @@ def generate_kpi_excel(
         cover.merge_range(r, 0, r, 9, "", navy_bg)
 
     cover.set_row(2, 60)
-    cover.merge_range(2, 0, 2, 9, "PRISM  ·  Marketing KPI Report", cover_title)
+    cover.merge_range(2, 0, 2, 9, f"{agency_name}  ·  Marketing KPI Report", cover_title)
+
+    # Feature 3: aspect-aware logo placement on Cover
+    card_col, card_row, xs, ys = _logo_card_dims(logo_aspect)
+    _insert_logo_on_sheet(cover, card_row, card_col, xs, ys,
+                          fallback_row=2, fallback_col=9)
+
     cover.set_row(3, 36)
     cover.merge_range(3, 0, 3, 9, f"{client_name}  ·  {date_range}", cover_sub)
 
@@ -404,7 +520,7 @@ def generate_kpi_excel(
     ns.set_column("B:J", 14)
     ns.set_zoom(90)
 
-    # header
+    # Header bar
     ns.set_row(0, 50)
     ns.merge_range(0, 0, 0, 9,
         f"  Notes & Recommendations — {client_name}  ·  {date_range}",
@@ -419,8 +535,16 @@ def generate_kpi_excel(
             bg_color=_hex(ACCENT_LIGHT), align="left", valign="vcenter",
             font_name="Calibri", left=6, left_color=_hex(ACCENT)))
 
+    # ── Feature 2: Insert logo on Notes sheet (top-right, row 0, col 9) ──
+    # Use aspect-aware scaling (same helper)
+    _insert_logo_on_sheet(
+        ns,
+        img_row=0, img_col=9,
+        x_scale=0.30, y_scale=0.30,
+        fallback_row=1, fallback_col=9,
+    )
+
     def notes_section(ws, start_row, title, lines=4):
-        """Write a branded section header + blank editable rows."""
         ws.set_row(start_row, 28)
         ws.merge_range(start_row, 0, start_row, 9, f"  {title}",
             fmt(bold=True, font_size=12, font_color=_hex(WHITE),
@@ -443,7 +567,7 @@ def generate_kpi_excel(
             ws.set_row(r, 30)
             ws.merge_range(r, 0, r, 9, "",
                 editable_alt if i % 2 == 1 else editable)
-        return start_row + 1 + lines + 1  # next free row
+        return start_row + 1 + lines + 1
 
     row = 3
     row = notes_section(ns, row, "📋  Executive Summary", lines=4)
@@ -452,7 +576,6 @@ def generate_kpi_excel(
     row = notes_section(ns, row, "🚀  Recommended Actions for Next Month", lines=5)
     row = notes_section(ns, row, "📅  Next Review Date & Goals", lines=3)
 
-    # branded footer
     ns.set_row(row + 1, 20)
     ns.merge_range(row + 1, 0, row + 1, 9,
         f"Generated by PRISM  ·  {agency_name}  ·  {datetime.now().strftime('%d %b %Y')}",
@@ -460,6 +583,14 @@ def generate_kpi_excel(
             align="right", font_name="Calibri"))
 
     wb.close()
+
+    # Cleanup temp logo file
+    if logo_path:
+        try:
+            os.unlink(logo_path)
+        except Exception:
+            pass
+
     return output.getvalue()
 
 
