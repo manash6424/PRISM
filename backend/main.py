@@ -19,6 +19,7 @@ from backend.api.settings import router as settings_router
 from backend.services.database_manager import db_manager
 from backend.services.schema_discovery import schema_discovery
 from backend.services.report_generator import report_generator
+from backend.services.alert_service import alert_service  # NEW
 
 load_dotenv()
 
@@ -46,9 +47,14 @@ async def lifespan(app: FastAPI):
     # Start report scheduler
     report_generator.start_scheduler()
 
+    # Start alert scheduler — automatically checks alerts in the background
+    # (e.g. every 5 minutes, per-alert) without anyone clicking "Check Now"
+    # alert_service.start_scheduler()  # NEW — temporarily disabled, see chat
+
     yield
 
     logger.info("Shutting down PRISM...")
+    alert_service.stop_scheduler()  # NEW
     report_generator.stop_scheduler()
     await db_manager.disconnect_all()
 

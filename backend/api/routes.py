@@ -478,6 +478,7 @@ class AlertCreateRequest(BaseModel):
     recipients: List[str]
     severity: str = "warning"
     description: str = ""
+    check_interval_minutes: int = 5   # NEW: how often the background scheduler auto-checks this alert
 
 
 class AlertUpdateRequest(BaseModel):
@@ -487,6 +488,13 @@ class AlertUpdateRequest(BaseModel):
     recipients: Optional[List[str]] = None
     severity: Optional[str] = None
     description: Optional[str] = None
+    check_interval_minutes: Optional[int] = None   # NEW
+
+
+# NEW: request model for previewing NL → SQL conversion before creating an alert
+class AlertSQLPreviewRequest(BaseModel):
+    connection_id: str
+    natural_language: str
 
 
 @router.post("/alerts")
@@ -495,7 +503,10 @@ async def create_alert(
     current_user: dict = Depends(get_current_user)
 ):
     try:
-        alert = alert_service.create_alert(
+        # NOTE: create_alert is now async — it transparently converts
+        # plain-English `sql_query` values (e.g. "count total leads today")
+        # into real SQL using the connection's schema before validating.
+        alert = await alert_service.create_alert(
             name=request.name,
             metric=request.metric,
             condition=request.condition,
@@ -505,10 +516,37 @@ async def create_alert(
             recipients=request.recipients,
             severity=request.severity,
             description=request.description,
+            check_interval_minutes=request.check_interval_minutes,   # NEW
         )
         return {"success": True, "alert": alert}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# NEW: lets the frontend preview the generated SQL before/without creating an alert
+@router.post("/alerts/preview-sql")
+async def preview_alert_sql(
+    request: AlertSQLPreviewRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user["id"]
+
+    if not db_manager.is_connection_owned_by_user(request.connection_id, user_id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    conn = db_manager._connection_cache.get(request.connection_id)
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    try:
+        sql_query = await alert_service.convert_natural_language_to_sql(
+            request.natural_language, request.connection_id
+        )
+        return {"success": True, "sql_query": sql_query}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/alerts")
@@ -584,92 +622,44 @@ async def get_alert_history(
     return {"history": alert_service.get_history(alert_id=alert_id, limit=limit)}
 
 
-# ==================== Report Endpoints ====================
 
-class ReportCreateRequest(BaseModel):
-    name: str
-    description: str = ""
+# ==================== Summary Report Endpoint ====================
+
+class SummaryReportRequest(BaseModel):
     connection_id: str
-    sql_query: str
-    schedule: Optional[str] = None
-    recipients: Optional[List[str]] = []
-    format: str = "excel"
 
-
-@router.post("/reports")
-async def create_report_template(
-    request: ReportCreateRequest,
+@router.post("/reports/summary")
+async def generate_summary_report(
+    request: SummaryReportRequest,
     current_user: dict = Depends(get_current_user)
 ):
     try:
-        template = report_generator.register_template(
-            name=request.name,
-            description=request.description,
-            connection_id=request.connection_id,
-            sql_query=request.sql_query,
-            schedule=request.schedule,
-            recipients=request.recipients,
-            format=request.format,
-        )
-        return {"success": True, "template": template}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        user_id = current_user["id"]
 
+        if not db_manager.is_connection_owned_by_user(request.connection_id, user_id):
+            raise HTTPException(status_code=403, detail="Access denied")
 
-@router.get("/reports")
-async def list_report_templates(current_user: dict = Depends(get_current_user)):
-    return {"templates": report_generator.list_templates()}
+        conn = db_manager._connection_cache.get(request.connection_id)
+        if not conn:
+            raise HTTPException(status_code=404, detail="Connection not found")
 
+        tables = await db_manager.list_tables(request.connection_id)
 
-@router.get("/reports/{template_id}")
-async def get_report_template(
-    template_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    template = report_generator.get_template(template_id)
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return template
+        return {
+            "success": True,
+            "summary": {
+                "connection_id": request.connection_id,
+                "database": conn.database,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "total_tables": len(tables),
+                "tables": tables,
+            }
+        }
 
-
-@router.delete("/reports/{template_id}")
-async def delete_report_template(
-    template_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    success = report_generator.delete_template(template_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return {"success": True, "message": "Template deleted"}
-
-
-@router.post("/reports/{template_id}/run")
-async def run_report(
-    template_id: str,
-    send_email: bool = False,
-    current_user: dict = Depends(get_current_user)
-):
-    result = await report_generator.generate_report(
-        template_id=template_id,
-        send_email=send_email,
-    )
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result.get("error"))
-    return result
-
-
-@router.post("/reports/{template_id}/send")
-async def send_report_now(
-    template_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    result = await report_generator.generate_report(
-        template_id=template_id,
-        send_email=True,
-    )
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result.get("error"))
-    return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==================== Client Endpoints ====================

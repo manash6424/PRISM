@@ -5,8 +5,10 @@ Handles alert rules, threshold checking, email notifications, and alert history.
 
 import os
 import uuid
+import json
 import smtplib
 import logging
+import httpx
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Dict, List, Optional, Any
@@ -79,6 +81,86 @@ def _alert_email_html(alert: dict, current_value: float) -> str:
     """
 
 
+# ── NL → SQL helpers ─────────────────────────────────────────────────────────
+# Reuses the same AI provider env vars as the /suggestions endpoint
+# (AI_API_KEY, AI_BASE_URL, AI_MODEL) so no new config is required.
+
+def _looks_like_sql(text: str) -> bool:
+    """Heuristic: does this already look like a SQL SELECT/CTE query?"""
+    return text.strip().lower().startswith(("select", "with"))
+
+
+def _build_schema_context(schema_data: dict) -> str:
+    """Turn discover_full_schema() output into a compact prompt-friendly string."""
+    lines = []
+    for table in schema_data.get("tables", []):
+        cols = [c.get("name", "") for c in table.get("columns", [])]
+        lines.append(f"{table.get('name', '')}({', '.join(cols)})")
+    return "\n".join(lines) if lines else "(no tables found)"
+
+
+def _clean_sql_response(text: str) -> str:
+    """Strip markdown code fences / language tags / trailing semicolons from an AI SQL response."""
+    text = (text or "").strip()
+
+    if text.startswith("```"):
+        parts = text.split("```")
+        # parts: ['', 'sql\nSELECT ...', ''] typically
+        text = parts[1] if len(parts) > 1 else text.strip("`")
+        stripped = text.lstrip()
+        if stripped[:4].lower().startswith("sql\n") or stripped[:3].lower() == "sql":
+            # remove leading "sql" language tag
+            text = stripped[3:].lstrip("\n").strip()
+        else:
+            text = stripped.strip()
+
+    text = text.strip().rstrip(";").strip()
+    return text
+
+
+async def _call_ai_for_sql(natural_language: str, schema_context: str) -> str:
+    """Call the configured AI provider (Groq-compatible) to convert plain English into SQL."""
+    api_key = os.getenv("AI_API_KEY")
+    base_url = os.getenv("AI_BASE_URL")
+    model = os.getenv("AI_MODEL")
+
+    prompt = f"""You are a SQL generator for a PostgreSQL database. Convert the natural language request below into a single valid SQL SELECT query.
+
+Database schema (table(columns)):
+{schema_context}
+
+Rules:
+- Output ONLY the raw SQL query. No explanation, no markdown code fences, no comments.
+- The query MUST start with SELECT (or WITH ... SELECT).
+- Only use tables and columns that appear in the schema above.
+- For counts, use COUNT(*).
+- For "today", use CURRENT_DATE for date comparisons; for timestamp columns use date_trunc('day', column) = CURRENT_DATE.
+- Return a single scalar-friendly result where possible (e.g. one aggregate column) unless the request clearly asks for multiple rows/columns.
+
+Natural language request: "{natural_language}"
+
+SQL query:"""
+
+    async with httpx.AsyncClient() as client:
+        res = await client.post(
+            f"{base_url}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 300,
+                "temperature": 0,
+            },
+            timeout=20.0,
+        )
+        res.raise_for_status()
+        data = res.json()
+        return data["choices"][0]["message"]["content"].strip()
+
+
 # ── AlertService ──────────────────────────────────────────────────────────────
 
 class AlertService:
@@ -92,10 +174,114 @@ class AlertService:
         self._alerts: Dict[str, Dict[str, Any]] = {}
         # list of triggered alert events
         self._history: List[Dict[str, Any]] = []
+        # APScheduler instance (started via start_scheduler())
+        self._scheduler = None
+
+    # ── Scheduler (NEW) ──────────────────────────────────────────────────────
+    # Follows the same pattern as ReportGenerator.start_scheduler()/stop_scheduler().
+    # Rather than one cron job per alert, a single 1-minute "heartbeat" job checks
+    # every active alert and runs check_alert() only if its own check_interval_minutes
+    # has elapsed since it was last checked. This makes create/pause/delete/update
+    # take effect immediately without touching the scheduler.
+
+    def start_scheduler(self):
+        """Start APScheduler for automated alert checking."""
+        try:
+            from apscheduler.schedulers.asyncio import AsyncIOScheduler
+            self._scheduler = AsyncIOScheduler()
+            self._scheduler.add_job(
+                self._run_scheduled_checks,
+                trigger="interval",
+                minutes=1,
+                id="alert_heartbeat",
+                replace_existing=True,
+            )
+            self._scheduler.start()
+            logger.info("[PRISM Alerts] Scheduler started (heartbeat every 1 minute)")
+        except ImportError:
+            logger.warning("[PRISM Alerts] APScheduler not installed — automatic alert checking disabled")
+
+    def stop_scheduler(self):
+        if self._scheduler and self._scheduler.running:
+            self._scheduler.shutdown()
+            logger.info("[PRISM Alerts] Scheduler stopped")
+
+    def _minutes_since(self, iso_str: Optional[str]) -> float:
+        """Minutes elapsed since an ISO timestamp. Returns +inf if missing/unparseable."""
+        if not iso_str:
+            return float("inf")
+        try:
+            dt = datetime.fromisoformat(iso_str)
+        except Exception:
+            return float("inf")
+        return (datetime.now(timezone.utc) - dt).total_seconds() / 60.0
+
+    async def _run_scheduled_checks(self):
+        """Called every minute by the scheduler; checks any alert that's due."""
+        for alert_id, alert in list(self._alerts.items()):
+            if not alert.get("is_active"):
+                continue
+
+            interval = alert.get("check_interval_minutes") or 5
+            reference_ts = alert.get("last_checked") or alert.get("created_at")
+            elapsed = self._minutes_since(reference_ts)
+
+            if elapsed >= interval:
+                logger.info(
+                    f"[PRISM Alerts] Auto-checking '{alert['name']}' "
+                    f"(interval={interval}m, elapsed={elapsed:.1f}m)"
+                )
+                try:
+                    await self.check_alert(alert_id)
+                except Exception as e:
+                    logger.error(f"[PRISM Alerts] Scheduled check failed for {alert_id}: {e}")
+
+    # ── NL → SQL ─────────────────────────────────────────────────────────────
+
+    async def _get_schema_context(self, connection_id: str) -> str:
+        """Fetch and format the schema for a connection, for use in AI prompts."""
+        from .schema_discovery import schema_discovery
+
+        schema_data = await schema_discovery.discover_full_schema(connection_id)
+        return _build_schema_context(schema_data)
+
+    async def convert_natural_language_to_sql(self, natural_language: str, connection_id: str) -> str:
+        """
+        Convert a plain-English monitoring request (e.g. "count total leads today")
+        into a validated SQL SELECT query, using the connection's live schema as context.
+        Raises ValueError with a user-friendly message on failure.
+        """
+        try:
+            schema_context = await self._get_schema_context(connection_id)
+        except Exception as e:
+            logger.error(f"[PRISM Alerts] Schema lookup failed during NL→SQL: {e}")
+            raise ValueError(
+                "Could not read the database schema to understand your query. "
+                "Make sure the connection is active, or enter SQL directly."
+            )
+
+        try:
+            raw_response = await _call_ai_for_sql(natural_language, schema_context)
+        except Exception as e:
+            logger.error(f"[PRISM Alerts] AI call failed during NL→SQL: {e}")
+            raise ValueError(
+                "Failed to convert your query into SQL right now. "
+                "Please try rephrasing, or enter SQL directly."
+            )
+
+        sql = _clean_sql_response(raw_response)
+
+        if not _looks_like_sql(sql):
+            raise ValueError(
+                "Couldn't turn that into a valid SQL SELECT query. "
+                "Try rephrasing (e.g. 'count of leads today') or enter SQL directly."
+            )
+
+        return sql
 
     # ── CRUD ──────────────────────────────────────────────────────────────────
 
-    def create_alert(
+    async def create_alert(
         self,
         name: str,
         metric: str,
@@ -106,13 +292,33 @@ class AlertService:
         recipients: List[str],
         severity: str = "warning",   # "warning" or "critical"
         description: str = "",
+        check_interval_minutes: int = 5,   # NEW: how often the scheduler auto-checks this alert
     ) -> Dict[str, Any]:
-        """Create a new alert rule."""
+        """Create a new alert rule.
+
+        `sql_query` may be either raw SQL (starting with SELECT/WITH) or a
+        plain-English description of what to monitor (e.g. "count total leads
+        today") — plain English is automatically converted to SQL using the
+        connection's schema before validation.
+
+        `check_interval_minutes` controls how often the background scheduler
+        (see start_scheduler()) automatically re-checks this alert without
+        anyone clicking "Check Now".
+        """
 
         if condition not in ("gt", "lt", "gte", "lte", "eq"):
             raise ValueError(f"Invalid condition '{condition}'. Use: gt, lt, gte, lte, eq")
         if severity not in ("warning", "critical"):
             raise ValueError("Severity must be 'warning' or 'critical'")
+        if not check_interval_minutes or check_interval_minutes < 1:
+            check_interval_minutes = 5
+
+        original_input: Optional[str] = None
+        if not _looks_like_sql(sql_query):
+            original_input = sql_query.strip()
+            sql_query = await self.convert_natural_language_to_sql(original_input, connection_id)
+            logger.info(f"[PRISM Alerts] Converted NL '{original_input}' → SQL: {sql_query}")
+
         if not sql_query.strip().lower().startswith("select"):
             raise ValueError("Alert SQL must be a SELECT query")
 
@@ -126,8 +332,10 @@ class AlertService:
             "threshold": threshold,
             "connection_id": connection_id,
             "sql_query": sql_query.strip(),
+            "original_input": original_input,           # the plain-English text, if any
             "recipients": recipients,
             "severity": severity,
+            "check_interval_minutes": check_interval_minutes,  # NEW
             "is_active": True,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "last_checked": None,
@@ -135,7 +343,10 @@ class AlertService:
             "trigger_count": 0,
         }
         self._alerts[alert_id] = alert
-        logger.info(f"[PRISM Alerts] Created alert '{name}' ({alert_id})")
+        logger.info(
+            f"[PRISM Alerts] Created alert '{name}' ({alert_id}) — "
+            f"auto-checks every {check_interval_minutes}m"
+        )
         return alert
 
     def get_alert(self, alert_id: str) -> Optional[Dict[str, Any]]:
@@ -148,7 +359,10 @@ class AlertService:
         alert = self._alerts.get(alert_id)
         if not alert:
             return None
-        allowed = {"name", "description", "threshold", "condition", "recipients", "severity", "sql_query"}
+        allowed = {
+            "name", "description", "threshold", "condition", "recipients",
+            "severity", "sql_query", "check_interval_minutes",  # NEW
+        }
         for key, value in updates.items():
             if key in allowed:
                 alert[key] = value
@@ -267,10 +481,10 @@ class AlertService:
             return {"success": False, "error": str(e)}
 
     async def check_all_alerts(self) -> List[Dict[str, Any]]:
-        """Check all active alerts — called by APScheduler."""
+        """Check all active alerts on demand (e.g. from an admin endpoint)."""
         results = []
         for alert_id in list(self._alerts.keys()):
-            result = await check_alert(alert_id)
+            result = await self.check_alert(alert_id)
             results.append(result)
         return results
 

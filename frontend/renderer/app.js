@@ -1,4 +1,4 @@
-const API = 'http://localhost:8000/api/v1';
+const API = 'https://prism-production-54e1.up.railway.app/api/v1';
 
 class AICopilotApp {
     constructor() {
@@ -648,7 +648,6 @@ class AICopilotApp {
     }
 
     populateConnectionSelects() {
-        // ✅ FIX: alert-connection added to the list
         ['query-connection', 'schema-connection', 'report-connection', 'alert-connection'].forEach(selectId => {
             const select = document.getElementById(selectId);
             if (!select) return;
@@ -771,6 +770,7 @@ class AICopilotApp {
         }
     }
 
+    // ✅ FIXED: Remove card instantly from UI, then sync with backend
     async deleteConnection(connectionId) {
         if (!confirm('Are you sure you want to delete this connection?')) return;
         try {
@@ -778,12 +778,16 @@ class AICopilotApp {
                 method: 'DELETE'
             });
             if (!res) return;
-            if (res.ok) {
-                this.loadConnections();
-                this.showToast('Connection deleted', 'success');
-            } else {
-                this.showToast('Failed to delete connection', 'error');
-            }
+
+            // ✅ Remove from local array IMMEDIATELY — don't wait for server reload
+            this.connections = this.connections.filter(c => c.id !== connectionId);
+            this.renderConnections();
+            this.populateConnectionSelects();
+            this.showToast('Connection deleted', 'success');
+
+            // ✅ Sync with backend in background after 2 seconds
+            setTimeout(() => this.loadConnections(), 2000);
+
         } catch (err) {
             this.showToast('Failed to delete connection', 'error');
         }
@@ -1390,21 +1394,54 @@ class AICopilotApp {
 
     // ── Reports ─────────────────────────────────────────────────────────────
     async generateSummaryReport() {
-        const connectionId = document.getElementById('report-connection').value;
-        if (!connectionId) { this.showToast('Please select a connection', 'warning'); return; }
-        try {
-            const res = await this.authFetch(`${API}/reports/summary`, {
-                method: 'POST',
-                body: JSON.stringify({ connection_id: connectionId })
-            });
-            if (!res) return;
-            const result = await res.json();
-            if (result.error) { this.showToast('Failed to generate report', 'error'); return; }
-            this.showToast('Summary report generated successfully', 'success');
-        } catch (err) {
+    const connectionId = document.getElementById('report-connection').value;
+    if (!connectionId) { 
+        this.showToast('Please select a connection', 'warning'); 
+        return; 
+    }
+    try {
+        const res = await this.authFetch(`${API}/reports/summary`, {
+            method: 'POST',
+            body: JSON.stringify({ connection_id: connectionId })
+        });
+        if (!res) return;
+        const result = await res.json();
+
+        if (res.ok && result.success) {
+            // ✅ Show the actual summary data
+            const s = result.summary;
+            const container = document.getElementById('templates-list');
+            if (container) {
+                container.innerHTML = `
+                    <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:20px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+                            <strong style="color:var(--text-primary);font-size:15px;">📊 ${s.database} Summary</strong>
+                            <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${new Date(s.generated_at).toLocaleString()}</span>
+                        </div>
+                        <div style="display:flex;gap:20px;margin-bottom:16px;">
+                            <div style="background:var(--accent-dim);border:1px solid var(--accent-glow);border-radius:8px;padding:12px 20px;text-align:center;">
+                                <div style="font-size:24px;font-weight:700;color:var(--accent);">${s.total_tables}</div>
+                                <div style="font-size:11px;color:var(--text-muted);">Total Tables</div>
+                            </div>
+                        </div>
+                        <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Tables Found</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                            ${s.tables.map(t => `
+                                <span style="background:var(--bg-hover);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;">
+                                    📋 ${t}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>`;
+            }
+            this.showToast(`Summary generated — ${s.total_tables} tables found`, 'success');
+        } else {
             this.showToast('Failed to generate report', 'error');
         }
+    } catch (err) {
+        this.showToast('Failed to generate report', 'error');
     }
+}
 
     // ── Alerts ──────────────────────────────────────────────────────────────
     async sendTestAlert() {
@@ -1436,7 +1473,49 @@ class AICopilotApp {
         }
     }
 
-    // ✅ FIX: Now calls backend API instead of only localStorage
+    // ── NEW: preview the SQL PRISM will generate for a plain-English alert query ──
+    async previewAlertSQL() {
+        const connId = document.getElementById('alert-connection').value;
+        const query  = document.getElementById('alert-query').value.trim();
+        const previewBox = document.getElementById('alert-sql-preview');
+
+        if (!connId) { this.showToast('Please select a connection first', 'warning'); return; }
+        if (!query)  { this.showToast('Please enter a query to monitor first', 'warning'); return; }
+
+        // If it already looks like SQL, there's nothing to preview/convert
+        if (/^\s*(select|with)\b/i.test(query)) {
+            if (previewBox) {
+                previewBox.classList.remove('hidden');
+                previewBox.textContent = query;
+            }
+            return;
+        }
+
+        if (previewBox) {
+            previewBox.classList.remove('hidden');
+            previewBox.textContent = '⏳ Converting to SQL...';
+        }
+
+        try {
+            const res = await this.authFetch(`${API}/alerts/preview-sql`, {
+                method: 'POST',
+                body: JSON.stringify({ connection_id: connId, natural_language: query })
+            });
+            if (!res) return;
+            const result = await res.json();
+            if (res.ok && result.success) {
+                if (previewBox) previewBox.textContent = result.sql_query;
+            } else {
+                if (previewBox) previewBox.textContent = '';
+                if (previewBox) previewBox.classList.add('hidden');
+                this.showToast(result.detail || 'Could not convert query to SQL', 'error');
+            }
+        } catch (e) {
+            if (previewBox) previewBox.classList.add('hidden');
+            this.showToast('Failed to preview SQL', 'error');
+        }
+    }
+
     async createAlertRule() {
         const name      = document.getElementById('alert-name').value.trim();
         const connId    = document.getElementById('alert-connection').value;
@@ -1453,7 +1532,6 @@ class AICopilotApp {
         if (!threshold) { this.showToast('Please enter a threshold value', 'warning'); return; }
         if (channels.length === 0) { this.showToast('Please select at least one channel', 'warning'); return; }
 
-        // Map UI condition values to backend format
         const conditionMap = {
             'less_than': 'lt',
             'greater_than': 'gt',
@@ -1463,12 +1541,37 @@ class AICopilotApp {
             'Greater than (>)': 'gt',
         };
 
-        // Get user email for notifications
         let userEmail = 'manashmandal117@gmail.com';
         try {
             const session = JSON.parse(localStorage.getItem('prism_session') || '{}');
             userEmail = session.email || userEmail;
         } catch (e) {}
+
+        // NEW: read the "Check Every" dropdown so the backend scheduler knows
+        // how often to auto-check this alert (defaults to 5 minutes if the
+        // element isn't found or its value can't be parsed).
+        // Tries a couple of likely element ids since this dropdown wasn't
+        // previously wired up — adjust the id here if yours differs.
+        let checkIntervalMinutes = 5;
+        const intervalEl =
+            document.getElementById('alert-interval') ||
+            document.getElementById('alert-check-interval') ||
+            document.getElementById('alert-frequency');
+        if (intervalEl) {
+            const raw = (intervalEl.value || intervalEl.textContent || '').toLowerCase();
+            const match = raw.match(/(\d+)/);
+            if (match) {
+                checkIntervalMinutes = parseInt(match[1], 10);
+                if (raw.includes('hour')) checkIntervalMinutes *= 60;
+            }
+        }
+
+        // NOTE: `query` can be plain English (e.g. "count total leads today") —
+        // the backend now converts it into SQL automatically using the
+        // connection's schema, so we send it through unchanged.
+        const btn = document.getElementById('create-alert-btn');
+        const originalBtnText = btn ? btn.innerHTML : null;
+        if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Creating...'; }
 
         try {
             const res = await this.authFetch(`${API}/alerts`, {
@@ -1482,26 +1585,34 @@ class AICopilotApp {
                     sql_query: query,
                     recipients: channels.includes('email') ? [userEmail] : [],
                     severity: 'warning',
-                    description: `Alert: ${name}`
+                    description: `Alert: ${name}`,
+                    check_interval_minutes: checkIntervalMinutes
                 })
             });
             if (!res) return;
             const result = await res.json();
-            if (result.success) {
+            if (res.ok && result.success) {
                 document.getElementById('alert-name').value = '';
                 document.getElementById('alert-query').value = '';
                 document.getElementById('alert-threshold').value = '';
+                const previewBox = document.getElementById('alert-sql-preview');
+                if (previewBox) { previewBox.classList.add('hidden'); previewBox.textContent = ''; }
                 this.renderAlertRules();
-                this.showToast(`Alert "${name}" created!`, 'success');
+                if (result.alert?.original_input) {
+                    this.showToast(`Alert "${name}" created! Converted to: ${result.alert.sql_query}`, 'success');
+                } else {
+                    this.showToast(`Alert "${name}" created!`, 'success');
+                }
             } else {
                 this.showToast(`Failed: ${result.detail || 'Unknown error'}`, 'error');
             }
         } catch (err) {
             this.showToast('Failed to create alert', 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = originalBtnText; }
         }
     }
 
-    // ✅ FIX: Loads alert rules from backend API
     async renderAlertRules() {
         let rules = [];
         try {
@@ -1538,8 +1649,13 @@ class AICopilotApp {
                 <div class="alert-rule-body">
                     <div class="alert-rule-name">${this.escapeHtml(rule.name)}</div>
                     <div class="alert-rule-query">"${this.escapeHtml(rule.metric)}" ${conditionLabels[rule.condition] || rule.condition} ${rule.threshold}</div>
+                    ${rule.sql_query ? `
+                        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);background:var(--bg-elevated);padding:6px 8px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            ${rule.original_input ? '🔤→SQL: ' : ''}${this.escapeHtml(rule.sql_query)}
+                        </div>` : ''}
                     <div class="alert-rule-meta">
                         Severity: ${rule.severity}
+                        · Auto-checks every ${rule.check_interval_minutes || 5}m
                         · Triggered ${rule.trigger_count || 0}x
                         · ${rule.recipients?.join(', ') || 'No recipients'}
                     </div>
@@ -1604,7 +1720,6 @@ class AICopilotApp {
     }
 
     async renderAlertHistory() {
-        // Try backend first
         let history = [];
         try {
             const res = await this.authFetch(`${API}/alerts/history/all?limit=50`);

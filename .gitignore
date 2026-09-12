@@ -77,3 +77,6 @@ test_*.py
 patch.py
 
 connections/
+
+uploads/
+conflict.txt
