@@ -775,8 +775,9 @@ async def delete_client(
             return {"success": resp.status_code in [200, 204]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-    # ==================== Logo / Branding Endpoints ====================
+
+
+# ==================== Logo / Branding Endpoints ====================
 
 import uuid as _uuid
 import os as _os
@@ -876,3 +877,56 @@ async def delete_logo(current_user: dict = Depends(get_current_user)):
             json={"logo_url": None}
         )
     return {"status": "removed"}
+
+
+# ==================== Onboarding Checklist Endpoints ====================
+
+@router.get("/onboarding")
+async def get_onboarding_checklist(current_user: dict = Depends(get_current_user)):
+    supabase_url = _os.getenv("SUPABASE_URL")
+    service_key  = _os.getenv("SUPABASE_SERVICE_KEY") or _os.getenv("SUPABASE_ANON_KEY")
+    user_id      = current_user["id"]
+
+    async with _httpx.AsyncClient() as client:
+        res = await client.get(
+            f"{supabase_url}/rest/v1/user_settings",
+            params={"user_id": f"eq.{user_id}", "select": "onboarding_checklist"},
+            headers={
+                "apikey": service_key,
+                "Authorization": f"Bearer {service_key}",
+                "Accept": "application/json"
+            }
+        )
+        data = res.json()
+        checklist = data[0]["onboarding_checklist"] if isinstance(data, list) and data and data[0].get("onboarding_checklist") else {}
+    return {"checklist": checklist}
+
+
+class OnboardingUpdateRequest(BaseModel):
+    checklist: dict
+
+
+@router.post("/onboarding")
+async def update_onboarding_checklist(
+    request: OnboardingUpdateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    supabase_url = _os.getenv("SUPABASE_URL")
+    service_key  = _os.getenv("SUPABASE_SERVICE_KEY") or _os.getenv("SUPABASE_ANON_KEY")
+    user_token   = current_user.get("token")
+
+    async with _httpx.AsyncClient() as client:
+        res = await client.post(
+            f"{supabase_url}/rest/v1/user_settings?on_conflict=user_id",
+            headers={
+                "apikey": service_key,
+                "Authorization": f"Bearer {user_token or service_key}",
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates"
+            },
+            json={"user_id": current_user["id"], "onboarding_checklist": request.checklist}
+        )
+        if res.status_code not in [200, 201, 204]:
+            raise HTTPException(500, f"Failed to save checklist: {res.text}")
+
+    return {"success": True, "checklist": request.checklist}

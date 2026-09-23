@@ -42,7 +42,7 @@ class AlertConfig(BaseModel):
 
 class ExportConfig(BaseModel):
     export_dir: str = Field(default="./exports")
-    pdf_engine: str = Field(default="weasyprint")
+    pdf_engine: str = Field(default="reportlab")
     max_rows_export: int = Field(default=100000)
 
 class Settings(BaseModel):
@@ -110,7 +110,7 @@ def load_settings() -> Settings:
         ),
         export=ExportConfig(
             export_dir=os.getenv("EXPORT_DIR", "./exports"),
-            pdf_engine=os.getenv("PDF_ENGINE", "weasyprint"),
+            pdf_engine=os.getenv("PDF_ENGINE", "reportlab"),
             max_rows_export=int(os.getenv("MAX_ROWS_EXPORT", "100000")),
         ),
         # Razorpay

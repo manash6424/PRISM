@@ -103,7 +103,7 @@ async def root():
 
 def run_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
     uvicorn.run(
-        "backend.main:app",
+        app if not reload else "backend.main:app",
         host=host,
         port=port,
         reload=reload,

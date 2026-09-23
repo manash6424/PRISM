@@ -19,7 +19,7 @@
   "dependencies": {
     "electron-log": "^5.0.0"
   },
-  "build": {
+ "build": {
     "appId": "com.aicopilot.desktop",
     "productName": "AI Desktop Copilot",
     "directories": {
@@ -28,7 +28,11 @@
     "files": [
       "main.js",
       "preload.js",
-      "renderer/**/*"
+      "renderer/**/*",
+      "backend-dist/**/*"
+    ],
+    "asarUnpack": [
+      "backend-dist/**/*"
     ],
     "win": {
       "target": "nsis",

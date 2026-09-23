@@ -20,6 +20,7 @@ class AICopilotApp {
         this.initKeyboardShortcuts();
         this.renderHistory();
         this.checkOnboarding();
+        this.loadOnboardingChecklist();
         this.loadClients(); // NEW: multi-client
         this.initTooltips();
         window.addEventListener('focus', () => {
@@ -1797,16 +1798,43 @@ class AICopilotApp {
         } catch { return 'prism_checklist_default'; }
     }
 
-    getChecklist() {
+        getChecklist() {
         try { return JSON.parse(localStorage.getItem(this.getChecklistKey()) || '{}'); }
         catch { return {}; }
     }
 
-    markChecklistDone(item) {
+    async loadOnboardingChecklist() {
+        try {
+            const res = await this.authFetch(`${API}/onboarding`);
+            if (!res || !res.ok) return;
+            const data = await res.json();
+            const remote = data.checklist || {};
+            const local = this.getChecklist();
+            const merged = { ...remote, ...local };
+            localStorage.setItem(this.getChecklistKey(), JSON.stringify(merged));
+            this.renderChecklist();
+        } catch (e) {
+            // offline or backend down — localStorage still works fine
+        }
+    }
+
+    async saveOnboardingChecklist(checklist) {
+        try {
+            await this.authFetch(`${API}/onboarding`, {
+                method: 'POST',
+                body: JSON.stringify({ checklist })
+            });
+        } catch (e) {
+            // will re-sync on next login via loadOnboardingChecklist
+        }
+    }
+
+        markChecklistDone(item) {
         const cl = this.getChecklist();
         if (cl[item]) return;
         cl[item] = true;
         localStorage.setItem(this.getChecklistKey(), JSON.stringify(cl));
+        this.saveOnboardingChecklist(cl);
         this.renderChecklist();
         if (cl.connection && cl.query && cl.upload) {
             setTimeout(() => this.showCompletionBanner(), 400);
@@ -1885,8 +1913,33 @@ class AICopilotApp {
             </div>
             <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-muted,#3d4560);font-size:18px;cursor:pointer;padding:0 0 0 8px;">×</button>
         `;
-        document.body.appendChild(banner);
+                document.body.appendChild(banner);
+        this.fireConfetti();
         setTimeout(() => banner?.remove(), 6000);
+    }
+
+    fireConfetti() {
+        const colors = ['#e8455a', '#4ade80', '#f5a623', '#ffffff'];
+        for (let i = 0; i < 40; i++) {
+            const piece = document.createElement('div');
+            const size = 6 + Math.random() * 6;
+            piece.style.cssText = `
+                position:fixed;top:-20px;left:${Math.random() * 100}vw;
+                width:${size}px;height:${size}px;z-index:9991;
+                background:${colors[Math.floor(Math.random() * colors.length)]};
+                border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+                opacity:${0.7 + Math.random() * 0.3};
+                pointer-events:none;
+            `;
+            document.body.appendChild(piece);
+            const duration = 1800 + Math.random() * 1200;
+            const drift = (Math.random() - 0.5) * 200;
+            piece.animate([
+                { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+                { transform: `translate(${drift}px, 100vh) rotate(${360 + Math.random() * 360}deg)`, opacity: 0 }
+            ], { duration, easing: 'ease-in' });
+            setTimeout(() => piece.remove(), duration);
+        }
     }
 
     initTooltips() {
