@@ -72,4 +72,8 @@ contextBridge.exposeInMainWorld('api', {
 
     saveFile: (filename, content) =>
         ipcRenderer.invoke('save-file', { filename, content }),
+
+    // ✅ NEW: binary-safe export download — writes the file locally and opens it
+    saveExportFile: (filename, data) =>
+        ipcRenderer.invoke('save-export-file', { filename, data }),
 });
