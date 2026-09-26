@@ -1,75 +1,8 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
-const http = require('http');
 
 let mainWindow;
-let backendProcess;
-
-function getBackendPath() {
-    if (app.isPackaged) {
-        // In the packaged app, unpacked files live under app.asar.unpacked
-        return path.join(process.resourcesPath, 'app.asar.unpacked', 'backend-dist', 'prism-backend.exe');
-    } else {
-        // In development, it's inside the frontend folder
-        return path.join(__dirname, 'backend-dist', 'prism-backend.exe');
-    }
-}
-
-function startBackend() {
-    const backendPath = getBackendPath();
-    console.log('Starting backend from:', backendPath);
-
-    backendProcess = spawn(backendPath, [], {
-    windowsHide: true,
-    cwd: path.dirname(backendPath),
-    env: {
-        ...process.env,
-        PYTHONIOENCODING: 'utf-8',
-        PYTHONUTF8: '1'
-    }
-});
-
-    backendProcess.stdout.on('data', (data) => {
-        console.log(`[backend] ${data}`);
-    });
-
-    backendProcess.stderr.on('data', (data) => {
-        console.error(`[backend] ${data}`);
-    });
-
-    backendProcess.on('close', (code) => {
-        console.log(`Backend process exited with code ${code}`);
-    });
-
-    backendProcess.on('error', (err) => {
-        console.error('Failed to start backend:', err);
-    });
-}
-
-function waitForBackend(callback, retries = 60) {
-    const check = () => {
-        const req = http.get('http://127.0.0.1:8000/docs', (res) => {
-            callback();
-        });
-
-        req.setTimeout(1000, () => {
-            req.destroy();
-        });
-
-        req.on('error', () => {
-            if (retries <= 0) {
-                console.error('Backend did not start in time.');
-                callback();
-                return;
-            }
-            retries--;
-            setTimeout(check, 500);
-        });
-    };
-    check();
-}
 
 // ── Token Storage ─────────────────────────────────────────────────────────────
 let accessToken = null;
@@ -105,21 +38,11 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-    startBackend();
-    waitForBackend(() => {
-        createWindow();
-    });
+    createWindow();
 });
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('before-quit', () => {
-    if (backendProcess) {
-        console.log('Killing backend process...');
-        backendProcess.kill();
-    }
 });
 
 app.on('activate', () => {
@@ -127,7 +50,7 @@ app.on('activate', () => {
 });
 
 // ── API Base ─────────────────────────────────────────────────────────────────
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = 'https://prism-production-54e1.up.railway.app/api/v1';
 
 // ── Open File (for exports) ───────────────────────────────────────────────────
 ipcMain.handle('open-file', async (event, filepath) => {
@@ -178,7 +101,7 @@ ipcMain.handle('auth-login', async (event, { email, password }) => {
         }
         return { success: false, message: data.detail || 'Invalid email or password' };
     } catch (err) {
-        return { success: false, message: 'Cannot reach server. Is the backend running?' };
+        return { success: false, message: 'Cannot reach server. Please check your internet connection and try again.' };
     }
 });
 
@@ -193,7 +116,7 @@ ipcMain.handle('auth-signup', async (event, { name, company, email, password }) 
         if (res.ok) return { success: true };
         return { success: false, message: data.detail || 'Registration failed' };
     } catch (err) {
-        return { success: false, message: 'Cannot reach server. Is the backend running?' };
+        return { success: false, message: 'Cannot reach server. Please check your internet connection and try again.' };
     }
 });
 

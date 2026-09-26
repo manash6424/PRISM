@@ -896,7 +896,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     btn.disabled = true;
 
     try {
-        const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+        const res = await fetch('https://prism-production-54e1.up.railway.app/api/v1/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -938,7 +938,7 @@ document.getElementById('signup-btn').addEventListener('click', async () => {
     btn.disabled = true;
 
     try {
-        const res = await fetch('http://localhost:8000/api/v1/auth/register', {
+        const res = await fetch('https://prism-production-54e1.up.railway.app/api/v1/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, company, email, password })
@@ -983,7 +983,7 @@ document.getElementById('forgot-btn').addEventListener('click', async () => {
     btn.textContent = 'Sending...';
     btn.disabled = true;
     try {
-        const res = await fetch('http://localhost:8000/api/v1/auth/forgot-password', {
+        const res = await fetch('https://prism-production-54e1.up.railway.app/api/v1/auth/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })

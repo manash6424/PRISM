@@ -1,16 +1,14 @@
 {
-  "name": "ai-desktop-copilot",
+  "name": "prism",
   "version": "1.0.0",
-  "description": "AI Desktop Copilot - Natural Language to SQL Query Engine",
+  "description": "PRISM - Ask your data questions in plain English",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dev": "npx electron . --enable-logging",
-    "build": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux"
+    "build": "electron-builder --win"
   },
-  "author": "AI Desktop Copilot",
+  "author": "PRISM",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.3.3",
@@ -19,32 +17,19 @@
   "dependencies": {
     "electron-log": "^5.0.0"
   },
- "build": {
-    "appId": "com.aicopilot.desktop",
-    "productName": "AI Desktop Copilot",
+  "build": {
+    "appId": "com.prism.desktop",
+    "productName": "PRISM",
     "directories": {
       "output": "dist"
     },
     "files": [
       "main.js",
       "preload.js",
-      "renderer/**/*",
-      "backend-dist/**/*"
-    ],
-    "asarUnpack": [
-      "backend-dist/**/*"
+      "renderer/**/*"
     ],
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
+      "target": "nsis"
     }
   }
 }
