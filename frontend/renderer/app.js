@@ -1250,6 +1250,12 @@ class AICopilotApp {
     }
 
     // ── Export ──────────────────────────────────────────────────────────────
+    // NOTE: this no longer trusts a raw filesystem path from the backend
+    // (that only makes sense if the backend runs on this same PC — but our
+    // backend runs on Railway, and will keep doing so once the .exe ships).
+    // Instead: ask the backend to generate the file, then download the
+    // actual bytes over HTTP via /export/download/{filename}, and hand
+    // those bytes to Electron's main process to write locally + open.
     async exportResults(format) {
         if (!this.currentQuery) { this.showToast('No query results to export', 'warning'); return; }
 
@@ -1272,10 +1278,35 @@ class AICopilotApp {
             if (!res) return;
             const result = await res.json();
 
-            if (result.success && result.filepath) {
-                this.showToast(`✅ ${format.toUpperCase()} saved! Opening...`, 'success');
-                if (window.api && window.api.openFile) {
-                    window.api.openFile(result.filepath);
+            if (result.success && result.download_url) {
+                // Download the actual file bytes from the backend (works
+                // whether the backend is local or on Railway).
+                const apiRoot = API.replace('/api/v1', '');
+                const downloadRes = await this.authFetch(`${apiRoot}${result.download_url}`);
+                if (!downloadRes || !downloadRes.ok) {
+                    this.showToast('Failed to download exported file', 'error');
+                    return;
+                }
+                const arrayBuffer = await downloadRes.arrayBuffer();
+
+                if (window.api && window.api.saveExportFile) {
+                    // Electron: write the bytes locally and auto-open
+                    const saveResult = await window.api.saveExportFile(result.filename, arrayBuffer);
+                    if (saveResult.success) {
+                        this.showToast(`✅ ${format.toUpperCase()} saved! Opening...`, 'success');
+                    } else {
+                        this.showToast(`Failed to save file: ${saveResult.error}`, 'error');
+                    }
+                } else {
+                    // Browser fallback: trigger a normal download
+                    const blob = new Blob([arrayBuffer]);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = result.filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    this.showToast(`✅ ${format.toUpperCase()} downloaded!`, 'success');
                 }
             } else {
                 this.showToast(`Export failed: ${result.error || 'Unknown error'}`, 'error');

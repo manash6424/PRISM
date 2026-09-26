@@ -67,6 +67,33 @@ ipcMain.handle('open-file', async (event, filepath) => {
     }
 });
 
+// ── Save Exported File (binary-safe, auto-opens) ──────────────────────────────
+// Uses app.getPath('documents') instead of __dirname, so this works
+// correctly both in development AND in the packaged .exe — __dirname
+// points somewhere unreliable (inside resources/asar) once packaged.
+ipcMain.handle('save-export-file', async (event, { filename, data }) => {
+    try {
+        const exportsDir = path.join(app.getPath('documents'), 'PRISM Exports');
+        if (!fs.existsSync(exportsDir)) {
+            fs.mkdirSync(exportsDir, { recursive: true });
+        }
+        const filePath = path.join(exportsDir, filename);
+
+        const buffer = Buffer.from(data);
+        fs.writeFileSync(filePath, buffer);
+
+        const error = await shell.openPath(filePath);
+        if (error) {
+            console.error('Failed to open exported file:', error);
+            return { success: true, filePath, openError: error };
+        }
+        return { success: true, filePath };
+    } catch (err) {
+        console.error('save-export-file failed:', err);
+        return { success: false, error: err.message };
+    }
+});
+
 // ── Generic API request ──────────────────────────────────────────────────────
 ipcMain.handle('api-request', async (event, { method, endpoint, data }) => {
     const url = `${API_BASE}${endpoint}`;

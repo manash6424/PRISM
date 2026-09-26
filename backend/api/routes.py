@@ -8,6 +8,7 @@ from typing import Optional, List
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -365,10 +366,20 @@ async def create_export(
     try:
         filepath = await export_service.export(request, query)
 
+        # NEW: the raw filepath only makes sense on the machine the backend
+        # itself is running on (which, on Railway, is NOT the user's PC).
+        # So instead of asking the frontend to open `filepath` directly,
+        # we also hand back just the filename plus a download_url the
+        # frontend can fetch to pull down the actual file bytes over HTTP
+        # and save them locally, wherever the app is running.
+        import os as _os_export
+        filename_only = _os_export.path.basename(filepath)
+
         return {
             "success": True,
             "filepath": filepath,
-            "filename": request.filename or f"export_{request.query_id[:8]}",
+            "filename": filename_only,
+            "download_url": f"/api/v1/export/download/{filename_only}",
             "format": request.format.value,
         }
 
@@ -376,6 +387,28 @@ async def create_export(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# NEW: serves the actual exported file bytes over HTTP so the frontend
+# can download and save it locally, regardless of where the backend runs.
+@router.get("/export/download/{filename}")
+async def download_export(
+    filename: str,
+    current_user: dict = Depends(get_current_user)
+):
+    import os as _os_dl
+
+    export_dir = export_service.settings.export.export_dir
+    filepath = _os_dl.path.join(export_dir, filename)
+
+    # Basic safety check — prevent path traversal outside the export dir
+    if not _os_dl.path.abspath(filepath).startswith(_os_dl.path.abspath(export_dir)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    if not _os_dl.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(filepath, filename=filename)
 
 
 # ==================== System Endpoints ====================
