@@ -160,12 +160,7 @@ class DatabaseManager:
                             dialect=row["dialect"],
                         )
                         resolved_host, original_host = self._resolve_host(conn.host)
-                        pg_conn = await self._make_asyncpg_connection(
-                            resolved_host, conn.port, conn.username,
-                            conn.password or "", conn.database, sni_host=original_host
-                        )
-                        await pg_conn.execute("SELECT 1")
-                        await pg_conn.close()
+                    
                         self._resolved_hosts[conn_id] = resolved_host
                         self._original_hosts[conn_id] = original_host
                         self._connection_cache[conn_id] = conn
