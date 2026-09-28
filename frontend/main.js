@@ -73,7 +73,7 @@ ipcMain.handle('open-file', async (event, filepath) => {
 // points somewhere unreliable (inside resources/asar) once packaged.
 ipcMain.handle('save-export-file', async (event, { filename, data }) => {
     try {
-        const exportsDir = path.join(app.getPath('documents'), 'PRISM Exports');
+       const exportsDir = path.join(app.getPath('downloads'), 'PRISM Exports');
         if (!fs.existsSync(exportsDir)) {
             fs.mkdirSync(exportsDir, { recursive: true });
         }
