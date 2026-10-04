@@ -490,11 +490,12 @@ async def query_session(session_id: str, body: QueryBody):
     # ── CORE FIX: Rich schema context instead of 3 generic sample rows ────
     schema_context = build_schema_context(store)
 
-    groq_key = os.environ.get("GROQ_API_KEY")
+    groq_key = os.environ.get("AI_API_KEY")
     if not groq_key:
-        raise HTTPException(status_code=500, detail="GROQ_API_KEY not set in environment")
+        raise HTTPException(status_code=500, detail="AI_API_KEY not set in environment")
 
     client = Groq(api_key=groq_key)
+    ai_model = os.environ.get("AI_MODEL", "openai/gpt-oss-120b")  # ← NEW: was hardcoded to the retired llama-3.3-70b-versatile
 
     # Per-file individual counts — ground truth for count questions
     per_file_counts     = {f['filename']: f['row_count'] for f in store["files"]}
@@ -569,7 +570,7 @@ Good expression examples:
 
         else:
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=ai_model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=300,
                 temperature=0.1,
@@ -637,7 +638,7 @@ Give a SHORT, direct, friendly answer in 1-2 sentences.
 Use EXACT numbers from the context — never guess. No code, no markdown."""
 
                 ans_response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model=ai_model,
                     messages=[{"role": "user", "content": answer_prompt}],
                     max_tokens=150,
                     temperature=0.1,
